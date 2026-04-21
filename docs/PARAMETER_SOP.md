@@ -266,6 +266,30 @@ assert rmse_V < 0.020  # 20 mV
 
 **如果没数据**：使用论文默认 `C1=949, C2=3576`，稳态误差 < 5%，可进入下一阶段。
 
+#### FIT-3: 电阻分配（fractionR1toRs, fractionR2toRs）
+
+**前置**：SOP-2 完成（需要 `R_NE_LUT`, `R_PE_LUT` 已就位）
+
+**输入**：EXP-D 的 DST 首循环数据 `experiments/EXP-D/cell_01_dst_firstcycle.csv`（列：`time_s, V_cell, I_A`）
+
+**算法**：
+1. 粗扫：`fractionR1toRs ∈ [0.1, 0.9]` 步长 0.1，`fractionR2toRs ∈ [0.1, 0.9]` 步长 0.1（9×9 = 81 点）
+2. 精扫或 Nelder-Mead：围绕粗扫最优点 ±0.1，步长 0.02，`bounds=(0.05, 0.95)`
+3. 目标函数：`V_cell(t)` RMSE
+
+**验收**：
+- RMSE < 20 mV 为理想
+- RMSE 在 30–50 mV 区间属于已知 RC 模型限制（paper Fig. 3d 在 ~250 s 的电压阶跃），不应继续压低
+- 参见 `CRITICAL_REVIEW.md` 相关条目
+
+**如果没数据**：使用论文默认 `0.5 / 0.5`，误差可控，可进入下一阶段。
+
+**特别提醒**：`PARAMETERS.json::parameters::fractionR1toRs::notes` 原话——
+
+> "Despite the 0.5 value looking like a default, it is in fact a FIT RESULT for this specific cell."
+
+不要让读者误以为 `0.5` 是硬编码默认值；它是论文针对 Panasonic NCR18650B 的拟合结果，新体系仍须走 FIT-3。
+
 ---
 
 ### SOP-4: 老化参数拟合（Tier IV，分 3 步）
@@ -469,3 +493,11 @@ Claude Code 可被要求："对比 `parameterization_history/2026-04-20_initial/
 3. 相关代码（实现层）
 
 **禁止**：只改 MD 文档不改 JSON。这是之前文档不一致的根本原因。
+
+---
+
+## 九、版本纪要
+
+| 日期 | 变更 |
+| --- | --- |
+| 2026-04-21 | 补上 FIT-3 小节。R5 流程下首个跨文档协调任务。 |

@@ -521,6 +521,12 @@
       "fits": ["fractionR1toRs", "fractionR2toRs"],
       "measurement_needed": "Dynamic voltage response on fresh cell",
       "method": "Manual or grid search",
+      "search_bounds": {
+        "fractionR1toRs": [0.05, 0.95],
+        "fractionR2toRs": [0.05, 0.95]
+      },
+      "acceptance_rmse_mV": 20,
+      "known_limitation": "RMSE in 30-50 mV range is a known limit of the two-RC topology (paper Fig. 3d shows a ~250 s voltage step the RC ladder cannot follow). Do not over-fit below this floor. See CRITICAL_REVIEW.md.",
       "estimated_runtime": "minutes",
       "blocks_what": "Nothing"
     },

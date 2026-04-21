@@ -295,11 +295,16 @@ $$
 
 ### 3.3 resistance "fraction" 分配 (fractionR1toRs 等)
 
-**论文值**：三个都设为 0.5
+**论文值**：两个都为 0.5。**注意**：这个 0.5 不是"未调过的默认值"，而是论文针对 Panasonic NCR18650B 的 FIT 结果（见 `PARAMETERS.json::parameters::fractionR1toRs::notes`：
+> "Despite the 0.5 value looking like a default, it is in fact a FIT RESULT for this specific cell."
 
-**物理意义**：把 R-RC 元件中的 R 劈一半给串联 Rs，劈一半给 RC-R（动态部分）。这是**纯经验参数**，用来让动态响应更好拟合。
+新体系不能假定 0.5 仍然适用，应重新走 FIT-3。
 
-**获取方法**：用上面的阶跃响应数据，同时拟合 $C_1, C_2$ 和 fraction（即 R 的劈分比例）。对新体系，**先保持默认 0.5 跑**，对比实验电压曲线，如果瞬态有系统偏差再调。
+**物理意义**：把 R-RC 元件中的 R 劈一部分给串联 Rs，其余留给 RC-R（动态部分）。这是**经验劈分因子**，用来让动态电压响应更贴合实测。
+
+**获取方法**：属于 FIT-3（电阻分配）。**数据来源是 EXP-D 的 DST 首循环**（`experiments/EXP-D/cell_01_dst_firstcycle.csv`），不是 EXP-C 阶跃。完整流程（粗扫 → 精扫、验收标准、已知 RC 模型限制）见 `PARAMETER_SOP.md §SOP-3::FIT-3`。
+
+**如果没数据**：沿用论文的 0.5 / 0.5 作 placeholder，稳态误差可接受，但须在参数工厂处加 TODO。
 
 ---
 
