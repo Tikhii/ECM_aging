@@ -272,6 +272,8 @@ assert rmse_V < 0.020  # 20 mV
 
 **输入**：EXP-D 的 DST 首循环数据 `experiments/EXP-D/cell_01_dst_firstcycle.csv`（列：`time_s, V_cell, I_A`）
 
+**脚本**：`scripts/fit_resistance_distribution.py`（SOP-5 会生成）
+
 **算法**：
 1. 粗扫：`fractionR1toRs ∈ [0.1, 0.9]` 步长 0.1，`fractionR2toRs ∈ [0.1, 0.9]` 步长 0.1（9×9 = 81 点）
 2. 精扫或 Nelder-Mead：围绕粗扫最优点 ±0.1，步长 0.02，`bounds=(0.05, 0.95)`
@@ -409,6 +411,7 @@ k_LP_fit = 10 ** res.x
 | `build_resistance_mat.py` | `scripts/` | GITT CSV → `.mat` | `python scripts/build_resistance_mat.py --input gitt.csv --CN 3.0 --output R.mat` |
 | `fit_electrode_balance.py` | `scripts/` | FIT-1 | `python scripts/fit_electrode_balance.py --fullcell ocv.csv --pe-dat PE.dat --ne-dat NE.dat` |
 | `fit_rc_transient.py` | `scripts/` | FIT-2 | `python scripts/fit_rc_transient.py --step step.csv` |
+| `fit_resistance_distribution.py` | `scripts/` | FIT-3 | `python scripts/fit_resistance_distribution.py --dst experiments/EXP-D/cell_01_dst_firstcycle.csv` |
 | `fit_calendar.py` | `scripts/` | FIT-4a | `python scripts/fit_calendar.py --rpt-dir experiments/EXP-E/` |
 | `fit_cycle_preknee.py` | `scripts/` | FIT-4b | `python scripts/fit_cycle_preknee.py --rpt-dir experiments/EXP-F/` |
 | `fit_knee.py` | `scripts/` | FIT-4c | `python scripts/fit_knee.py --rpt-dir experiments/EXP-G/` |
@@ -501,3 +504,4 @@ Claude Code 可被要求："对比 `parameterization_history/2026-04-20_initial/
 | 日期 | 变更 |
 | --- | --- |
 | 2026-04-21 | 补上 FIT-3 小节。R5 流程下首个跨文档协调任务。 |
+| 2026-04-21 | FIT-3 补上"脚本"字段（`fit_resistance_distribution.py`，SOP-5 会生成）。修正上一轮字段结构遗漏。 |

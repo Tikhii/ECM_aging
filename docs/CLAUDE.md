@@ -134,6 +134,7 @@ scripts/ (SOP-5 规范, 待生成)
 ├── build_resistance_mat.py     EXP-B4 GITT 数据 → .mat
 ├── fit_electrode_balance.py    FIT-1 (LR, OFS)
 ├── fit_rc_transient.py         FIT-2 (C1, C2)
+├── fit_resistance_distribution.py  FIT-3
 ├── fit_calendar.py             FIT-4a (含 R_SEI!)
 ├── fit_cycle_preknee.py        FIT-4b
 └── fit_knee.py                 FIT-4c (只调 k_LP)
