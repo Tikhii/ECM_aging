@@ -1,0 +1,54 @@
+# environment.yml
+# ==================================================================
+# 用 conda/mamba 创建 libquiv-aging 的完整开发环境。
+#
+# 使用方法:
+#   conda env create -f environment.yml       # 创建
+#   conda activate libquiv-aging               # 激活
+#   pip install -e .                           # 把本工程以可编辑方式装进环境
+#
+# 若机器已装 mamba (推荐, 更快):
+#   mamba env create -f environment.yml
+#
+# 更新已有环境 (你改了 yml 之后):
+#   conda env update -f environment.yml --prune
+#
+# 删除环境:
+#   conda env remove -n libquiv-aging
+# ==================================================================
+
+name: libquiv-aging
+
+channels:
+  - conda-forge        # 优先从 conda-forge 拉 (更新, Apple Silicon 兼容好)
+  - defaults
+
+dependencies:
+  # ---- Python 版本 ----
+  - python=3.11
+
+  # ---- 科学计算核心 (走 conda 能自动装对 Apple Silicon 优化的 BLAS) ----
+  - numpy>=1.24,<3
+  - scipy>=1.11
+  - matplotlib>=3.7
+  - pandas>=2.0
+
+  # ---- 开发工具 ----
+  - pytest>=7.0
+  - pytest-cov
+  - black
+  - ruff
+  - mypy
+
+  # ---- Jupyter 生态 (交互式探索时很有用) ----
+  - ipykernel
+  - jupyter
+  - ipywidgets
+
+  # ---- pip 机制 (留给 pip install -e . 用) ----
+  - pip
+
+  # ---- 通过 pip 装的: 本工程自身 (可编辑安装) ----
+  # conda env create 时 pip 依赖会自动执行
+  - pip:
+      - -e .

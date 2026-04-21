@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+build/
+dist/
+
+# 虚拟环境
+.venv/
+venv/
+env/
+
+# IDE
+.idea/
+*.swp
+.DS_Store
+
+# Jupyter
+.ipynb_checkpoints/
+
+# 仿真结果 (大多数情况下不纳入版本控制)
+examples/outputs/
+*.npz
+*.png
+*.jpg
+
+# MATLAB
+*.asv

@@ -1,0 +1,53 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "libquiv-aging"
+version = "1.0.0"
+description = "Python port of the physics-informed aging-sensitive equivalent circuit model (Mmeka, Dubarry & Bessler 2025)"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "CC-BY-NC-4.0" }
+authors = [
+    { name = "Python port", email = "your.email@example.com" },
+]
+dependencies = [
+    "numpy>=1.24,<3",
+    "scipy>=1.11",
+    "matplotlib>=3.7",
+    "pandas>=2.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov",
+    "black",
+    "ruff",
+    "mypy",
+    "ipykernel",
+    "jupyter",
+]
+
+[tool.setuptools]
+packages = ["libquiv_aging"]
+
+[tool.setuptools.package-data]
+libquiv_aging = ["data/*.dat", "data/*.mat", "data/*.csv"]
+
+[tool.black]
+line-length = 100
+target-version = ["py310"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP"]
+ignore = ["E501"]  # 行过长由 black 管理
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]

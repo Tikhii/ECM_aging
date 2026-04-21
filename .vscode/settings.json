@@ -1,0 +1,31 @@
+{
+    // 不硬编码解释器路径 —— 让 VS Code 自动发现 conda 环境。
+    // 首次打开工程时手动选一次 conda 环境 (libquiv-aging), VS Code 会记住。
+    // 若你想硬编码, 可取消下面这行注释并指向你的 conda 环境:
+    // "python.defaultInterpreterPath": "/Users/you/miniforge3/envs/libquiv-aging/bin/python",
+
+    "python.analysis.typeCheckingMode": "basic",
+    "python.analysis.autoImportCompletions": true,
+    "python.analysis.extraPaths": ["${workspaceFolder}"],
+    "python.testing.pytestEnabled": true,
+    "python.testing.pytestArgs": ["tests"],
+
+    // Conda 激活脚本自动在集成终端中 source
+    "python.terminal.activateEnvironment": true,
+
+    "editor.formatOnSave": true,
+    "[python]": {
+        "editor.defaultFormatter": "ms-python.black-formatter",
+        "editor.codeActionsOnSave": {
+            "source.organizeImports": "explicit"
+        }
+    },
+
+    "files.exclude": {
+        "**/__pycache__": true,
+        "**/.pytest_cache": true,
+        "**/*.egg-info": true
+    },
+
+    "jupyter.notebookFileRoot": "${workspaceFolder}"
+}

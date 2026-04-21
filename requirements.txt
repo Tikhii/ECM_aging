@@ -1,0 +1,9 @@
+# 运行时依赖 (与 pyproject.toml 一致)
+numpy>=1.24,<3
+scipy>=1.11
+matplotlib>=3.7
+pandas>=2.0
+
+# 可选但推荐 (调试 / Notebook)
+ipykernel>=6.0
+jupyter>=1.0

@@ -1,0 +1,12 @@
+{
+    "recommendations": [
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "ms-python.black-formatter",
+        "charliermarsh.ruff",
+        "ms-toolsai.jupyter",
+        "yzhang.markdown-all-in-one",
+        "bierner.markdown-preview-github-styles",
+        "anthropic.claude-code"
+    ]
+}
