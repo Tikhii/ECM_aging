@@ -243,7 +243,7 @@
       "units": "-",
       "experiment": "EXP-D",
       "fit_step": "FIT-3",
-      "notes": "Paper states this was 'obtained via a constant factor by fitting to the dynamic DST test.' Despite the 0.5 value looking like a default, it is in fact a FIT RESULT for this specific cell.",
+      "notes": "Paper states this was 'obtained via a constant factor by fitting to the dynamic DST test.' Despite the 0.5 value looking like a default, it is in fact a FIT RESULT for this specific cell. Name is historical (inherited from MATLAB original); the 'toRs' suffix does NOT imply a semantic relationship with R_s. Actual meaning: fraction of R_NE assigned to the static branch vs. dynamic (RC) branch. See 06_parameter_sourcing.md §3.3 for physical rationale and why horizontal (§2.2.3) and vertical (§3.3) resistance splits are both necessary.",
       "paper_errata": null
     },
     {
@@ -254,6 +254,7 @@
       "units": "-",
       "experiment": "EXP-D",
       "fit_step": "FIT-3",
+      "notes": "Controls the static/dynamic split of R_PE (positive electrode). Name is historical (inherited from MATLAB original); the 'toRs' suffix does NOT imply a semantic relationship with R_s. Actual meaning: fraction of R_PE assigned to the static branch vs. dynamic (RC) branch. See 06_parameter_sourcing.md §3.3 for physical rationale. Paper value 0.5 is a FIT RESULT for Panasonic NCR18650B via FIT-3, not a hardcoded default.",
       "paper_errata": null
     },
 

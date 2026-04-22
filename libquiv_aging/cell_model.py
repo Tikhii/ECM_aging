@@ -105,7 +105,20 @@ class EquivCircuitCell:
     C2: float = 0.0      # PE 侧 RC 电容 [F]
     C3: float = 0.0      # 额外 RC (未使用)
 
-    # 将 R1/R2/R3 的一部分"转移"到 Rs（为了更好地拟合动态瞬态）
+    # ---- 电极电阻的 static / dynamic 劈分因子 ------------------------------
+    # fractionR1toRs : float
+    #     R_NE 电极电阻中分配给 static 分支（串联无电容）的比例，
+    #     余下部分进入 dynamic 分支（与 C1 并联）。范围 (0, 1)，
+    #     默认 0.5（论文 Panasonic NCR18650B 的 FIT-3 结果）。
+    #
+    #     命名陷阱：字段名中的 "toRs" 是历史遗留（延续 MATLAB 原版），
+    #     不表示与 R_s（电解液/集流体串联电阻）的任何语义关系。
+    #     R_s 和电极电阻在模型中是物理上独立的对象——R_s 假设不退化
+    #     ($f_{R,s}=1$)，而电极电阻通过 $f_{R,NE}$/$f_{R,PE}$ 随
+    #     SEI、LAM、镀锂演化。详见 docs/06_parameter_sourcing.md §3.3。
+    #
+    # fractionR2toRs : float
+    #     R_PE 的同类参数（对称版本）。命名陷阱同上。
     fractionR1toRs: float = 0.0
     fractionR2toRs: float = 0.0
     fractionR3toRs: float = 0.0

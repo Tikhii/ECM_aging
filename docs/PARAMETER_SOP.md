@@ -292,6 +292,8 @@ assert rmse_V < 0.020  # 20 mV
 
 不要让读者误以为 `0.5` 是硬编码默认值；它是论文针对 Panasonic NCR18650B 的拟合结果，新体系仍须走 FIT-3。
 
+**命名提醒**：参数名 `fractionR1toRs` / `fractionR2toRs` 中的 "toRs" 是 MATLAB 原版的历史遗迹，**不表示与 $R_s$ 的语义关系**。这两个参数控制的是电极电阻（R_NE / R_PE）内部的 static/dynamic 劈分，与串联电阻 $R_s$ 独立。详见 `06_parameter_sourcing.md §3.3`。
+
 ---
 
 ### SOP-4: 老化参数拟合（Tier IV，分 3 步）
@@ -505,3 +507,4 @@ Claude Code 可被要求："对比 `parameterization_history/2026-04-20_initial/
 | --- | --- |
 | 2026-04-21 | 补上 FIT-3 小节。R5 流程下首个跨文档协调任务。 |
 | 2026-04-21 | FIT-3 补上"脚本"字段（`fit_resistance_distribution.py`，SOP-5 会生成）。修正上一轮字段结构遗漏。 |
+| 2026-04-22 | fractionR*toRs 命名陷阱澄清（方案 β）。§3.3 补两层分配的区分与物理依据；§2.2.3 加反向指引；PARAMETERS.json notes + cell_model.py docstring 同步警示。不改字段名，保留 MATLAB 对照链。 |

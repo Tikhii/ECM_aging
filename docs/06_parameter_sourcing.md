@@ -203,6 +203,8 @@ savemat('my_R.mat', {
 2. **按经验比例分**：文献中 NCA/G 的 R_NE : R_PE 通常在 5:3 到 3:2 之间
 3. **模型容错性高**：即使分配不完美，ECM 的总响应仍然对就行（只是内部的 V_NE 会有偏差，影响老化率准确性）
 
+> **注意**：本节解决的是"全电池总电阻 → 三个组件"的**横向空间分配**问题。模型中还存在一个独立的、**纵向时间尺度**分配问题——把 $R_\text{NE}$ 和 $R_\text{PE}$ 各自劈成 static / dynamic 分支，见 §3.3 及其命名陷阱说明。
+
 ---
 
 ## 3. Ⅲ 级参数 — 从测量数据做轻度拟合
@@ -294,6 +296,20 @@ $$
 ---
 
 ### 3.3 resistance "fraction" 分配 (fractionR1toRs 等)
+
+**与 §2.2.3 的区别**——以及为什么两层分配都必要：
+
+§2.2.3 把全电池总电阻拆成 $R_s + R_\text{NE} + R_\text{PE}$（横向/空间分配）。这个分配**不仅仅是电路数学上的**；三者在老化期间遵循**不同的退化规律**（论文 Eq. 43-46）：
+
+- $R_s$ 假设不退化（$f_{R,s} = 1$）
+- $R_\text{NE}$ 的退化由 SEI、LAM_NE、镀锂共同驱动（$f_{R,\text{NE}}$, Eq. 45）
+- $R_\text{PE}$ 的退化仅由 LAM_PE 驱动（$f_{R,\text{PE}}$, Eq. 44）
+
+因此**三份电阻不能互相合并**，即使它们在稳态电路上可能等价。
+
+本节（§3.3）解决的是一个独立的、**纵向/时间尺度**分配问题：把 $R_\text{NE}$ 和 $R_\text{PE}$ **各自内部**劈成 static 分支（快速 <1s 响应）和 dynamic 分支（慢速 >1s，并联 RC）。这是 ECM 区分瞬态动力学和稳态响应的必要结构，与 §2.2.3 正交。
+
+⚠️ **命名陷阱**：代码字段 `fractionR1toRs` 和 `fractionR2toRs` 的名字看起来像在描述"电极电阻与 Rs 之间的某种比例"，但**这只是一个历史命名（延续自 MATLAB 原版的早期建模视角）**。实际语义是"NE/PE 电极电阻内部的 static 分支占比"，与 $R_s$ 无直接语义关系。记住：$R_s$ 和电极电阻是物理上独立的对象（见上），不可互换。
 
 **论文值**：两个都为 0.5。**注意**：这个 0.5 不是"未调过的默认值"，而是论文针对 Panasonic NCR18650B 的 FIT 结果（见 `PARAMETERS.json::parameters::fractionR1toRs::notes`：
 > "Despite the 0.5 value looking like a default, it is in fact a FIT RESULT for this specific cell."
