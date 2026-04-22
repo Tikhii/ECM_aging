@@ -151,9 +151,44 @@ MATLAB 原版使用 `ode23t` 求解 18 维 DAE。Python 移植中改用 `scipy.i
 
 ---
 
+## 十一、2026-04-23 P0 事故与 meta 教训
+
+本节记录 2026-04-23 将离线工作流落地到 environment-frozen.yml 的过程中
+暴露的规则系统边界漏洞。事故本身已在当日对话中完整走完事故—回滚—
+修复—制度化的全流程; 本节存底, 供未来会话快速理解 v0.2.1 标签之前
+发生过什么。
+
+事故的直接触发是一条 `conda env export --no-builds > environment-frozen.yml`
+命令在未激活 libquiv-aging 环境的情况下执行, 默认 base 环境被导出,
+内容完全不含项目依赖。更严重的是, 同一日的另一次误操作导致
+`conda env export` 覆盖了 `environment.yml` 本身, 将仓库中手写的
+规范版替换为机器生成的 base 环境 dump。两处错误同时存在时, 由于
+事实层与工作树状态严重不一致, Claude 基于 Claude Code 的报告做出
+了 "environment.yml 是预先存在的历史遗留错误" 的错误判断, 并据此
+推了错误的 Commit 2 计划, 直到 `git status` 输出暴露了
+`environment.yml` 被工作树修改这一关键事实, 才得以拦下。
+
+事故最终通过 `git restore environment.yml` + 正确激活环境后重新导出
+`environment-frozen.yml` 的路径修复, 并以 v0.2.1-env-frozen-locked
+标签固化。完整 commit 链条保持四层单一职责 (ignore .claude → env
+baseline → clear TODO → tag), 事故过程本身未在 git 历史中留下噪音。
+
+从本次事故沉淀的四条教训均已制度化: "入库" 的精确定义、
+`conda env export` 的破坏性语义、"历史遗留" 判断必须基于 HEAD
+而非工作树、Claude Code 超范围审查前置条件的正向行为, 均写入
+CLAUDE.md 对应小节。R5 验收阶段的 git 条款也在本轮同步从 "禁止
+自动 commit" 扩展为 "禁止自动 git add / commit / tag", 以反映
+Claude Code 在事故中的实际拦截点 (它拒绝 git add 的理由正是对
+原 R5 条款的合理扩展解读)。此外, Claude Code 在本次事故中两次
+主动发挥了拦截作用, 这两种行为已在 CLAUDE.md "允许的超范围行为"
+一节中明确鼓励, 从偶发善意转为制度预期。
+
+---
+
 ## 版本记录
 
 | 日期 | 变更 |
 | --- | --- |
 | 2026-04-21 | 初版。汇总从工程建立到 `PARAMETERS.json v2.0` 和 `CRITICAL_REVIEW.md` 发布的全部关键决策。 |
 | 2026-04-23 | 追加 §十。记录 air-gapped 三阶段分离、独立 error code registry、`--export-public` 人因分析三项架构决策。对应 tag `docs/v0.2.0-offline-workflow`。 |
+| 2026-04-23 | 追加 §十一。v0.2.2 meta 教训制度化 (术语约定 / 破坏性命令清单 / Claude Code 协作规范), R5 验收阶段 git 条款扩展。详见 §十一。 |
