@@ -128,8 +128,32 @@ MATLAB 原版使用 `ode23t` 求解 18 维 DAE。Python 移植中改用 `scipy.i
 
 ---
 
+## 十、离线工作流三阶段分离（2026-04-23 架构决策）
+
+工程从"单体对话"模式演进为 air-gapped 三阶段分离：离线区（Claude Code + 本地
+脚本 + 原始数据），外带区（仅工程师手工贴到在线对话的文本），在线区（Claude
+网页端，用于架构与方法学级讨论）。边界由 `docs/08_consultation_protocol.md`
+§1 白名单和 §2 黑名单确定，原始数据与任何参数绝对数值禁止越过离线↔在线边界。
+此分离的根本动机是对话日志的长期可缓存性与账号层上下文泄露风险；三阶段分离
+把数据留在离线区，同时保留在线咨询能力。
+
+错误码 registry 被刻意设计为独立文件 `docs/error_codes_registry.json`，不并入
+`PARAMETERS.json`。理由是语义纯洁性：`PARAMETERS.json` 回答"有什么参数、从哪
+里来"，registry 回答"什么会出错、怎么拦截、什么时候升级"。两者的修改节奏与
+引用者集合完全不重合，强行合并会产生虚假耦合；独立 registry 让 R1（参数层
+修改顺序）与 R6（错误码修改顺序）两条规则在事实层上不相互缠绕。
+
+`--export-public` 最终采用"脚本生成 bundle + 终端 y/N 确认 + 审计副本"而非
+"要求工程师手工复制粘贴"。讨论中评估过手工粘贴方案的"人眼过一遍"价值，结论
+是重复性手工抄写会让工程师 desensitize、粘贴板残留会引入意外泄露、而自动化
++ 多层硬约束（20 行/2 KB 上限、Schema 白名单、`_public_` 文件名标记、SHA256
+审计）提供比手工抄写更可靠的拦截。该人因分析写入 `08_consultation_protocol.md §4.6`。
+
+---
+
 ## 版本记录
 
 | 日期 | 变更 |
 | --- | --- |
 | 2026-04-21 | 初版。汇总从工程建立到 `PARAMETERS.json v2.0` 和 `CRITICAL_REVIEW.md` 发布的全部关键决策。 |
+| 2026-04-23 | 追加 §十。记录 air-gapped 三阶段分离、独立 error code registry、`--export-public` 人因分析三项架构决策。对应 tag `docs/v0.2.0-offline-workflow`。 |

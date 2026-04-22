@@ -1,0 +1,122 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://libquiv-aging/docs/error_codes.schema.json",
+  "title": "libquiv-aging error code registry",
+  "description": "Fact-layer schema for the offline-workflow error-code registry. Every code referenced by scripts, runbooks or PARAMETERS.json must validate against this schema.",
+  "type": "object",
+  "required": ["version", "codes"],
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "type": "string",
+      "description": "Registry semantic version (independent of PARAMETERS.json _schema_version)."
+    },
+    "_comment": {
+      "type": "string"
+    },
+    "_updated": {
+      "type": "string",
+      "description": "ISO-8601 date of last edit."
+    },
+    "codes": {
+      "type": "object",
+      "description": "Map of error code ID to code definition. Keys must match pattern and match the entry's scope prefix.",
+      "patternProperties": {
+        "^(ENV|DATA|FIT4A|FIT4B|FIT4C|SOLVE|IDENT)-[EWI][0-9]{3}$": {
+          "$ref": "#/definitions/code"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "definitions": {
+    "code": {
+      "type": "object",
+      "required": [
+        "scope",
+        "level",
+        "title",
+        "trigger",
+        "consequence",
+        "cross_refs",
+        "remediation",
+        "script_behavior",
+        "escalation",
+        "since_version",
+        "status"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "scope": {
+          "type": "string",
+          "enum": ["ENV", "DATA", "FIT4A", "FIT4B", "FIT4C", "SOLVE", "IDENT"]
+        },
+        "level": {
+          "type": "string",
+          "enum": ["E", "W", "I"],
+          "description": "E=error (halting), W=warning (continue with caution), I=info (advisory)."
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "trigger": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Condition under which the code fires. Order-of-magnitude thresholds only; absolute numerical tolerances are forbidden."
+        },
+        "consequence": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Physical or methodological impact of ignoring this condition."
+        },
+        "cross_refs": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string"
+          },
+          "description": "Pointers to authoritative documents. Use 'TODO: ...' when a precise section/page is not yet known; entries must not be empty."
+        },
+        "remediation": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Ordered list of field-level remediations, highest-priority first. Must be non-empty for status=active entries (enforced by test, not schema)."
+        },
+        "script_behavior": {
+          "type": "object",
+          "required": ["exit_code", "action"],
+          "additionalProperties": false,
+          "properties": {
+            "exit_code": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 255
+            },
+            "action": {
+              "type": "string",
+              "enum": ["refuse", "warn", "info"]
+            }
+          }
+        },
+        "escalation": {
+          "type": "string",
+          "description": "Pointer into docs/08_consultation_protocol.md (section id or anchor)."
+        },
+        "since_version": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["active", "deprecated", "merged"]
+        },
+        "deprecated_note": {
+          "type": "string",
+          "description": "Present only when status=deprecated (conditional enforcement is done in test)."
+        }
+      }
+    }
+  }
+}

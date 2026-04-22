@@ -58,6 +58,8 @@
 | **EXP-F** | 循环老化（knee 前） | ≥2（推荐 6） | 1–3 月 | `k_SEI_cyc, k_LAM_PE_cyc, k_LAM_NE_cyc` | 每 30–50 EFC 做 RPT |
 | **EXP-G** | 循环老化（knee 后） | 同 EXP-F | +3–6 月 | `k_LP` | 跑到 ~70% 容量 |
 
+→ 数据契约违规见 `docs/07_offline_runbook.md §2`（`DATA-Exxx` 系列）。
+
 **每次 RPT 的标准流程**
 
 RPT 协议对日历老化（EXP-E）和循环老化（EXP-F/G）**共用同一套步骤**，以保证两组
@@ -328,6 +330,8 @@ R_NE_0 = luts.interp_RNE(c_rate=-1/3, X_ne=0.5) / C_nominal_Ah
 
 **前置**：SOP-2 子步 2.1 完成
 
+→ 失败时参见 `docs/07_offline_runbook.md §7`（`IDENT-W002` 系列）。
+
 **输入**：
 - 全电池 OCV：`experiments/EXP-A/cell_01_fullcycle_C40.csv`
 - PE / NE 半电池 OCV：已在 `.dat` 文件里
@@ -348,6 +352,8 @@ assert rmse_V < 0.020  # 20 mV
 
 **前置**：SOP-2 完成
 
+→ 失败时参见 `docs/07_offline_runbook.md §7`（`IDENT-W002` 系列）。
+
 **输入**：EXP-C 阶跃响应 CSV
 
 **算法**：`scipy.optimize.curve_fit` 拟合 `V(t) = V_inf + A1*exp(-t/τ1) + A2*exp(-t/τ2)`；然后 `C_i = τ_i / R_i`。
@@ -359,6 +365,8 @@ assert rmse_V < 0.020  # 20 mV
 #### FIT-3: 电阻分配（fractionR1toRs, fractionR2toRs）
 
 **前置**：SOP-2 完成（需要 `R_NE_LUT`, `R_PE_LUT` 已就位）
+
+→ 失败时参见 `docs/07_offline_runbook.md §7`（`IDENT-W002` 系列；bound 命中常见于 FIT-3 搜索区间）。
 
 **输入**：EXP-D 的 DST 首循环数据 `experiments/EXP-D/cell_01_dst_firstcycle.csv`（列：`time_s, V_cell, I_A`）
 
@@ -397,6 +405,8 @@ assert rmse_V < 0.020  # 20 mV
 - EXP-E 数据已整理成 `cell_Ex_rpt.csv`（含 `time_s, C_measured_Ah, R_IR_mOhm, LLI_Ah, LAM_PE_Ah`）
 - **关键**：至少一个温度的数据；若有多温度则 `E_a` 可自动识别，否则 `E_a` 固定为 55500 J/mol
 
+→ 失败时参见 `docs/07_offline_runbook.md §3`（`FIT4A-Exxx` 系列）。
+
 **脚本**：`scripts/fit_calendar.py`（见 SOP-5）
 
 **算法**：
@@ -434,6 +444,8 @@ LAM_PE RMSE  < 0.01 Ah
 - FIT-4a 完成，**所有电阻相关参数（含 R_SEI）冻结**
 - EXP-F 数据整理好（含 `EFC, LLI_Ah, LAM_PE_Ah, LAM_NE_Ah`）
 
+→ 失败时参见 `docs/07_offline_runbook.md §4`（`FIT4B-Exxx` 系列）。
+
 **脚本**：`scripts/fit_cycle_preknee.py`
 
 **关键设置**：
@@ -467,6 +479,8 @@ Capacity RMSE < 2% at EFC=150
 #### FIT-4c: Knee 位置 → `k_LP`
 
 **前置**：FIT-4a, 4b 完成；EXP-G 数据（knee 已出现）
+
+→ 失败时参见 `docs/07_offline_runbook.md §5`（`FIT4C-Exxx` 系列）。
 
 **脚本**：`scripts/fit_knee.py`
 

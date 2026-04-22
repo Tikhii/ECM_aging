@@ -32,6 +32,8 @@
 | "模型输入/输出的含义" | `docs/03_inputs_guide.md` / `docs/04_outputs_guide.md` | — |
 | "搭环境 / 安装问题" | `QUICKSTART.md` | `docs/01_setup_guide.md` |
 | "运行 / 调试问题" | `examples/smoke_test.py` 先跑 | 再看 `tests/test_basic.py` |
+| "现场脚本报错" | `docs/07_offline_runbook.md` 对应错误码 | 需外带走 `08_consultation_protocol.md` |
+| "外带诊断给 Claude" | `docs/08_consultation_protocol.md §3` 模板 | — |
 
 ---
 
@@ -110,6 +112,27 @@ R_i(t) = R_i^0 · f_{R,i}(t)      # 论文式 (43)
 **违反本规则的典型症状**：某个概念在 A 文档说 X，在 B 文档说 Y，
 在 JSON 里什么也没说。这是 2026-04 之前的状态，R5 就是为了防止回退。
 
+### R6: 错误码登记与 runbook 一致性
+
+修改错误码必须按：
+
+```
+改 docs/error_codes_registry.json
+    →  改 docs/07_offline_runbook.md
+    →  改 scripts/ 中对应 error raise
+```
+
+编号一经发放不复用，不再使用的条目标记 `status=deprecated`
+（`deprecated_note` 指向替代码）。
+
+`07_offline_runbook.md` 中 `trigger/consequence/cross_refs/script_behavior`
+与 registry 不一致时，**以 registry 为准**。registry 是事实层，runbook
+是解释层，这一层级关系与 R1 中 PARAMETERS.json ↔ MD 的关系同构。
+
+外带诊断到在线 Claude 时走 `docs/08_consultation_protocol.md` §3 的观测
+笔记模板；该模板与 registry 的 `escalation` 字段互锁，两者有任一修改必须
+同步。
+
 ---
 
 ## 代码导航
@@ -159,6 +182,8 @@ docs/                           文档 (读 README.md 找入口)
 - [ ] 给用户建议做 GITT：是否说明只测 fresh cell，不重复？
 - [ ] 修改了 PARAMETERS.json 结构或 MD 章节：是否按 R5 做了
       扫描-确认-编辑-验收四步？
+- [ ] 改了错误码：是否按 R6 顺序改 registry → runbook → scripts，
+      且未复用已发放的编号？
 
 执行任务后，**运行检查**：
 
@@ -192,3 +217,4 @@ python examples/smoke_test.py    # 必须全通过
 | --- | --- |
 | 2026-04-20 | 初版。建立 PARAMETERS.json 作为 SSoT。修正 R_SEI 在 FIT-4a 而非 FIT-4b 的历史错误。 |
 | 2026-04-21 | 新增 R5 文档一致性协议。起因：FIT-3 小节缺失事件暴露了跨文档协调机制的空白。 |
+| 2026-04-23 | 新增 R6 错误码登记与 runbook 一致性。落盘 `docs/error_codes_registry.json` + `07_offline_runbook.md` + `08_consultation_protocol.md` 三件套（tag: docs/v0.2.0-offline-workflow）。**偏离记录**：本次任务单的 D.3 请求把新规则编号为 R5，但 2026-04-21 已存在 R5（文档一致性协议）；为保护已提交工作并保持编号不复用的原则，新规则改编为 R6。|

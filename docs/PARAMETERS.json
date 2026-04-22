@@ -496,7 +496,8 @@
       "measurement_needed": "C/40 discharge curve (full)",
       "method": "Manual or scalar fit of the 0.973/1.0275 correction factors",
       "blocks_what": "All simulation starts",
-      "notes": "Often skipped by using paper correction factors as-is. Re-derive only if cell differs substantially (>10%) from NCR18650B."
+      "notes": "Often skipped by using paper correction factors as-is. Re-derive only if cell differs substantially (>10%) from NCR18650B.",
+      "error_codes": []
     },
     "FIT-1": {
       "name": "Electrode balancing",
@@ -505,7 +506,8 @@
       "measurement_needed": "V_cell(SOC) full-cell OCV and V_PE^0(X), V_NE^0(X) half-cell OCVs",
       "method": "scipy.optimize.minimize on SSE",
       "estimated_runtime": "seconds",
-      "blocks_what": "Everything downstream"
+      "blocks_what": "Everything downstream",
+      "error_codes": ["IDENT-W002"]
     },
     "FIT-2": {
       "name": "RC transient fitting",
@@ -514,7 +516,8 @@
       "measurement_needed": "V(t) relaxation after current step",
       "method": "scipy.optimize.curve_fit two-exponential",
       "estimated_runtime": "seconds",
-      "blocks_what": "Nothing hard"
+      "blocks_what": "Nothing hard",
+      "error_codes": ["IDENT-W002"]
     },
     "FIT-3": {
       "name": "Resistance distribution",
@@ -529,7 +532,8 @@
       "acceptance_rmse_mV": 20,
       "known_limitation": "RMSE in 30-50 mV range is a known limit of the two-RC topology (paper Fig. 3d shows a ~250 s voltage step the RC ladder cannot follow). Do not over-fit below this floor. See CRITICAL_REVIEW.md.",
       "estimated_runtime": "minutes",
-      "blocks_what": "Nothing"
+      "blocks_what": "Nothing",
+      "error_codes": ["IDENT-W002"]
     },
     "FIT-4a": {
       "name": "Calendar aging parameters (INCLUDING R_SEI)",
@@ -539,7 +543,8 @@
       "method": "Multi-objective least-squares",
       "estimated_runtime": "hours if automated",
       "critical_constraint": "IR(t) MUST be measured at each RPT to identify R_SEI. Paper p.12 confirms all resistance-related aging params come from calendar fit.",
-      "skip_if_no_data": "Set R_SEI to paper value (0.66), k_SEI_cal to paper default. Model loses quantitative IR prediction accuracy."
+      "skip_if_no_data": "Set R_SEI to paper value (0.66), k_SEI_cal to paper default. Model loses quantitative IR prediction accuracy.",
+      "error_codes": ["FIT4A-E001", "FIT4A-E002", "FIT4A-E003", "FIT4A-E004", "SOLVE-E001", "SOLVE-E002", "IDENT-W001", "IDENT-W002", "IDENT-W003"]
     },
     "FIT-4b": {
       "name": "Cycle aging parameters (pre-knee)",
@@ -549,7 +554,8 @@
       "method": "Multi-objective least-squares with k_LP=0",
       "estimated_runtime": "hours if automated",
       "parameters_frozen": "All FIT-4a results (especially R_SEI)",
-      "note": "R_SEI is NOT re-fitted here."
+      "note": "R_SEI is NOT re-fitted here.",
+      "error_codes": ["FIT4B-E001", "FIT4B-E002", "FIT4B-E003", "SOLVE-E001", "SOLVE-E002", "IDENT-W001", "IDENT-W002", "IDENT-W003"]
     },
     "FIT-4c": {
       "name": "Knee location (plating)",
@@ -558,7 +564,8 @@
       "measurement_needed": "EFC at knee onset",
       "method": "1D scipy.optimize.minimize_scalar",
       "estimated_runtime": "minutes",
-      "parameters_frozen": "ALL other aging parameters"
+      "parameters_frozen": "ALL other aging parameters",
+      "error_codes": ["FIT4C-E001", "FIT4C-E002", "SOLVE-E001", "SOLVE-E002", "IDENT-W002"]
     }
   },
 
@@ -568,28 +575,32 @@
       "description": "C/40 complete discharge on fresh cell from V_max to V_min",
       "cells_needed": 2,
       "duration": "~80 hours",
-      "outputs": ["C_nominal_Ah", "V_cell(SOC) OCV curve"]
+      "outputs": ["C_nominal_Ah", "V_cell(SOC) OCV curve"],
+      "error_codes": ["DATA-E001"]
     },
     "EXP-B1": {
       "name": "PE half-cell OCV",
       "description": "Disassemble cell, build CR2032 PE half-cell vs Li metal, C/40 voltage sweep",
       "cells_needed": "1-2 disassembled cells -> 4 coin cells",
       "duration": "~2 weeks (including formation)",
-      "outputs": ["V_PE_0_curve"]
+      "outputs": ["V_PE_0_curve"],
+      "error_codes": ["DATA-E002"]
     },
     "EXP-B2": {
       "name": "NE half-cell OCV",
       "description": "Same as B1 but for NE material",
       "cells_needed": "1-2 disassembled cells -> 4 coin cells",
       "duration": "~2 weeks",
-      "outputs": ["V_NE_0_curve"]
+      "outputs": ["V_NE_0_curve"],
+      "error_codes": ["DATA-E002"]
     },
     "EXP-B3": {
       "name": "Series resistance (EIS)",
       "description": "EIS at 1kHz-10kHz on FRESH cell; high-frequency intercept = R_s",
       "cells_needed": 1,
       "duration": "1 hour",
-      "outputs": ["R_s_LUT"]
+      "outputs": ["R_s_LUT"],
+      "error_codes": ["DATA-E003"]
     },
     "EXP-B4": {
       "name": "Electrode resistance map (GITT)",
@@ -603,21 +614,24 @@
         "pulse_duration_s": 600,
         "relaxation_s": 3600,
         "splits": "Use half-cell GITT if available; else EIS Nyquist fitting"
-      }
+      },
+      "error_codes": ["DATA-E003"]
     },
     "EXP-C": {
       "name": "RC transient",
       "description": "Current step -> rest -> relax; fit two-exponential decay",
       "cells_needed": 1,
       "duration": "4 hours",
-      "outputs": ["C1", "C2"]
+      "outputs": ["C1", "C2"],
+      "error_codes": ["DATA-E001"]
     },
     "EXP-D": {
       "name": "Dynamic protocol validation",
       "description": "First DST cycle on fresh cell, full voltage trace",
       "cells_needed": 1,
       "duration": "1 hour",
-      "outputs": ["fractionR1toRs", "fractionR2toRs"]
+      "outputs": ["fractionR1toRs", "fractionR2toRs"],
+      "error_codes": ["DATA-E001"]
     },
     "EXP-E": {
       "name": "Calendar aging",
@@ -626,7 +640,8 @@
       "duration": "6-15 months",
       "RPT_interval": "Every 9-12 weeks",
       "outputs": ["k_SEI_cal", "k_LAM_PE_cal", "gamma_PE", "R_SEI", "E_a_SEI"],
-      "CRITICAL": "Each RPT MUST include: (1) C/5 capacity, (2) IR pulse or EIS for internal resistance, (3) C/40 OCV for IC analysis -> LLI, LAM_PE, LAM_NE. Additionally: all RPTs must be performed at 25 ± 1 degC with ≥4 h thermal equilibration after removal from storage; channel/fixture assignment must be fixed per cell across the entire aging campaign; BOL/EOL reference-cell calibration and a sentinel cell are required for drift correction. See PARAMETER_SOP.md §二.4 and §二.5 for full protocol."
+      "CRITICAL": "Each RPT MUST include: (1) C/5 capacity, (2) IR pulse or EIS for internal resistance, (3) C/40 OCV for IC analysis -> LLI, LAM_PE, LAM_NE. Additionally: all RPTs must be performed at 25 ± 1 degC with ≥4 h thermal equilibration after removal from storage; channel/fixture assignment must be fixed per cell across the entire aging campaign; BOL/EOL reference-cell calibration and a sentinel cell are required for drift correction. See PARAMETER_SOP.md §二.4 and §二.5 for full protocol.",
+      "error_codes": ["DATA-E001", "FIT4A-E002", "FIT4A-E003", "FIT4A-E004"]
     },
     "EXP-F": {
       "name": "Cycle aging (pre-knee)",
@@ -635,7 +650,8 @@
       "duration": "1-3 months",
       "RPT_interval": "Every 30-50 EFC",
       "outputs": ["k_SEI_cyc", "k_LAM_PE_cyc", "k_LAM_NE_cyc"],
-      "RPT_requirements": "Same RPT protocol as EXP-E. IR measurement is recommended but not strictly required for FIT-4b (R_SEI not re-fitted from cycle data, per rule R2). Temperature control (25 ± 1 degC) and device hygiene requirements are mandatory. See PARAMETER_SOP.md §二."
+      "RPT_requirements": "Same RPT protocol as EXP-E. IR measurement is recommended but not strictly required for FIT-4b (R_SEI not re-fitted from cycle data, per rule R2). Temperature control (25 ± 1 degC) and device hygiene requirements are mandatory. See PARAMETER_SOP.md §二.",
+      "error_codes": ["DATA-E001", "FIT4B-E003"]
     },
     "EXP-G": {
       "name": "Cycle aging (through knee)",
@@ -643,7 +659,8 @@
       "cells_needed": "Same cells as EXP-F",
       "duration": "Additional 3-6 months",
       "outputs": ["k_LP"],
-      "RPT_requirements": "Same RPT protocol as EXP-E. IR measurement is recommended but not strictly required for FIT-4b (R_SEI not re-fitted from cycle data, per rule R2). Temperature control (25 ± 1 degC) and device hygiene requirements are mandatory. See PARAMETER_SOP.md §二."
+      "RPT_requirements": "Same RPT protocol as EXP-E. IR measurement is recommended but not strictly required for FIT-4b (R_SEI not re-fitted from cycle data, per rule R2). Temperature control (25 ± 1 degC) and device hygiene requirements are mandatory. See PARAMETER_SOP.md §二.",
+      "error_codes": ["DATA-E001", "FIT4C-E002"]
     }
   },
 
