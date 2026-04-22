@@ -58,14 +58,89 @@
 | **EXP-F** | 循环老化（knee 前） | ≥2（推荐 6） | 1–3 月 | `k_SEI_cyc, k_LAM_PE_cyc, k_LAM_NE_cyc` | 每 30–50 EFC 做 RPT |
 | **EXP-G** | 循环老化（knee 后） | 同 EXP-F | +3–6 月 | `k_LP` | 跑到 ~70% 容量 |
 
-**每次 RPT 的标准流程**（`PARAMETERS.json::experiments::EXP-E::CRITICAL`）：
+**每次 RPT 的标准流程**
+
+RPT 协议对日历老化（EXP-E）和循环老化（EXP-F/G）**共用同一套步骤**，以保证两组
+数据可比、可用于交叉验证。不同实验对各步骤的"必要性"不同，详见下文 §二.3。
+
+#### §二.1 — RPT 四步骤
 
 ```
-1) C/5 完整充放电   → 得到当前实际容量 C(t)
-2) IR 脉冲 或 EIS   → 得到当前内阻 R(t)    ← 不能省！R_SEI 依赖
-3) C/40 慢速充放电  → V_cell(SOC) 曲线
-4) IC 分析（用 alawa 或等效工具） → LLI(t), LAM_PE(t), LAM_NE(t)
+(1) C/5 完整充放电   → 当前实际容量 C(t)
+(2) 内阻测量         → 当前内阻 R(t)
+(3) C/40 慢速充放电  → V_cell(SOC) 曲线
+(4) IC 分析          → LLI(t), LAM_PE(t), LAM_NE(t)
+                       （用 scripts/fit_ic_to_dms.py 自动完成，见 §SOP-4.5）
 ```
+
+#### §二.2 — 内阻测量方法选择
+
+论文 Eq. 30 用 C/3 与 C/5 放电曲线在 50% SOC 处的割线定义 IR，是作者"无 
+脉冲、无 EIS 数据"情况下的权宜。本工程**推荐**按下述顺序选择方法：
+
+1. **IR 脉冲（默认方案）**：标准化协议 —— 50% SOC、25°C、1C 脉冲 10 s 或 30 s，
+   取脉冲起始瞬时电压降除以电流。工业通用，与 Dubarry 2014 实验口径接近。
+2. **EIS（增强方案）**：在 BOL、mid-life、EOL 等 2–3 个关键节点加测 EIS，用作 
+   诊断补充（追踪 $R_s$ 是否真不变；分辨率阻抗增长的归属）。不要求每次 RPT 都做。
+3. **论文 Eq. 30 割线法**：仅在已有 C/3 + C/5 双放电数据且无脉冲/EIS 设备时使用。
+
+关键点：$R_\text{SEI}$ 拟合只对**相对增长曲线**敏感，不对绝对 IR 值敏感。方法一致 
+比方法"正确"更重要。同一工程内所有 RPT 必须用同一种 IR 方法。
+
+#### §二.3 — 各步骤在不同实验中的必要性
+
+| 步骤 | EXP-E（日历）| EXP-F/G（循环）|
+| --- | --- | --- |
+| (1) C/5 容量 | 强烈建议 | 强烈建议（knee 检测依赖）|
+| (2) 内阻 | **必须**：FIT-4a 的 $R_\text{SEI}$ 依赖 | 推荐：验证 FIT-4a 结果可迁移 |
+| (3) C/40 + IC | **必须**：LLI/LAM/γ_PE 依赖 | **必须**：LLI/LAM 依赖 |
+
+循环 RPT 内阻若因成本原因省略，FIT-4b 仍可执行（不再拟合 $R_\text{SEI}$，规则 
+R2），但失去对 Fig. 6b 式"日历参数预测循环 IR 增长"的独立验证能力。
+
+#### §二.4 — RPT 温度控制（必读）
+
+**所有 cell 的所有 RPT 必须在 25 ± 1°C 下进行**，无论储存温度或循环温度。
+
+理由：RPT 测出的所有指标都对温度敏感。$R_\text{ct}$ 的 Arrhenius 依赖最强，
+典型 $E_a \sim 50$ kJ/mol，环境温度偏 10 K 产生的 $R_\text{ct}$ 变化约 1.8 倍，
+已超过一年日历老化的内阻信号幅度。且模型的电阻 LUT 和 $R_\text{SEI}$ 均不含 
+温度依赖项（见 `CRITICAL_REVIEW.md` C1、S3 条和 `scope_of_validity`），必须 
+通过实验侧控温来满足模型假设。
+
+**具体要求**：
+
+1. 储存/循环条件 ≠ RPT 条件。从存储箱或循环架取出后，先于 **25°C 环境静置 ≥ 4 
+   小时**（约 5 倍 18650 自由对流热时间常数）再开始 RPT。条件允许时，把 cell 
+   在 25°C 恒温炉过夜。
+2. RPT 期间 cell 表面贴**热电偶**记录实际温度。C/5 自发热典型 2–5°C 表面温升、
+   5–10°C 芯体温升，必须有记录以便事后审查/修正。
+3. RPT 完成后**尽快放回**原储存/循环条件，避免污染时间簿记。
+4. RPT 之间**不切换 channel/cycler/夹具**（见 §二.5）。
+
+**不接受的替代方案**：
+- 在 $T_\text{storage}$ 下做 RPT 并对 IR 做 Arrhenius 后修正。虽然 IR 可修正， 
+  但 C/40 + IC 分析对温度的敏感性是**非线性形状扭曲**（Graphite 阶梯峰的位移 
+  和高度随 T 变化不均匀），单纯乘法修正无法消除，会把温度污染传递到 FIT-4a/b 
+  拟合参数中，不可接受。此议题在 2026-04-22 讨论中已评估并否决。
+
+#### §二.5 — RPT 质量控制（设备 hygiene）
+
+老化实验周期 6–15 月，期间设备漂移与老化信号同量级（~5%）。以下规则强制执行：
+
+1. **固定工站**：每颗 cell 的所有 RPT 走**同一台 cycler、同一个 channel**。不允许 
+   cell_E1 本次走 channel 3、下次走 channel 7。并行化需要多 channel 时，固定 
+   每颗 cell 的 channel 归属并记录在 `experiments/.../metadata.csv` 中。
+2. **固定夹具**：18650 保持器、弹簧针、四线制连接方式全部锁定。接触电阻变动 
+   1 mΩ 即相当于 ~2–3% IR 误差（18650 IR 典型 30–50 mΩ）。
+3. **BOL/EOL 参考 cell 标定**：实验开始和结束时，各用**一颗全新参考 cell**
+   （从未参与老化，单独在 25°C、50% SOC 标定箱存放）跑一遍所有 channel。标定 
+   偏差进入后处理线性校正。
+4. **哨兵 cell**：老化 cell 组内指定**一颗最温和条件的 cell**（例如 25°C、50% 
+   SOC 日历组）作为"老化之外漂移"的基线。其 $C(t)$ 和 $R(t)$ 轨迹异常跳变即 
+   指示设备问题而非电池老化。
+5. **记录元数据**：`experiments/.../metadata.csv` 每颗 cell 至少记录：
+   `cell_id, channel_id, fixture_id, T_storage_K, SOC_storage, start_date, notes`。
 
 ---
 
@@ -108,6 +183,8 @@
 | `LLI_Ah` | Ah | IC 分析得 |
 | `LAM_PE_Ah` | Ah | IC 分析得 |
 | `LAM_NE_Ah` | Ah | IC 分析得 |
+| `ic_analysis_fit_quality` | - | IC 分析 rmse_V，质量指标（<15 mV 为可接受）|
+| `ic_analysis_timestamp` | ISO8601 | 该次 RPT 的 IC 分析运行时间 |
 
 ### 3.3 目录约定
 
@@ -207,8 +284,21 @@ V0 = -dH / 96485.0
 **脚本**：`scripts/build_resistance_mat.py`（SOP-5 会生成）
 
 **关键步骤**：
-1. 用 `scipy.interpolate.RegularGridInterpolator` 把稀疏数据插值到 1001×2001 网格
-2. **三个矩阵的拆分**：若无半电池 GITT，用 EIS Nyquist 图把总电阻拆成 $R_s$（高频实轴）、$R_\text{NE}^\text{dyn}$（第一半圆直径）、$R_\text{PE}^\text{dyn}$（第二半圆直径）
+
+1. **三张 LUT 的分工**（重要，勿混淆）：
+   - `RsAlawa`（$R_s$）：**来自 EXP-B3**（全电池 EIS 高频实轴截距）。
+     半电池 GITT 无法产出 $R_s$，因为 $R_s$ 是全电池性质（电解液体相 + 集流体 + 
+     引线 + 接触阻抗），半电池结构完全不同。
+   - `RNEAlawa`（$R_\text{NE}^0(I, X_\text{NE})$）：来自 EXP-B4 **负极**半电池 GITT。
+   - `RPEAlawa`（$R_\text{PE}^0(I, X_\text{PE})$）：来自 EXP-B4 **正极**半电池 GITT。
+
+2. 用 `scipy.interpolate.RegularGridInterpolator` 把稀疏 GITT 数据插值到 1001×2001 
+   网格。
+
+3. **退路：无半电池 GITT 时的拆分**。如果只能做全电池 GITT，可用 EIS Nyquist 图 
+   辅助拆分总电阻：$R_s$ 取高频实轴截距，$R_\text{NE}^\text{dyn}$ 取第一半圆直径
+   （典型归属，取决于体系），$R_\text{PE}^\text{dyn}$ 取第二半圆直径。此路线精度低，
+   仅在成本受限时使用。
 
 **验收**：
 ```python
@@ -403,6 +493,45 @@ k_LP_fit = 10 ** res.x
 
 ---
 
+### SOP-4.5: IC 分析提取 DMs（FIT-4a/b 的前置数据处理）
+
+**目标**：把每次 RPT 的 C/40 V(Q) 曲线转换为 (LLI, LAM_PE, LAM_NE) 三元组，
+供 FIT-4a 和 FIT-4b 使用。
+
+**前置**：
+- SOP-2 子步 2.1 完成（半电池 OCV `.dat` 文件已生成）
+- 目标 cell 的参数工厂可用（例如 `create_panasonic_ncr18650b`）
+- RPT 的 C/40 数据已存为 CSV，列含 `Q_Ah` 和 `V_cell_V`
+
+**脚本**：`scripts/fit_ic_to_dms.py`（实现见 `docs/TODO_ic_analysis.md`）
+
+**调用**：
+
+```bash
+for cell in experiments/EXP-E/cell_*; do
+  for rpt_csv in ${cell}/RPT*_C40.csv; do
+    python scripts/fit_ic_to_dms.py \
+      --aged-data ${rpt_csv} \
+      --cell-type panasonic_ncr18650b \
+      --output ${rpt_csv%.csv}_dms.json
+  done
+done
+```
+
+**产物**：每次 RPT 得到一个 `*_dms.json`，含 (LLI_Ah, LAM_PE_Ah, LAM_NE_Ah) 
++ 1σ 误差棒 + 拟合质量指标。这些 JSON 聚合后填入 `cell_XX_rpt.csv` 的 
+`LLI_Ah, LAM_PE_Ah, LAM_NE_Ah` 列，供 FIT-4a/b 读取。
+
+**方法论依据**：Dubarry & Anseán 2022, Front. Energy Res. 10:1023555。算法 
+细节、验收标准、out-of-scope 项见 `docs/TODO_ic_analysis.md`。
+
+**验收**：
+- `pytest tests/test_ic_analysis.py` 全部通过
+- 在 fresh cell 的 C/40 数据（EXP-A）上运行，recovered DMs 均 < 0.01 Ah
+- 输出 JSON 的 `fit_quality.converged` 为 true
+
+---
+
 ### SOP-5: 辅助脚本一览
 
 按 SOP 流程生成脚本。Claude Code 应按需创建：
@@ -414,6 +543,7 @@ k_LP_fit = 10 ** res.x
 | `fit_electrode_balance.py` | `scripts/` | FIT-1 | `python scripts/fit_electrode_balance.py --fullcell ocv.csv --pe-dat PE.dat --ne-dat NE.dat` |
 | `fit_rc_transient.py` | `scripts/` | FIT-2 | `python scripts/fit_rc_transient.py --step step.csv` |
 | `fit_resistance_distribution.py` | `scripts/` | FIT-3 | `python scripts/fit_resistance_distribution.py --dst experiments/EXP-D/cell_01_dst_firstcycle.csv` |
+| `fit_ic_to_dms.py` | `scripts/` | RPT C/40 → (LLI, LAM_PE, LAM_NE) | `python scripts/fit_ic_to_dms.py --aged-data ... --cell-type panasonic_ncr18650b --output ...` |
 | `fit_calendar.py` | `scripts/` | FIT-4a | `python scripts/fit_calendar.py --rpt-dir experiments/EXP-E/` |
 | `fit_cycle_preknee.py` | `scripts/` | FIT-4b | `python scripts/fit_cycle_preknee.py --rpt-dir experiments/EXP-F/` |
 | `fit_knee.py` | `scripts/` | FIT-4c | `python scripts/fit_knee.py --rpt-dir experiments/EXP-G/` |

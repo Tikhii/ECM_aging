@@ -626,7 +626,7 @@
       "duration": "6-15 months",
       "RPT_interval": "Every 9-12 weeks",
       "outputs": ["k_SEI_cal", "k_LAM_PE_cal", "gamma_PE", "R_SEI", "E_a_SEI"],
-      "CRITICAL": "Each RPT MUST include: (1) C/5 capacity, (2) IR pulse or EIS, (3) C/40 OCV for IC analysis -> LLI, LAM_PE, LAM_NE"
+      "CRITICAL": "Each RPT MUST include: (1) C/5 capacity, (2) IR pulse or EIS for internal resistance, (3) C/40 OCV for IC analysis -> LLI, LAM_PE, LAM_NE. Additionally: all RPTs must be performed at 25 ± 1 degC with ≥4 h thermal equilibration after removal from storage; channel/fixture assignment must be fixed per cell across the entire aging campaign; BOL/EOL reference-cell calibration and a sentinel cell are required for drift correction. See PARAMETER_SOP.md §二.4 and §二.5 for full protocol."
     },
     "EXP-F": {
       "name": "Cycle aging (pre-knee)",
@@ -634,14 +634,16 @@
       "cells_needed": "Recommended: 6; Minimum: 2",
       "duration": "1-3 months",
       "RPT_interval": "Every 30-50 EFC",
-      "outputs": ["k_SEI_cyc", "k_LAM_PE_cyc", "k_LAM_NE_cyc"]
+      "outputs": ["k_SEI_cyc", "k_LAM_PE_cyc", "k_LAM_NE_cyc"],
+      "RPT_requirements": "Same RPT protocol as EXP-E. IR measurement is recommended but not strictly required for FIT-4b (R_SEI not re-fitted from cycle data, per rule R2). Temperature control (25 ± 1 degC) and device hygiene requirements are mandatory. See PARAMETER_SOP.md §二."
     },
     "EXP-G": {
       "name": "Cycle aging (through knee)",
       "description": "Continue EXP-F until capacity drops to ~70%",
       "cells_needed": "Same cells as EXP-F",
       "duration": "Additional 3-6 months",
-      "outputs": ["k_LP"]
+      "outputs": ["k_LP"],
+      "RPT_requirements": "Same RPT protocol as EXP-E. IR measurement is recommended but not strictly required for FIT-4b (R_SEI not re-fitted from cycle data, per rule R2). Temperature control (25 ± 1 degC) and device hygiene requirements are mandatory. See PARAMETER_SOP.md §二."
     }
   },
 
@@ -649,6 +651,34 @@
     "for_fresh_cell_simulation_only": ["EXP-A", "EXP-B1", "EXP-B2", "EXP-B4"],
     "for_aging_prediction_minimum": ["EXP-A", "EXP-B1", "EXP-B2", "EXP-B4", "EXP-F", "EXP-G"],
     "for_aging_prediction_robust": ["EXP-A", "EXP-B1", "EXP-B2", "EXP-B3", "EXP-B4", "EXP-C", "EXP-E", "EXP-F", "EXP-G"]
+  },
+
+  "deferred_extensions": {
+    "_comment": "Architectural extensions evaluated in web-chat discussions and explicitly deferred. Do NOT begin implementation without a new task card from web chat.",
+    "R_temperature_dependence": {
+      "evaluated_in": "2026-04-22 web-chat Q5 follow-up",
+      "summary": "Add temperature dependence to R_s, R_NE, R_PE LUTs to enable cross-temperature performance prediction.",
+      "candidate_paths": [
+        "A: Arrhenius shell on existing 2D LUTs (lightest, requires E_a calibration at 2-3 T points)",
+        "B: 3D LUT R(I, X, T) (medium cost, requires full B3+B4 at 3-5 T points)",
+        "C: Replace LUT with electrochemical R model (heavy, departs from ECM philosophy)"
+      ],
+      "blocking": "Required before any cross-temperature energy/power prediction.",
+      "next_step": "New web-chat task card needed before implementation."
+    },
+    "per_process_Arrhenius": {
+      "evaluated_in": "2026-04-22 web-chat Q5 follow-up; also critical_review_findings.S3",
+      "summary": "Add Arrhenius temperature dependence to plating, LAM_PE, LAM_NE rate constants. Currently only SEI has E_a.",
+      "blocking": "Required for cross-temperature aging-rate prediction. Independent of R(T) extension.",
+      "experimental_cost": "Multi-T versions of EXP-E, EXP-F, EXP-G; ~14 aging parameters total (up from 10).",
+      "next_step": "New web-chat task card needed before implementation."
+    },
+    "ic_analysis_multi_rpt_smoothing": {
+      "evaluated_in": "2026-04-22 web-chat Q6",
+      "summary": "Joint inversion across all RPTs of a cell with monotonicity / smoothness priors on (LLI, LAM_PE, LAM_NE) trajectories.",
+      "blocking": "Not blocking. v1 single-RPT inversion is sufficient for FIT-4a/b. Revisit only if v1 noise floor proves limiting.",
+      "next_step": "Revisit after v1 IC analysis (TODO_ic_analysis.md) is in production use."
+    }
   },
 
   "scope_of_validity": {
