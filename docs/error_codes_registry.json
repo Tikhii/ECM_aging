@@ -13,7 +13,7 @@
         "QUICKSTART.md §环境激活",
         "docs/01_setup_guide.md §conda 环境",
         "environment.yml",
-        "TODO: environment-frozen.yml 锁定机制尚未落盘 (2026-04 讨论决定的产物)"
+        "environment-frozen.yml"
       ],
       "remediation": [
         "先确认 `conda env list` 输出中确为 libquiv-aging 环境被激活",
