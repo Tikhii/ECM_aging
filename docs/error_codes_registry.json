@@ -405,7 +405,8 @@
       },
       "escalation": "§5.例 6 — 识别性警告",
       "since_version": "0.1.0",
-      "status": "active"
+      "status": "draft",
+      "notes": "Placeholder pending fit scripts implementation in P1-B. Trigger conditions and thresholds will be validated against actual scripts behavior. Schema may be adjusted at that time."
     },
 
     "IDENT-W002": {
@@ -429,7 +430,8 @@
       },
       "escalation": "§5.例 6 — 识别性警告",
       "since_version": "0.1.0",
-      "status": "active"
+      "status": "draft",
+      "notes": "Placeholder pending fit scripts implementation in P1-B. Trigger conditions and thresholds will be validated against actual scripts behavior. Schema may be adjusted at that time."
     },
 
     "IDENT-W003": {
@@ -454,7 +456,8 @@
       },
       "escalation": "§5.例 6 — 识别性警告",
       "since_version": "0.1.0",
-      "status": "active"
+      "status": "draft",
+      "notes": "Placeholder pending fit scripts implementation in P1-B. Trigger conditions and thresholds will be validated against actual scripts behavior. Schema may be adjusted at that time."
     }
   }
 }

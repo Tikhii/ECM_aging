@@ -102,3 +102,11 @@ conda 环境变更 → conda env export → environment-frozen.yml
 `pip install -e .` 报错通常表示 `setuptools` 版本不够新。`install_offline.sh` 在安装依赖前已执行 `pip install --upgrade pip setuptools wheel`，正常情况下不会出现此问题。若仍报错，检查内部镜像上 setuptools 的最新可用版本。
 
 在 Ubuntu 20.04 上，如果系统 glibc 版本低于某些 wheel 的编译要求（glibc >= 2.28 对应 Ubuntu 18.04+，Ubuntu 20.04 的 glibc 2.31 满足此要求），pip 会回退到源码编译，可能因缺少编译工具链（gcc、python3.11-dev）而失败。此时应通过内部 apt 镜像安装 `build-essential` 和 `python3.11-dev`。
+
+---
+
+## §六 作用范围说明
+
+本文档针对当前实验室离线机配置 (Ubuntu 20.04+, x86_64, Python 3.11,
+内部 pip 镜像可达) 撰写。如未来目标平台或网络配置发生变化, 本文档
+需重新评估, 不保证对其他配置有效。

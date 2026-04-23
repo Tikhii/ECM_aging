@@ -480,6 +480,12 @@ exit code 61, refuse, 打印本条目编号 (`[SOLVE-E002]`)。
 
 ## §7 可识别性警告 (IDENT)
 
+> 本节三条警告码 (IDENT-W001/W002/W003) 当前 status 为 draft。
+> 它们的 trigger 条件和阈值是基于理论预判的占位规格, 尚未在
+> 实际 fit 脚本中验证。P1-B 实施时会据实际代码路径修订。
+> 若在当前状态下遇到可识别性疑问, 按 08_consultation_protocol.md
+> 走跨 air-gap 咨询, 不要依赖本节的具体阈值数值。
+
 ### IDENT-W001: Hessian 条件数量级偏大
 
 **触发条件**
@@ -582,6 +588,6 @@ exit code 72, warn, 打印本条目编号 (`[IDENT-W003]`)。
 | FIT4C-E002 | FIT4C | E | 数据未跨越 knee, k_LP 不可识别 | 51 | refuse | active |
 | SOLVE-E001 | SOLVE | E | scipy solve_ivp BDF 积分失败 | 60 | refuse | active |
 | SOLVE-E002 | SOLVE | E | 代数约束 Newton 与 brentq 兜底均失败 | 61 | refuse | active |
-| IDENT-W001 | IDENT | W | Hessian 条件数量级偏大 | 70 | warn | active |
-| IDENT-W002 | IDENT | W | 参数估计命中边界 | 71 | warn | active |
-| IDENT-W003 | IDENT | W | 残差自相关系数量级接近 1 | 72 | warn | active |
+| IDENT-W001 | IDENT | W | Hessian 条件数量级偏大 | 70 | warn | draft |
+| IDENT-W002 | IDENT | W | 参数估计命中边界 | 71 | warn | draft |
+| IDENT-W003 | IDENT | W | 残差自相关系数量级接近 1 | 72 | warn | draft |

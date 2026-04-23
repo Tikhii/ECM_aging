@@ -110,11 +110,16 @@
         },
         "status": {
           "type": "string",
-          "enum": ["active", "deprecated", "merged"]
+          "enum": ["active", "draft", "deprecated", "merged"],
+          "description": "draft = placeholder spec pending script-side validation; not yet consumed by scripts."
         },
         "deprecated_note": {
           "type": "string",
           "description": "Present only when status=deprecated (conditional enforcement is done in test)."
+        },
+        "notes": {
+          "type": "string",
+          "description": "Free-form commentary (e.g. why an entry is draft, caveats for interpretation)."
         }
       }
     }
