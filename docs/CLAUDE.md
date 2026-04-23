@@ -34,6 +34,7 @@
 | "运行 / 调试问题" | `examples/smoke_test.py` 先跑 | 再看 `tests/test_basic.py` |
 | "现场脚本报错" | `docs/07_offline_runbook.md` 对应错误码 | 需外带走 `08_consultation_protocol.md` |
 | "外带诊断给 Claude" | `docs/08_consultation_protocol.md §3` 模板 | — |
+| "离线环境安装" | `docs/09_offline_bundle_guide.md` | `scripts/install_offline.sh` |
 
 ---
 
@@ -356,3 +357,4 @@ python examples/smoke_test.py    # 必须全通过
 | 2026-04-21 | 新增 R5 文档一致性协议。起因：FIT-3 小节缺失事件暴露了跨文档协调机制的空白。 |
 | 2026-04-23 | 新增 R6 错误码登记与 runbook 一致性。落盘 `docs/error_codes_registry.json` + `07_offline_runbook.md` + `08_consultation_protocol.md` 三件套（tag: docs/v0.2.0-offline-workflow）。**偏离记录**：本次任务单的 D.3 请求把新规则编号为 R5，但 2026-04-21 已存在 R5（文档一致性协议）；为保护已提交工作并保持编号不复用的原则，新规则改编为 R6。|
 | 2026-04-23 | v0.2.2 meta 教训制度化: 新增"术语约定"、"破坏性命令清单"、"Claude Code 协作规范"三小节。R5 验收阶段的"禁止自动 commit"条款扩展为"禁止自动 git add / commit / tag", 措辞同步更新。 |
+| 2026-04-24 | v0.2.3 离线工作流落地: 内部 pip 镜像单轨制, 新增 `docs/09_offline_bundle_guide.md` 与配套 scripts (`build_requirements.sh`, `install_offline.sh`, `verify_install.sh`)。 |

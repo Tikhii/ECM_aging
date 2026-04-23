@@ -185,6 +185,32 @@ Claude Code 在事故中的实际拦截点 (它拒绝 git add 的理由正是对
 
 ---
 
+## 十二、离线工作流 v0.2.3: 从 air-gapped 到内部 pip 镜像单轨制 (2026-04-24)
+
+v0.2.0 的离线工作流架构基于完全 air-gapped 假设——即离线工作站与任何网络
+完全隔离，所有依赖必须以物理介质搬运。在实际落地过程中发现，目标工作站处于
+受控内部网络中，可以访问企业内部 pip 镜像站。这一事实改变了依赖交付的最优
+路径：不再需要在打包机上下载几百 MB 的 wheel 归档并通过 U 盘搬运，而是让
+离线工作站直接从内部镜像拉取依赖。物理传输带宽限制使大文件交付不现实是放弃
+重量路径的直接原因；更深层的原因是基础设施责任边界的明确——pip 镜像的可用性
+由 IT 部门保障，在工程项目内部做冗余备份既不经济也不属于工程的职责范围。
+
+这一方案迁移使 `environment-frozen.yml` 的职责发生了转变。在完全 air-gapped
+假设下，frozen.yml 的最终用途是生成 wheel 归档（提供二进制包本身）；在内部
+pip 镜像方案下，frozen.yml 的用途变为声明精确版本号。`requirements.txt` 从
+frozen.yml 通过 `scripts/build_requirements.sh` 机器派生，翻译 conda 包名为
+pip 格式，过滤 conda 专属的 C 库和系统包，严格保留 `==` 版本锁定。两份文件
+的一致性由脚本而非人工维护保证。放弃 frozen.yml 而非转变其职责的方案被否决，
+因为 frozen.yml 仍然是联网 macOS 开发机上 conda 环境的权威快照，且 ENV-E001
+错误码的检测语义依赖它作为基线。
+
+配套新增的三个脚本构成完整的操作链：`build_requirements.sh` 在联网机上从
+frozen.yml 生成 requirements.txt，`install_offline.sh` 在离线机上一键创建
+venv 并安装全部依赖，`verify_install.sh` 验证安装是否正确。完整的部署文档
+写入 `docs/09_offline_bundle_guide.md`。
+
+---
+
 ## 版本记录
 
 | 日期 | 变更 |
@@ -192,3 +218,4 @@ Claude Code 在事故中的实际拦截点 (它拒绝 git add 的理由正是对
 | 2026-04-21 | 初版。汇总从工程建立到 `PARAMETERS.json v2.0` 和 `CRITICAL_REVIEW.md` 发布的全部关键决策。 |
 | 2026-04-23 | 追加 §十。记录 air-gapped 三阶段分离、独立 error code registry、`--export-public` 人因分析三项架构决策。对应 tag `docs/v0.2.0-offline-workflow`。 |
 | 2026-04-23 | 追加 §十一。v0.2.2 meta 教训制度化 (术语约定 / 破坏性命令清单 / Claude Code 协作规范), R5 验收阶段 git 条款扩展。详见 §十一。 |
+| 2026-04-24 | 追加 §十二。v0.2.3 离线工作流落地: 从 air-gapped 假设迁移到内部 pip 镜像单轨制, 新增 `09_offline_bundle_guide.md` 与配套 scripts。 |
