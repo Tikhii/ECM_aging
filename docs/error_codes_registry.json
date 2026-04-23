@@ -25,7 +25,7 @@
         "exit_code": 10,
         "action": "refuse"
       },
-      "escalation": "§5.例 3 — 环境漂移",
+      "escalation": "§6.例 3 — 环境漂移",
       "since_version": "0.1.0",
       "status": "active"
     },
@@ -51,7 +51,7 @@
         "exit_code": 20,
         "action": "refuse"
       },
-      "escalation": "§5.例 1 — 数据契约违规",
+      "escalation": "§6.例 1 — 数据契约违规",
       "since_version": "0.1.0",
       "status": "active"
     },
@@ -77,7 +77,7 @@
         "exit_code": 21,
         "action": "refuse"
       },
-      "escalation": "§5.例 1 — 数据契约违规",
+      "escalation": "§6.例 1 — 数据契约违规",
       "since_version": "0.1.0",
       "status": "active"
     },
@@ -104,7 +104,7 @@
         "exit_code": 22,
         "action": "refuse"
       },
-      "escalation": "§5.例 1 — 数据契约违规",
+      "escalation": "§6.例 1 — 数据契约违规",
       "since_version": "0.1.0",
       "status": "active"
     },
@@ -129,7 +129,7 @@
         "exit_code": 30,
         "action": "refuse"
       },
-      "escalation": "§5.例 2 — 拟合前置条件不足",
+      "escalation": "§6.例 2 — 拟合前置条件不足",
       "since_version": "0.1.0",
       "status": "active"
     },
@@ -154,7 +154,7 @@
         "exit_code": 31,
         "action": "refuse"
       },
-      "escalation": "§5.例 2 — 拟合前置条件不足",
+      "escalation": "§6.例 2 — 拟合前置条件不足",
       "since_version": "0.1.0",
       "status": "active"
     },
@@ -179,7 +179,7 @@
         "exit_code": 32,
         "action": "refuse"
       },
-      "escalation": "§5.例 2 — 拟合前置条件不足",
+      "escalation": "§6.例 2 — 拟合前置条件不足",
       "since_version": "0.1.0",
       "status": "active"
     },
@@ -205,7 +205,7 @@
         "exit_code": 33,
         "action": "refuse"
       },
-      "escalation": "§5.例 2 — 拟合前置条件不足",
+      "escalation": "§6.例 2 — 拟合前置条件不足",
       "since_version": "0.1.0",
       "status": "active"
     },
@@ -231,7 +231,7 @@
         "exit_code": 40,
         "action": "refuse"
       },
-      "escalation": "§5.例 4 — R2 顺序违规",
+      "escalation": "§6.例 4 — R2 顺序违规",
       "since_version": "0.1.0",
       "status": "active"
     },
@@ -256,7 +256,7 @@
         "exit_code": 41,
         "action": "refuse"
       },
-      "escalation": "§5.例 4 — R2 顺序违规",
+      "escalation": "§6.例 4 — R2 顺序违规",
       "since_version": "0.1.0",
       "status": "active"
     },
@@ -280,7 +280,7 @@
         "exit_code": 42,
         "action": "refuse"
       },
-      "escalation": "§5.例 2 — 拟合前置条件不足",
+      "escalation": "§6.例 2 — 拟合前置条件不足",
       "since_version": "0.1.0",
       "status": "active"
     },
@@ -305,7 +305,7 @@
         "exit_code": 50,
         "action": "refuse"
       },
-      "escalation": "§5.例 4 — R2 顺序违规",
+      "escalation": "§6.例 4 — R2 顺序违规",
       "since_version": "0.1.0",
       "status": "active"
     },
@@ -330,7 +330,7 @@
         "exit_code": 51,
         "action": "refuse"
       },
-      "escalation": "§5.例 2 — 拟合前置条件不足",
+      "escalation": "§6.例 2 — 拟合前置条件不足",
       "since_version": "0.1.0",
       "status": "active"
     },
@@ -354,7 +354,7 @@
         "exit_code": 60,
         "action": "refuse"
       },
-      "escalation": "§5.例 5 — 求解器数值异常",
+      "escalation": "§6.例 5 — 求解器数值异常",
       "since_version": "0.1.0",
       "status": "active"
     },
@@ -378,7 +378,7 @@
         "exit_code": 61,
         "action": "refuse"
       },
-      "escalation": "§5.例 5 — 求解器数值异常",
+      "escalation": "§6.例 5 — 求解器数值异常",
       "since_version": "0.1.0",
       "status": "active"
     },
@@ -403,7 +403,7 @@
         "exit_code": 70,
         "action": "warn"
       },
-      "escalation": "§5.例 6 — 识别性警告",
+      "escalation": "§6.例 6 — 识别性警告",
       "since_version": "0.1.0",
       "status": "draft",
       "notes": "Placeholder pending fit scripts implementation in P1-B. Trigger conditions and thresholds will be validated against actual scripts behavior. Schema may be adjusted at that time."
@@ -428,7 +428,7 @@
         "exit_code": 71,
         "action": "warn"
       },
-      "escalation": "§5.例 6 — 识别性警告",
+      "escalation": "§6.例 6 — 识别性警告",
       "since_version": "0.1.0",
       "status": "draft",
       "notes": "Placeholder pending fit scripts implementation in P1-B. Trigger conditions and thresholds will be validated against actual scripts behavior. Schema may be adjusted at that time."
@@ -454,7 +454,7 @@
         "exit_code": 72,
         "action": "warn"
       },
-      "escalation": "§5.例 6 — 识别性警告",
+      "escalation": "§6.例 6 — 识别性警告",
       "since_version": "0.1.0",
       "status": "draft",
       "notes": "Placeholder pending fit scripts implementation in P1-B. Trigger conditions and thresholds will be validated against actual scripts behavior. Schema may be adjusted at that time."

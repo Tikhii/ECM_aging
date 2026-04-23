@@ -33,7 +33,7 @@
 | "搭环境 / 安装问题" | `QUICKSTART.md` | `docs/01_setup_guide.md` |
 | "运行 / 调试问题" | `examples/smoke_test.py` 先跑 | 再看 `tests/test_basic.py` |
 | "现场脚本报错" | `docs/07_offline_runbook.md` 对应错误码 | 需外带走 `08_consultation_protocol.md` |
-| "外带诊断给 Claude" | `docs/08_consultation_protocol.md §3` 模板 | — |
+| "外带诊断给 Claude" | `docs/08_consultation_protocol.md §4` 模板 | — |
 | "离线环境安装" | `docs/09_offline_bundle_guide.md` | `scripts/install_offline.sh` |
 
 ---
@@ -267,7 +267,7 @@ R_i(t) = R_i^0 · f_{R,i}(t)      # 论文式 (43)
 与 registry 不一致时，**以 registry 为准**。registry 是事实层，runbook
 是解释层，这一层级关系与 R1 中 PARAMETERS.json ↔ MD 的关系同构。
 
-外带诊断到在线 Claude 时走 `docs/08_consultation_protocol.md` §3 的观测
+外带诊断到在线 Claude 时走 `docs/08_consultation_protocol.md` §4 的观测
 笔记模板；该模板与 registry 的 `escalation` 字段互锁，两者有任一修改必须
 同步。
 
