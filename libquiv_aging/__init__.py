@@ -23,6 +23,7 @@ from .cell_model import EquivCircuitCell
 from .lookup_tables import (
     HalfCellThermo, ResistanceLUTs, default_data_path, open_circuit_voltage,
 )
+from .cell_factory import create_cell_from_specs
 from .panasonic_ncr18650b import create_panasonic_ncr18650b
 
 __all__ = [
@@ -38,4 +39,5 @@ __all__ = [
     "open_circuit_voltage",
     "default_data_path",
     "create_panasonic_ncr18650b",
+    "create_cell_from_specs",
 ]
