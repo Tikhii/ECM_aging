@@ -97,7 +97,7 @@ conda 环境变更 → conda env export → environment-frozen.yml
 
 ## 五、已知失败模式与应对
 
-依赖安装时报 `No matching distribution found`，通常表示 `requirements.txt` 中的某个包或版本未进入内部镜像索引。应对顺序是：首先确认内部镜像能访问（直接浏览镜像站首页或尝试 `pip index versions <package-name>`），其次确认该包名与版本在 PyPI 上真实存在（可能是 conda→PyPI 的包名映射有误），最后与 IT 协调将缺失包加入白名单。不应通过放松版本约束绕过此错误，会破坏环境一致性。此失败模式将在后续单独追加为 ENV-E002 错误码。
+依赖安装时报 `No matching distribution found`，通常表示 `requirements.txt` 中的某个包或版本未进入内部镜像索引。应对顺序是：首先确认内部镜像能访问（直接浏览镜像站首页或尝试 `pip index versions <package-name>`），其次确认该包名与版本在 PyPI 上真实存在（可能是 conda→PyPI 的包名映射有误），最后与 IT 协调将缺失包加入白名单。不应通过放松版本约束绕过此错误，会破坏环境一致性。该失败模式已正式登记为错误码 ENV-E002, 详见 docs/07_offline_runbook.md§1 和 docs/error_codes_registry.json。
 
 `pip install -e .` 报错通常表示 `setuptools` 版本不够新。`install_offline.sh` 在安装依赖前已执行 `pip install --upgrade pip setuptools wheel`，正常情况下不会出现此问题。若仍报错，检查内部镜像上 setuptools 的最新可用版本。
 

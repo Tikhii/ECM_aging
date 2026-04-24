@@ -86,6 +86,51 @@ exit code 10, refuse, 打印本条目编号 (`[ENV-E001]`)。
 **何时升级到在线咨询**
 见 `docs/08_consultation_protocol.md §6.例 3 — 环境漂移`。
 
+### ENV-E002: pip install 失败: 依赖不在内部镜像索引中
+
+**触发条件**
+install_offline.sh 或 pip install -r requirements.txt 执行时,
+pip 返回以下错误之一 (且内部镜像站可访问, 排除网络问题):
+- "No matching distribution found for \<package\>"
+- "Could not find a version that satisfies the requirement \<package\>"
+- "Could not find a version that matches \<package\>==\<version\>"
+
+**物理/方法学后果**
+离线机无法完成 Python 环境重建, install_offline.sh 中途退出,
+.venv 处于不完整状态。依赖链下游包可能连带失败。若强行用
+`--no-deps` 跳过会产生缺失依赖的环境, 运行时报 ImportError,
+但这是不推荐的处置方式。
+
+**权威文档交叉引用**
+- docs/09_offline_bundle_guide.md§五 (已知失败模式与应对)
+- docs/PARAMETER_SOP.md§零 (环境重建流程)
+- requirements.txt (锁定的版本清单)
+
+**现场可选处置**
+1. 确认内部镜像站可访问。在离线机上跑 `python -m pip config list -v`,
+   确认 index-url 非空且指向内部镜像。若无配置, 联系 IT 部门修复 pip
+   配置, 不要手工编辑 /etc/pip.conf 或用户级配置。
+2. 确认缺失包在 PyPI 上真实存在且版本号正确。在联网机上跑
+   `pip index versions <package>`, 与 requirements.txt 中锁定的版本对比。
+   若 requirements.txt 中版本号有误 (如手工编辑造成), 回联网机重跑
+   `scripts/build_requirements.sh` 覆盖生成 requirements.txt, commit 后
+   拷到离线机重试。
+3. 若包确实存在于 PyPI 但未进入内部镜像白名单: 记录缺失的包名和版本,
+   向 IT 提交加入白名单申请, 等待确认入镜像后重试 install_offline.sh。
+
+**不应采取的处置**
+- 不应通过放松版本约束 (>= 代替 ==) 绕过错误, 会破坏环境一致性
+- 不应用 --no-deps 跳过缺失包, 会让环境不完整
+- 不应手工从 PyPI 下载 wheel 传入离线机 (受 50MB 传输限制和安全
+  策略双重限制)
+
+**脚本应当行为**
+exit code 2, refuse, log 必须含完整 pip 错误输出和缺失包的名称与版本。
+
+**何时升级到在线咨询**
+见 `docs/08_consultation_protocol.md§6` (措辞规范, 若 IT 协调或向联网 Claude
+咨询时参考)。
+
 ---
 
 ## §2 数据契约类错误 (DATA)
@@ -574,6 +619,7 @@ exit code 72, warn, 打印本条目编号 (`[IDENT-W003]`)。
 | 编号 | 作用域 | 级别 | 标题 | 退出码 | action | 状态 |
 | --- | --- | --- | --- | ---: | --- | --- |
 | ENV-E001 | ENV | E | Conda 环境哈希与冻结环境不匹配 | 10 | refuse | active |
+| ENV-E002 | ENV | E | pip install 失败: 依赖不在内部镜像索引中 | 2 | refuse | active |
 | DATA-E001 | DATA | E | RPT CSV 列名或单位不符 SOP §3.2 | 20 | refuse | active |
 | DATA-E002 | DATA | E | .dat 文件 x 列非单调或越界 | 21 | refuse | active |
 | DATA-E003 | DATA | E | 电阻 .mat 形状不是 1001×2001 | 22 | refuse | active |

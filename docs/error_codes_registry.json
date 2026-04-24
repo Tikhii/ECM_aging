@@ -30,6 +30,33 @@
       "status": "active"
     },
 
+    "ENV-E002": {
+      "scope": "ENV",
+      "level": "E",
+      "title": "pip install 失败: 依赖不在内部镜像索引中",
+      "trigger": "install_offline.sh 或 pip install -r requirements.txt 执行时, pip 返回 'No matching distribution found'、'Could not find a version that satisfies the requirement' 或 'Could not find a version that matches' 错误, 且内部 pip 镜像站可访问 (排除网络问题)。",
+      "consequence": "离线机无法完成 Python 环境重建。.venv 处于不完整状态, 依赖链下游包也可能安装失败。若强行用 --no-deps 继续会产生缺失依赖的环境, 运行时报 ImportError, 不推荐此路径。",
+      "cross_refs": [
+        "docs/09_offline_bundle_guide.md §五",
+        "docs/PARAMETER_SOP.md §零",
+        "requirements.txt"
+      ],
+      "remediation": [
+        "确认内部镜像站可访问: python -m pip config list -v, 确认 index-url 非空。若无配置, 联系 IT 部门修复。",
+        "确认缺失包在 PyPI 上存在且版本号正确: 在联网机上 pip index versions <package>, 与 requirements.txt 中锁定版本对比。若版本号有误 (如手工编辑造成), 回联网机重跑 scripts/build_requirements.sh 生成 requirements.txt, commit 后拷到离线机重试。",
+        "若包确实存在但未进入内部镜像白名单: 记录缺失包名和版本, 向 IT 提交加入白名单申请, 等待入镜像后重试。",
+        "不应采取的处置: (a) 不放松版本约束绕过错误, 破坏环境一致性; (b) 不用 --no-deps 跳过包, 环境不完整; (c) 不手工从 PyPI 下载 wheel 传入, 受 50MB 传输限制和安全策略双重限制。"
+      ],
+      "script_behavior": {
+        "exit_code": 2,
+        "action": "refuse"
+      },
+      "escalation": "docs/08_consultation_protocol.md§6",
+      "since_version": "0.3.0",
+      "status": "active",
+      "notes": "本错误码于 2026-04-24 (v0.3.0 阶段) 从 09_offline_bundle_guide.md §五 正式化而来。remediation 前两条为诊断路径, 第三条为升级路径 (向 IT 协调)。'不应采取的处置' 列表是从制度防护角度列出, 防止使用坏的 workaround 破坏环境一致性。"
+    },
+
     "DATA-E001": {
       "scope": "DATA",
       "level": "E",
