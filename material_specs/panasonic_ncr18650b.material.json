@@ -1,0 +1,106 @@
+{
+  "schema_version": "material.v1",
+  "cell_type": "panasonic_ncr18650b",
+  "chemistry": "NCA/Graphite",
+  "created_at": "2026-04-24T00:00:00Z",
+  "last_modified_at": "2026-04-24T00:00:00Z",
+
+  "C_nominal_Ah": {
+    "value": 3.35,
+    "status": "datasheet",
+    "fit_step": null,
+    "fit_source": null,
+    "fit_script_version": null,
+    "fit_r_squared": null,
+    "uncertainty": null,
+    "last_modified_at": "2026-04-24T00:00:00Z"
+  },
+  "V_max": {
+    "value": 4.2,
+    "status": "datasheet",
+    "fit_step": null,
+    "fit_source": null,
+    "fit_script_version": null,
+    "fit_r_squared": null,
+    "uncertainty": null,
+    "last_modified_at": "2026-04-24T00:00:00Z"
+  },
+  "V_min": {
+    "value": 2.5,
+    "status": "datasheet",
+    "fit_step": null,
+    "fit_source": null,
+    "fit_script_version": null,
+    "fit_r_squared": null,
+    "uncertainty": null,
+    "last_modified_at": "2026-04-24T00:00:00Z"
+  },
+  "X0_PE": {
+    "value": 0.95,
+    "status": "literature_default",
+    "fit_step": null,
+    "fit_source": null,
+    "fit_script_version": null,
+    "fit_r_squared": null,
+    "uncertainty": null,
+    "last_modified_at": "2026-04-24T00:00:00Z"
+  },
+  "X0_NE": {
+    "value": 0.01,
+    "status": "literature_default",
+    "fit_step": null,
+    "fit_source": null,
+    "fit_script_version": null,
+    "fit_r_squared": null,
+    "uncertainty": null,
+    "last_modified_at": "2026-04-24T00:00:00Z"
+  },
+  "dX_PE_alawa": {
+    "value": 0.7710,
+    "status": "literature_default",
+    "fit_step": null,
+    "fit_source": null,
+    "fit_script_version": null,
+    "fit_r_squared": null,
+    "uncertainty": null,
+    "last_modified_at": "2026-04-24T00:00:00Z"
+  },
+  "dX_NE_alawa": {
+    "value": 0.9600,
+    "status": "literature_default",
+    "fit_step": null,
+    "fit_source": null,
+    "fit_script_version": null,
+    "fit_r_squared": null,
+    "uncertainty": null,
+    "last_modified_at": "2026-04-24T00:00:00Z"
+  },
+  "LR": {
+    "value": 1.04,
+    "status": "manually_set",
+    "fit_step": null,
+    "fit_source": null,
+    "fit_script_version": null,
+    "fit_r_squared": null,
+    "uncertainty": null,
+    "last_modified_at": "2026-04-24T00:00:00Z"
+  },
+  "OFS": {
+    "value": 2.0,
+    "status": "manually_set",
+    "fit_step": null,
+    "fit_source": null,
+    "fit_script_version": null,
+    "fit_r_squared": null,
+    "uncertainty": null,
+    "last_modified_at": "2026-04-24T00:00:00Z"
+  },
+
+  "anode_thermo_dat": "libquiv_aging/data/GraphiteAlawa.dat",
+  "cathode_thermo_dat": "libquiv_aging/data/NCAAlawa.dat",
+
+  "mvol_ne_mode": "graphite_standard",
+  "mvol_ne_coeff": null,
+  "mvol_pe_mode": "nca_standard",
+  "mvol_pe_coeff": null
+}

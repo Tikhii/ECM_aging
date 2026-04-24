@@ -1,0 +1,251 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "params_mmeka2025.schema.v1.json",
+  "title": "Params Schema for mmeka2025 mechanism model v1",
+  "description": "Parameter specification schema for the mmeka2025 degradation mechanism model (Mmeka, Dubarry & Bessler 2025). All physical parameters are phenomenological.",
+  "type": "object",
+  "definitions": {
+    "value_with_provenance": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": ["number", "null"],
+          "description": "The parameter value. null means pending_fit (not yet determined)."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["pending_fit", "fitted", "manually_set", "literature_default", "convention", "datasheet"],
+          "description": "Provenance status of this parameter value."
+        },
+        "fit_step": {
+          "type": ["string", "null"],
+          "description": "Which FIT step produced this value (e.g. 'FIT-4a'). null if not fitted."
+        },
+        "fit_source": {
+          "type": ["string", "null"],
+          "description": "Source script or notebook that produced the fit. null if not fitted."
+        },
+        "fit_script_version": {
+          "type": ["string", "null"],
+          "description": "Git commit or version tag of the fit script. null if not fitted."
+        },
+        "fit_r_squared": {
+          "type": ["number", "null"],
+          "description": "R-squared goodness-of-fit metric. null if not fitted."
+        },
+        "uncertainty": {
+          "type": ["number", "null"],
+          "description": "Uncertainty estimate for the value. null if unknown."
+        },
+        "last_modified_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO 8601 timestamp of last modification."
+        }
+      },
+      "required": ["value", "status", "fit_step", "fit_source", "fit_script_version", "fit_r_squared", "uncertainty", "last_modified_at"],
+      "additionalProperties": true,
+      "if": {
+        "properties": { "status": { "const": "fitted" } }
+      },
+      "then": {
+        "properties": {
+          "fit_step": { "type": "string" },
+          "fit_source": { "type": "string" },
+          "fit_script_version": { "type": "string" },
+          "fit_r_squared": { "type": "number" }
+        }
+      },
+      "else": {
+        "properties": {
+          "fit_step": { "const": null },
+          "fit_source": { "const": null },
+          "fit_script_version": { "const": null },
+          "fit_r_squared": { "const": null }
+        }
+      }
+    }
+  },
+  "properties": {
+    "schema_version": {
+      "const": "params_mmeka2025.v1",
+      "description": "Schema version identifier."
+    },
+    "model_version": {
+      "const": "mmeka2025",
+      "description": "Mechanism model version this parameter spec targets."
+    },
+    "material_spec_ref": {
+      "type": "string",
+      "description": "Relative path (from project root) to the material spec file this parameter spec is paired with."
+    },
+    "fitted_at": {
+      "type": ["string", "null"],
+      "format": "date-time",
+      "description": "ISO 8601 timestamp of when fitting was completed. null if fitting is not yet done."
+    },
+    "last_modified_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp of last modification."
+    },
+    "C0_PE_correction_factor": {
+      "$ref": "#/definitions/value_with_provenance",
+      "description": "FIT-0 correction factor for initial PE capacity C0_PE. Phenomenological parameter from C/40 discharge curve fitting.",
+      "x-nature": "phenomenological"
+    },
+    "C1": {
+      "$ref": "#/definitions/value_with_provenance",
+      "description": "NE-side RC circuit capacitance [F]. Phenomenological parameter from FIT-2/3 EIS fitting.",
+      "x-nature": "phenomenological"
+    },
+    "C2": {
+      "$ref": "#/definitions/value_with_provenance",
+      "description": "PE-side RC circuit capacitance [F]. Phenomenological parameter from FIT-2/3 EIS fitting.",
+      "x-nature": "phenomenological"
+    },
+    "C3": {
+      "$ref": "#/definitions/value_with_provenance",
+      "description": "Additional RC circuit capacitance [F] (unused in current model). Phenomenological parameter.",
+      "x-nature": "phenomenological"
+    },
+    "fractionR1toRs": {
+      "$ref": "#/definitions/value_with_provenance",
+      "description": "Fraction of R1 (NE resistance) allocated to series resistance Rs. Phenomenological parameter.",
+      "x-nature": "phenomenological"
+    },
+    "fractionR2toRs": {
+      "$ref": "#/definitions/value_with_provenance",
+      "description": "Fraction of R2 (PE resistance) allocated to series resistance Rs. Phenomenological parameter.",
+      "x-nature": "phenomenological"
+    },
+    "k_SEI_cal": {
+      "$ref": "#/definitions/value_with_provenance",
+      "description": "Calendar SEI growth rate constant [A^2*s]. Phenomenological parameter from FIT-4a.",
+      "x-nature": "phenomenological"
+    },
+    "k_SEI_cyc": {
+      "$ref": "#/definitions/value_with_provenance",
+      "description": "Cyclic SEI growth rate constant [F = A*s/V]. Phenomenological parameter from FIT-4b.",
+      "x-nature": "phenomenological"
+    },
+    "E_a_SEI": {
+      "$ref": "#/definitions/value_with_provenance",
+      "description": "SEI Arrhenius activation energy [J/mol]. Phenomenological parameter.",
+      "x-nature": "phenomenological"
+    },
+    "alpha_f_SEI": {
+      "$ref": "#/definitions/value_with_provenance",
+      "description": "SEI symmetry factor alpha_f [-]. Convention value 0.5.",
+      "x-nature": "phenomenological"
+    },
+    "k_LP": {
+      "$ref": "#/definitions/value_with_provenance",
+      "description": "Lithium plating exchange current density constant [A]. Phenomenological parameter from FIT-4b.",
+      "x-nature": "phenomenological"
+    },
+    "alpha_LP": {
+      "$ref": "#/definitions/value_with_provenance",
+      "description": "Lithium plating symmetry factor [-]. Convention value 0.5.",
+      "x-nature": "phenomenological"
+    },
+    "V_LP_eq": {
+      "$ref": "#/definitions/value_with_provenance",
+      "description": "Lithium plating equilibrium potential vs Li/Li+ [V]. Convention value 0.0 (static assumption, see S2 errata).",
+      "x-nature": "phenomenological"
+    },
+    "k_LAM_PE_cal": {
+      "$ref": "#/definitions/value_with_provenance",
+      "description": "Calendar LAM rate constant for positive electrode [A]. Phenomenological parameter from FIT-4a.",
+      "x-nature": "phenomenological"
+    },
+    "k_LAM_PE_cyc": {
+      "$ref": "#/definitions/value_with_provenance",
+      "description": "Cyclic LAM rate constant for positive electrode [-]. Phenomenological parameter from FIT-4b.",
+      "x-nature": "phenomenological"
+    },
+    "gamma_PE": {
+      "$ref": "#/definitions/value_with_provenance",
+      "description": "Voltage-dependent exponent for PE calendar LAM [-]. Phenomenological parameter from FIT-4a.",
+      "x-nature": "phenomenological"
+    },
+    "k_LAM_NE_cal": {
+      "$ref": "#/definitions/value_with_provenance",
+      "description": "Calendar LAM rate constant for negative electrode [A]. Convention value 0.0 (NE calendar LAM assumed negligible).",
+      "x-nature": "phenomenological"
+    },
+    "k_LAM_NE_cyc": {
+      "$ref": "#/definitions/value_with_provenance",
+      "description": "Cyclic LAM rate constant for negative electrode [-]. Phenomenological parameter from FIT-4b.",
+      "x-nature": "phenomenological"
+    },
+    "gamma_NE": {
+      "$ref": "#/definitions/value_with_provenance",
+      "description": "Voltage-dependent exponent for NE calendar LAM [-]. Convention value 0.0 (unused since k_LAM_NE_cal=0).",
+      "x-nature": "phenomenological"
+    },
+    "R_SEI": {
+      "$ref": "#/definitions/value_with_provenance",
+      "description": "SEI intrinsic specific resistance [Ohm, normalized]. Phenomenological parameter from FIT-4a.",
+      "x-nature": "phenomenological"
+    },
+    "R_NE_0": {
+      "$ref": "#/definitions/value_with_provenance",
+      "description": "Initial NE total resistance anchor [Ohm], derived from R_NE LUT at 50% SOC, C/3. Phenomenological parameter.",
+      "x-nature": "phenomenological"
+    },
+    "resistance_mat": {
+      "type": "string",
+      "description": "Relative path (from project root) to the resistance lookup table .mat file."
+    },
+    "resistance_mode": {
+      "type": "string",
+      "enum": ["ncr18650b_default"],
+      "description": "Resistance closure construction mode. Determines how Rs, R1, R2 functions are built from the LUT."
+    },
+    "Q0_LLI_PE": {
+      "$ref": "#/definitions/value_with_provenance",
+      "description": "Initial LLI on positive electrode [A*s]. Convention value 0.0.",
+      "x-nature": "phenomenological"
+    },
+    "Q0_LAM_PE": {
+      "$ref": "#/definitions/value_with_provenance",
+      "description": "Initial LAM on positive electrode [A*s]. Convention value 0.0.",
+      "x-nature": "phenomenological"
+    },
+    "Q0_LAM_NE": {
+      "$ref": "#/definitions/value_with_provenance",
+      "description": "Initial LAM on negative electrode [A*s]. Convention value 0.0.",
+      "x-nature": "phenomenological"
+    },
+    "Q0_PLA_NE": {
+      "$ref": "#/definitions/value_with_provenance",
+      "description": "Initial plating on negative electrode [A*s]. Convention value 0.0.",
+      "x-nature": "phenomenological"
+    },
+    "X_LAM_PE": {
+      "$ref": "#/definitions/value_with_provenance",
+      "description": "Li stoichiometry in lost PE active material [-]. Convention value 0.0.",
+      "x-nature": "phenomenological"
+    },
+    "X_LAM_NE": {
+      "$ref": "#/definitions/value_with_provenance",
+      "description": "Li stoichiometry in lost NE active material [-]. Convention value 0.0.",
+      "x-nature": "phenomenological"
+    }
+  },
+  "required": [
+    "schema_version", "model_version", "material_spec_ref", "fitted_at", "last_modified_at",
+    "C0_PE_correction_factor",
+    "C1", "C2", "C3", "fractionR1toRs", "fractionR2toRs",
+    "k_SEI_cal", "k_SEI_cyc", "E_a_SEI", "alpha_f_SEI",
+    "k_LP", "alpha_LP", "V_LP_eq",
+    "k_LAM_PE_cal", "k_LAM_PE_cyc", "gamma_PE",
+    "k_LAM_NE_cal", "k_LAM_NE_cyc", "gamma_NE",
+    "R_SEI", "R_NE_0",
+    "resistance_mat", "resistance_mode",
+    "Q0_LLI_PE", "Q0_LAM_PE", "Q0_LAM_NE", "Q0_PLA_NE",
+    "X_LAM_PE", "X_LAM_NE"
+  ],
+  "additionalProperties": false
+}

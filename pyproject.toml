@@ -17,6 +17,7 @@ dependencies = [
     "scipy>=1.11",
     "matplotlib>=3.7",
     "pandas>=2.0",
+    "jsonschema>=4.0",
 ]
 
 [project.optional-dependencies]
