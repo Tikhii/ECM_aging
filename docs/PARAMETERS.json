@@ -6,69 +6,85 @@
   "_matlab_source": "Zenodo 10.5281/zenodo.15833031",
   "_last_verified": "2026-04-20",
   "_critical_review_date": "2026-04-20",
-
-  "tiers": {
-    "I":                "Read directly from datasheet or by convention (no fitting)",
-    "II":               "Measured directly and loaded as lookup tables (LUTs)",
-    "II-derived":       "Derived from II-level LUT at a canonical operating point",
-    "II-literature":    "Taken from published literature (e.g. XRD/dilatometry reference)",
-    "III":              "Simple scalar fit from 1-2 specific measurements (stable)",
-    "IV_calendar":      "Fitted from calendar-aging experiment (temperature x SOC x time)",
-    "IV_cycle":         "Fitted from cycle-aging experiment, pre-knee region",
-    "IV_knee":          "Fitted from cycle-aging experiment, full knee region"
+  "spec_schemas": {
+    "material": "schemas/material.schema.v1.json",
+    "params_mmeka2025": "schemas/params_mmeka2025.schema.v1.json"
   },
-
+  "spec_examples": {
+    "panasonic_ncr18650b": {
+      "material": "material_specs/panasonic_ncr18650b.material.json",
+      "params": "param_specs/panasonic_ncr18650b__mmeka2025.params.json"
+    }
+  },
+  "tiers": {
+    "I": "Read directly from datasheet or by convention (no fitting)",
+    "II": "Measured directly and loaded as lookup tables (LUTs)",
+    "II-derived": "Derived from II-level LUT at a canonical operating point",
+    "II-literature": "Taken from published literature (e.g. XRD/dilatometry reference)",
+    "III": "Simple scalar fit from 1-2 specific measurements (stable)",
+    "IV_calendar": "Fitted from calendar-aging experiment (temperature x SOC x time)",
+    "IV_cycle": "Fitted from cycle-aging experiment, pre-knee region",
+    "IV_knee": "Fitted from cycle-aging experiment, full knee region"
+  },
   "parameters": [
     {
       "name": "C_nominal_Ah",
       "tier": "I",
       "symbol": "C^0_nom",
-      "code_location": "panasonic_ncr18650b.py::C0_PE formula (constant 3.35)",
+      "code_location": "cell_factory.py::_derive_C0_PE (constant from material spec)",
       "paper_value_NCA_G": 3.35,
       "units": "Ah",
       "experiment": "EXP-A: C/40 complete discharge on fresh cell",
       "fit_step": null,
       "notes": "Nominal capacity from datasheet or direct C/40 discharge integration. DISTINCT from C_PE^0 (which is the derived initial PE electrode capacity, see C0_PE entry).",
-      "paper_errata": null
+      "paper_errata": null,
+      "spec_location": "material_spec.C_nominal_Ah",
+      "spec_nature": "intrinsic"
     },
     {
       "name": "C0_PE",
       "tier": "III",
       "symbol": "C_PE^0",
-      "code_location": "panasonic_ncr18650b.py::C0_PE (local variable)",
+      "code_location": "cell_factory.py::_derive_C0_PE (derived)",
       "paper_value_NCA_G_As": 16848.0,
       "paper_value_NCA_G_Ah": 4.68,
       "units": "A*s",
       "experiment": "Derived from EXP-A with correction factors; Appendix Eq. 51-54",
       "fit_step": "FIT-0",
       "notes": "Initial PE ELECTRODE capacity (distinct from nominal cell capacity). Formula in code: C_nominal_Ah / dX_PE_alawa / (1-OFS/100) * 3600 / 0.973 * 1.0275. The '/0.973 * 1.0275' ~5.6% correction factors adjust simulated C/20 discharge vs experimental. Paper Appendix states C_PE^0 'is obtained by fitting a simulation against an experimental C/40 discharge curve' - effectively a scalar fit, not a direct measurement.",
-      "paper_errata": null
+      "paper_errata": null,
+      "spec_location": "derived:cell_factory._derive_C0_PE",
+      "spec_nature": "intrinsic"
     },
     {
       "name": "C0_NE",
       "tier": "II-derived",
       "symbol": "C_NE^0",
-      "code_location": "panasonic_ncr18650b.py::C0_NE (local variable)",
+      "code_location": "cell_factory.py::_derive_C0_NE (derived)",
       "paper_value_NCA_G_As": 14076.0,
       "paper_value_NCA_G_Ah": 3.91,
       "units": "A*s",
       "experiment": "Derived from C0_PE via alawa electrode-balance formula",
       "fit_step": null,
       "notes": "Derived via Appendix Eq. 54: C_NE^0 = C_PE^0 * LR * dX_PE_alawa / dX_NE_alawa. Must be recomputed if any of {C0_PE, LR, dX_PE_alawa, dX_NE_alawa} changes.",
-      "paper_errata": null
+      "paper_errata": null,
+      "spec_location": "derived:cell_factory._derive_C0_NE",
+      "spec_nature": "intrinsic"
     },
     {
       "name": "Q0_SEI_NE",
       "tier": "II-derived",
       "symbol": "Q_NE^SEI,0",
-      "code_location": "panasonic_ncr18650b.py::Q0_SEI_NE (local variable)",
+      "code_location": "cell_factory.py::_derive_Q0_SEI_NE (derived)",
       "paper_value_NCA_G_As": 259.27,
       "paper_value_NCA_G_Ah": 0.072,
       "units": "A*s",
       "experiment": "Derived from OFS via Appendix Eq. 55-56",
       "fit_step": null,
       "notes": "Initial SEI charge from cell formation. Formula: Q0_SEI_NE = C_PE^0 * dX_PE_alawa * OFS/100. Directly linked to OFS fit parameter.",
-      "paper_errata": null
+      "paper_errata": null,
+      "spec_location": "derived:cell_factory._derive_Q0_SEI_NE",
+      "spec_nature": "intrinsic"
     },
     {
       "name": "V_max",
@@ -78,7 +94,9 @@
       "units": "V",
       "experiment": "From datasheet",
       "fit_step": null,
-      "paper_errata": null
+      "paper_errata": null,
+      "spec_location": "material_spec.V_max",
+      "spec_nature": "intrinsic"
     },
     {
       "name": "V_min",
@@ -88,7 +106,9 @@
       "units": "V",
       "experiment": "From datasheet",
       "fit_step": null,
-      "paper_errata": null
+      "paper_errata": null,
+      "spec_location": "material_spec.V_min",
+      "spec_nature": "intrinsic"
     },
     {
       "name": "X0_PE",
@@ -99,7 +119,9 @@
       "experiment": "Convention (full-discharge state of PE); can be cross-checked via half-cell data",
       "fit_step": null,
       "notes": "For NCA: at V_min the PE is near-saturated lithiated, X~0.95.",
-      "paper_errata": null
+      "paper_errata": null,
+      "spec_location": "material_spec.X0_PE",
+      "spec_nature": "intrinsic"
     },
     {
       "name": "X0_NE",
@@ -110,12 +132,14 @@
       "experiment": "Convention (full-discharge state of NE)",
       "fit_step": null,
       "notes": "For Graphite: at V_min the NE is near-depleted of Li, X~0.01.",
-      "paper_errata": null
+      "paper_errata": null,
+      "spec_location": "material_spec.X0_NE",
+      "spec_nature": "intrinsic"
     },
     {
       "name": "dX_PE_alawa",
       "tier": "II",
-      "code_location": "panasonic_ncr18650b.py::dX_PE_alawa (local variable)",
+      "code_location": "cell_factory.py::_extract_value (from material spec)",
       "paper_value_NCA_G": 0.771,
       "paper_value_Table_II": 0.788,
       "units": "-",
@@ -125,17 +149,21 @@
         "severity": "low-moderate",
         "description": "Paper Table II reports 0.788 but MATLAB source code (Zenodo) uses 0.771. ~2.2% discrepancy, not acknowledged in paper text. Most likely cause: late-stage refit of half-cell data after paper text frozen. Impact on capacity prediction <2%. Code value is what actually produced Fig. 6-7.",
         "action": "Use 0.771 for reproducibility. Document in CRITICAL_REVIEW.md."
-      }
+      },
+      "spec_location": "material_spec.dX_PE_alawa",
+      "spec_nature": "intrinsic"
     },
     {
       "name": "dX_NE_alawa",
       "tier": "II",
-      "code_location": "panasonic_ncr18650b.py::dX_NE_alawa (local variable)",
+      "code_location": "cell_factory.py::_extract_value (from material spec)",
       "paper_value_NCA_G": 0.96,
       "units": "-",
       "experiment": "From EXP-B2 half-cell data analysis",
       "fit_step": null,
-      "paper_errata": null
+      "paper_errata": null,
+      "spec_location": "material_spec.dX_NE_alawa",
+      "spec_nature": "intrinsic"
     },
     {
       "name": "V_PE_0_curve",
@@ -146,7 +174,9 @@
       "experiment": "EXP-B1: Half-cell C/40 test on PE material (measured ONCE on fresh material)",
       "fit_step": null,
       "notes": "IMPORTANT: Only measured ONCE on fresh material. Never re-measured during aging - degradation effects enter via LAM_PE, not by updating this curve.",
-      "paper_errata": null
+      "paper_errata": null,
+      "spec_location": "material_spec.cathode_thermo_dat",
+      "spec_nature": "intrinsic"
     },
     {
       "name": "V_NE_0_curve",
@@ -157,7 +187,9 @@
       "experiment": "EXP-B2: Half-cell C/40 test on NE material (measured ONCE on fresh material)",
       "fit_step": null,
       "notes": "IMPORTANT: Only measured ONCE on fresh material.",
-      "paper_errata": null
+      "paper_errata": null,
+      "spec_location": "material_spec.anode_thermo_dat",
+      "spec_nature": "intrinsic"
     },
     {
       "name": "R_s_LUT",
@@ -167,7 +199,9 @@
       "experiment": "EXP-B3: EIS high-frequency intercept on FRESH cell only",
       "fit_step": null,
       "notes": "CRITICAL: ONLY measured on fresh cell. R_s is assumed not to degrade (Eq. 46, f_R,s=1). Post-mortem literature (Stiaszny 2014) suggests this understates late-life behavior by 10-30%; see critical_review_findings.C3.",
-      "paper_errata": null
+      "paper_errata": null,
+      "spec_location": "params_mmeka2025_spec.resistance_mat",
+      "spec_nature": "phenomenological"
     },
     {
       "name": "R_NE_LUT",
@@ -177,7 +211,9 @@
       "experiment": "EXP-B4: GITT + half-cell characterization on FRESH cell only",
       "fit_step": null,
       "notes": "CRITICAL: ONLY measured on fresh cell. Aging-induced resistance increase captured by time-varying factor f_R,NE (Eq. 45).",
-      "paper_errata": null
+      "paper_errata": null,
+      "spec_location": "params_mmeka2025_spec.resistance_mat",
+      "spec_nature": "phenomenological"
     },
     {
       "name": "R_PE_LUT",
@@ -187,31 +223,37 @@
       "experiment": "EXP-B4: GITT + half-cell characterization on FRESH cell only",
       "fit_step": null,
       "notes": "CRITICAL: ONLY measured on fresh cell. Aging via f_R,PE = 1/(1-Q_LAM_PE/C0_PE), Eq. 44.",
-      "paper_errata": null
+      "paper_errata": null,
+      "spec_location": "params_mmeka2025_spec.resistance_mat",
+      "spec_nature": "phenomenological"
     },
     {
       "name": "LR",
       "tier": "III",
       "symbol": "Loading Ratio = C_NE / C_PE",
-      "code_location": "panasonic_ncr18650b.py::LR (local variable)",
+      "code_location": "cell_factory.py::_extract_value (from material spec)",
       "paper_value_NCA_G": 1.04,
       "units": "-",
       "experiment": "Combine EXP-A (full-cell OCV) + EXP-B1/B2 (half-cell OCVs)",
       "fit_step": "FIT-1",
       "notes": "Paper explicitly notes this differs from Devie & Dubarry 2016 (LR=0.96) due to use of more recent half-cell data.",
-      "paper_errata": null
+      "paper_errata": null,
+      "spec_location": "material_spec.LR",
+      "spec_nature": "intrinsic"
     },
     {
       "name": "OFS",
       "tier": "III",
       "symbol": "Offset",
-      "code_location": "panasonic_ncr18650b.py::OFS",
+      "code_location": "cell_factory.py::_extract_value (from material spec)",
       "paper_value_NCA_G": 2.0,
       "units": "%",
       "experiment": "Same as LR",
       "fit_step": "FIT-1",
       "notes": "Paper differs from Devie & Dubarry 2016 (OFS=2.8%) due to more recent half-cell data. OFS determines initial SEI capacity Q_SEI_NE^0.",
-      "paper_errata": null
+      "paper_errata": null,
+      "spec_location": "material_spec.OFS",
+      "spec_nature": "intrinsic"
     },
     {
       "name": "C1",
@@ -222,7 +264,9 @@
       "units": "F",
       "experiment": "EXP-C: Current-step relaxation test on fresh cell",
       "fit_step": "FIT-2: Fit two-exponential relaxation",
-      "paper_errata": null
+      "paper_errata": null,
+      "spec_location": "params_mmeka2025_spec.C1",
+      "spec_nature": "phenomenological"
     },
     {
       "name": "C2",
@@ -233,7 +277,9 @@
       "units": "F",
       "experiment": "EXP-C",
       "fit_step": "FIT-2: jointly with C1",
-      "paper_errata": null
+      "paper_errata": null,
+      "spec_location": "params_mmeka2025_spec.C2",
+      "spec_nature": "phenomenological"
     },
     {
       "name": "fractionR1toRs",
@@ -244,7 +290,9 @@
       "experiment": "EXP-D",
       "fit_step": "FIT-3",
       "notes": "Paper states this was 'obtained via a constant factor by fitting to the dynamic DST test.' Despite the 0.5 value looking like a default, it is in fact a FIT RESULT for this specific cell. Name is historical (inherited from MATLAB original); the 'toRs' suffix does NOT imply a semantic relationship with R_s. Actual meaning: fraction of R_NE assigned to the static branch vs. dynamic (RC) branch. See 06_parameter_sourcing.md §3.3 for physical rationale and why horizontal (§2.2.3) and vertical (§3.3) resistance splits are both necessary.",
-      "paper_errata": null
+      "paper_errata": null,
+      "spec_location": "params_mmeka2025_spec.fractionR1toRs",
+      "spec_nature": "phenomenological"
     },
     {
       "name": "fractionR2toRs",
@@ -255,9 +303,10 @@
       "experiment": "EXP-D",
       "fit_step": "FIT-3",
       "notes": "Controls the static/dynamic split of R_PE (positive electrode). Name is historical (inherited from MATLAB original); the 'toRs' suffix does NOT imply a semantic relationship with R_s. Actual meaning: fraction of R_PE assigned to the static branch vs. dynamic (RC) branch. See 06_parameter_sourcing.md §3.3 for physical rationale. Paper value 0.5 is a FIT RESULT for Panasonic NCR18650B via FIT-3, not a hardcoded default.",
-      "paper_errata": null
+      "paper_errata": null,
+      "spec_location": "params_mmeka2025_spec.fractionR2toRs",
+      "spec_nature": "phenomenological"
     },
-
     {
       "name": "k_SEI_cal",
       "tier": "IV_calendar",
@@ -268,14 +317,21 @@
       "units": "A^2*s",
       "experiment": "EXP-E: Calendar aging at multiple (T, SOC) over ~66 weeks",
       "fit_step": "FIT-4a",
-      "fit_constrains": ["Capacity(t)", "IR(t)", "LLI(t)", "LAM_PE(t)"],
+      "fit_constrains": [
+        "Capacity(t)",
+        "IR(t)",
+        "LLI(t)",
+        "LAM_PE(t)"
+      ],
       "paper_errata": {
         "severity": "HIGH",
         "description": "Paper Table Ib reports k_SEI_cal = 4.2e-22 A^2*s, but MATLAB Zenodo code has 0.0419625 ~= 4.2e-2 A^2*s. The factor-of-10^20 discrepancy is almost certainly a typesetting error (duplicated '2' in the exponent). Dimensional analysis of Eq. 36 plus forward-simulation sanity checks (a year of calendar aging at 50% SOC gives ~0.1 Ah LLI with the code value, matching Fig. 4c) confirm the code value is correct.",
         "evidence": "Dimensional analysis + MATLAB code + Fig. 4 reproduction.",
         "confidence": "Very high",
         "action": "ALWAYS USE 4.2e-2 A^2*s (= 0.0419625), NOT 10^-22."
-      }
+      },
+      "spec_location": "params_mmeka2025_spec.k_SEI_cal",
+      "spec_nature": "phenomenological"
     },
     {
       "name": "E_a_SEI",
@@ -291,7 +347,9 @@
         "severity": "low-moderate",
         "description": "In MATLAB source, Ea enters ONLY the SEI rate (Eq. 36). Plating, LAM_PE, LAM_NE have NO Arrhenius term. This limits temperature-extrapolation validity for those processes and is not explicitly acknowledged in the paper.",
         "action": "Document in scope_of_validity. Consider per-process Arrhenius for temperature extrapolation."
-      }
+      },
+      "spec_location": "params_mmeka2025_spec.E_a_SEI",
+      "spec_nature": "phenomenological"
     },
     {
       "name": "alpha_f_SEI",
@@ -302,7 +360,9 @@
       "units": "-",
       "experiment": "Default convention",
       "fit_step": null,
-      "paper_errata": null
+      "paper_errata": null,
+      "spec_location": "params_mmeka2025_spec.alpha_f_SEI",
+      "spec_nature": "phenomenological"
     },
     {
       "name": "k_LAM_PE_cal",
@@ -313,8 +373,12 @@
       "units": "A",
       "experiment": "EXP-E",
       "fit_step": "FIT-4a",
-      "fit_constrains": ["LAM_PE(t) during calendar aging"],
-      "paper_errata": null
+      "fit_constrains": [
+        "LAM_PE(t) during calendar aging"
+      ],
+      "paper_errata": null,
+      "spec_location": "params_mmeka2025_spec.k_LAM_PE_cal",
+      "spec_nature": "phenomenological"
     },
     {
       "name": "gamma_PE",
@@ -325,7 +389,9 @@
       "units": "1/V",
       "experiment": "EXP-E",
       "fit_step": "FIT-4a",
-      "paper_errata": null
+      "paper_errata": null,
+      "spec_location": "params_mmeka2025_spec.gamma_PE",
+      "spec_nature": "phenomenological"
     },
     {
       "name": "R_SEI",
@@ -336,9 +402,13 @@
       "units": "Ohm (normalized)",
       "experiment": "EXP-E (calendar aging, REQUIRES IR measurement at each RPT)",
       "fit_step": "FIT-4a",
-      "fit_constrains": ["Normalized IR(t) during calendar aging"],
+      "fit_constrains": [
+        "Normalized IR(t) during calendar aging"
+      ],
       "notes": "CRITICAL: R_SEI fitted from CALENDAR aging data, NOT cycle. Paper p.12 verbatim: 'all resistance-related aging parameters were taken from the calendar degradation study.' Rationale: under calendar conditions Q_PLA_NE=0, so IR(t) growth comes purely from SEI+LAM, making R_SEI uniquely identifiable.",
-      "paper_errata": null
+      "paper_errata": null,
+      "spec_location": "params_mmeka2025_spec.R_SEI",
+      "spec_nature": "phenomenological"
     },
     {
       "name": "R_NE_0",
@@ -350,9 +420,10 @@
       "experiment": "Derived from R_NE_LUT at 50% SOC, C/3 discharge",
       "fit_step": null,
       "notes": "Reference scalar extracted from fresh-cell R_NE_LUT at canonical operating point. Must be RECOMPUTED whenever R_NE_LUT is replaced. Currently hand-coded; a derive_R_NE_0() utility should be added for new cell chemistries.",
-      "paper_errata": null
+      "paper_errata": null,
+      "spec_location": "params_mmeka2025_spec.R_NE_0",
+      "spec_nature": "phenomenological"
     },
-
     {
       "name": "k_SEI_cyc",
       "tier": "IV_cycle",
@@ -362,36 +433,48 @@
       "units": "F (A*s/V)",
       "experiment": "EXP-F: Cycle aging to ~150 EFC pre-knee",
       "fit_step": "FIT-4b (plating SWITCHED OFF: k_LP=0)",
-      "fit_constrains": ["LLI(EFC) in pre-knee region"],
+      "fit_constrains": [
+        "LLI(EFC) in pre-knee region"
+      ],
       "paper_errata": {
         "severity": "moderate",
         "description": "Paper p.10 text lists 'k_SEI,cyc' among CALENDAR degradation rate constants, contradicting Table Ib/Ic which correctly place k_SEI,cal in calendar and k_SEI,cyc in cycle. This is a narrative typo; Tables are correct.",
         "action": "JSON follows the Tables. Read page-10 text as 'k_SEI,cal' in calendar context."
-      }
+      },
+      "spec_location": "params_mmeka2025_spec.k_SEI_cyc",
+      "spec_nature": "phenomenological"
     },
     {
       "name": "k_LAM_PE_cyc",
       "tier": "IV_cycle",
       "symbol": "k_PE^{LAM,cyc}",
       "code_location": "LAMParameters(lam_pe).k_cyc",
-      "paper_value_NCA_G": 2.72698288891875e-3,
+      "paper_value_NCA_G": 0.00272698288891875,
       "units": "-",
       "experiment": "EXP-F",
       "fit_step": "FIT-4b",
-      "fit_constrains": ["LAM_PE(EFC) in pre-knee region"],
-      "paper_errata": null
+      "fit_constrains": [
+        "LAM_PE(EFC) in pre-knee region"
+      ],
+      "paper_errata": null,
+      "spec_location": "params_mmeka2025_spec.k_LAM_PE_cyc",
+      "spec_nature": "phenomenological"
     },
     {
       "name": "k_LAM_NE_cyc",
       "tier": "IV_cycle",
       "symbol": "k_NE^{LAM,cyc}",
       "code_location": "LAMParameters(lam_ne).k_cyc",
-      "paper_value_NCA_G": 3.87e-4,
+      "paper_value_NCA_G": 0.000387,
       "units": "-",
       "experiment": "EXP-F",
       "fit_step": "FIT-4b",
-      "fit_constrains": ["LAM_NE(EFC) in pre-knee region"],
-      "paper_errata": null
+      "fit_constrains": [
+        "LAM_NE(EFC) in pre-knee region"
+      ],
+      "paper_errata": null,
+      "spec_location": "params_mmeka2025_spec.k_LAM_NE_cyc",
+      "spec_nature": "phenomenological"
     },
     {
       "name": "k_LAM_NE_cal",
@@ -402,21 +485,26 @@
       "experiment": "None - convention",
       "fit_step": null,
       "notes": "Paper assumes NE calendar LAM is negligible (fixed to 0).",
-      "paper_errata": null
+      "paper_errata": null,
+      "spec_location": "params_mmeka2025_spec.k_LAM_NE_cal",
+      "spec_nature": "phenomenological"
     },
-
     {
       "name": "k_LP",
       "tier": "IV_knee",
       "symbol": "k_NE^{LP}",
       "code_location": "PlatingParameters.k_LP",
-      "paper_value_NCA_G": 2.32859595117188e-4,
+      "paper_value_NCA_G": 0.000232859595117188,
       "units": "A",
       "experiment": "EXP-G: Cycle aging BEYOND knee (>400 EFC for NCA/G)",
       "fit_step": "FIT-4c (all other parameters frozen)",
-      "fit_constrains": ["EFC at which knee appears"],
+      "fit_constrains": [
+        "EFC at which knee appears"
+      ],
       "notes": "ONLY free parameter in FIT-4c.",
-      "paper_errata": null
+      "paper_errata": null,
+      "spec_location": "params_mmeka2025_spec.k_LP",
+      "spec_nature": "phenomenological"
     },
     {
       "name": "alpha_LP",
@@ -426,7 +514,9 @@
       "units": "-",
       "experiment": "Convention",
       "fit_step": null,
-      "paper_errata": null
+      "paper_errata": null,
+      "spec_location": "params_mmeka2025_spec.alpha_LP",
+      "spec_nature": "phenomenological"
     },
     {
       "name": "V_LP_eq",
@@ -441,9 +531,10 @@
         "severity": "moderate",
         "description": "Static V_LP_eq=0V is deprecated by Beck-Greszta-Roberts-Dubarry 2024 (Batteries 10:408, same senior author): 'Typical testing and modeling assume that plating occurs at 0 V when measured against the charge carrier. While this might be true under thermodynamic equilibrium, this is not true outside of steady state.' Adequate for Baure-Dubarry 2019 dataset's tested conditions, but should be revised for fast-charge or low-temperature extrapolation.",
         "action": "TODO in code + scope-of-validity note. Implement dynamic form for extensions."
-      }
+      },
+      "spec_location": "params_mmeka2025_spec.V_LP_eq",
+      "spec_nature": "phenomenological"
     },
-
     {
       "name": "v_rel_PE_coeff",
       "tier": "II-literature",
@@ -452,7 +543,9 @@
       "experiment": "Literature (paper Ref 37 = Lin et al. 2013)",
       "fit_step": null,
       "notes": "10-coefficient polynomial np.polyval-compatible. For LFP use near-constant (~6.8%).",
-      "paper_errata": null
+      "paper_errata": null,
+      "spec_location": "material_spec.mvol_pe_mode + mvol_pe_coeff",
+      "spec_nature": "intrinsic"
     },
     {
       "name": "v_rel_NE_coeff",
@@ -462,9 +555,10 @@
       "experiment": "Literature",
       "fit_step": null,
       "notes": "Graphite ~12% expansion, highly non-linear due to stage transitions. See critical_review_findings.C5.",
-      "paper_errata": null
+      "paper_errata": null,
+      "spec_location": "material_spec.mvol_ne_mode + mvol_ne_coeff",
+      "spec_nature": "intrinsic"
     },
-
     {
       "name": "X_LAM_PE",
       "tier": "I",
@@ -474,7 +568,9 @@
       "experiment": "None - convention",
       "fit_step": null,
       "notes": "Community-standard alawa convention.",
-      "paper_errata": null
+      "paper_errata": null,
+      "spec_location": "params_mmeka2025_spec.X_LAM_PE",
+      "spec_nature": "phenomenological"
     },
     {
       "name": "X_LAM_NE",
@@ -484,15 +580,20 @@
       "units": "-",
       "experiment": "None - convention",
       "fit_step": null,
-      "paper_errata": null
+      "paper_errata": null,
+      "spec_location": "params_mmeka2025_spec.X_LAM_NE",
+      "spec_nature": "phenomenological"
     }
   ],
-
   "fit_steps": {
     "FIT-0": {
       "name": "Initial PE capacity correction",
-      "requires_experiments": ["EXP-A"],
-      "fits": ["C0_PE"],
+      "requires_experiments": [
+        "EXP-A"
+      ],
+      "fits": [
+        "C0_PE"
+      ],
       "measurement_needed": "C/40 discharge curve (full)",
       "method": "Manual or scalar fit of the 0.973/1.0275 correction factors",
       "blocks_what": "All simulation starts",
@@ -501,113 +602,204 @@
     },
     "FIT-1": {
       "name": "Electrode balancing",
-      "requires_experiments": ["EXP-A", "EXP-B1", "EXP-B2"],
-      "fits": ["LR", "OFS"],
+      "requires_experiments": [
+        "EXP-A",
+        "EXP-B1",
+        "EXP-B2"
+      ],
+      "fits": [
+        "LR",
+        "OFS"
+      ],
       "measurement_needed": "V_cell(SOC) full-cell OCV and V_PE^0(X), V_NE^0(X) half-cell OCVs",
       "method": "scipy.optimize.minimize on SSE",
       "estimated_runtime": "seconds",
       "blocks_what": "Everything downstream",
-      "error_codes": ["IDENT-W002"]
+      "error_codes": [
+        "IDENT-W002"
+      ]
     },
     "FIT-2": {
       "name": "RC transient fitting",
-      "requires_experiments": ["EXP-C"],
-      "fits": ["C1", "C2"],
+      "requires_experiments": [
+        "EXP-C"
+      ],
+      "fits": [
+        "C1",
+        "C2"
+      ],
       "measurement_needed": "V(t) relaxation after current step",
       "method": "scipy.optimize.curve_fit two-exponential",
       "estimated_runtime": "seconds",
       "blocks_what": "Nothing hard",
-      "error_codes": ["IDENT-W002"]
+      "error_codes": [
+        "IDENT-W002"
+      ]
     },
     "FIT-3": {
       "name": "Resistance distribution",
-      "requires_experiments": ["EXP-D"],
-      "fits": ["fractionR1toRs", "fractionR2toRs"],
+      "requires_experiments": [
+        "EXP-D"
+      ],
+      "fits": [
+        "fractionR1toRs",
+        "fractionR2toRs"
+      ],
       "measurement_needed": "Dynamic voltage response on fresh cell",
       "method": "Manual or grid search",
       "search_bounds": {
-        "fractionR1toRs": [0.05, 0.95],
-        "fractionR2toRs": [0.05, 0.95]
+        "fractionR1toRs": [
+          0.05,
+          0.95
+        ],
+        "fractionR2toRs": [
+          0.05,
+          0.95
+        ]
       },
       "acceptance_rmse_mV": 20,
       "known_limitation": "RMSE in 30-50 mV range is a known limit of the two-RC topology (paper Fig. 3d shows a ~250 s voltage step the RC ladder cannot follow). Do not over-fit below this floor. See CRITICAL_REVIEW.md.",
       "estimated_runtime": "minutes",
       "blocks_what": "Nothing",
-      "error_codes": ["IDENT-W002"]
+      "error_codes": [
+        "IDENT-W002"
+      ]
     },
     "FIT-4a": {
       "name": "Calendar aging parameters (INCLUDING R_SEI)",
-      "requires_experiments": ["EXP-E"],
-      "fits": ["k_SEI_cal", "k_LAM_PE_cal", "gamma_PE", "R_SEI", "E_a_SEI"],
+      "requires_experiments": [
+        "EXP-E"
+      ],
+      "fits": [
+        "k_SEI_cal",
+        "k_LAM_PE_cal",
+        "gamma_PE",
+        "R_SEI",
+        "E_a_SEI"
+      ],
       "measurement_needed": "Capacity(t), IR(t), LLI(t), LAM_PE(t) at multiple (T, SOC)",
       "method": "Multi-objective least-squares",
       "estimated_runtime": "hours if automated",
       "critical_constraint": "IR(t) MUST be measured at each RPT to identify R_SEI. Paper p.12 confirms all resistance-related aging params come from calendar fit.",
       "skip_if_no_data": "Set R_SEI to paper value (0.66), k_SEI_cal to paper default. Model loses quantitative IR prediction accuracy.",
-      "error_codes": ["FIT4A-E001", "FIT4A-E002", "FIT4A-E003", "FIT4A-E004", "SOLVE-E001", "SOLVE-E002", "IDENT-W001", "IDENT-W002", "IDENT-W003"]
+      "error_codes": [
+        "FIT4A-E001",
+        "FIT4A-E002",
+        "FIT4A-E003",
+        "FIT4A-E004",
+        "SOLVE-E001",
+        "SOLVE-E002",
+        "IDENT-W001",
+        "IDENT-W002",
+        "IDENT-W003"
+      ]
     },
     "FIT-4b": {
       "name": "Cycle aging parameters (pre-knee)",
-      "requires_experiments": ["EXP-F"],
-      "fits": ["k_SEI_cyc", "k_LAM_PE_cyc", "k_LAM_NE_cyc"],
+      "requires_experiments": [
+        "EXP-F"
+      ],
+      "fits": [
+        "k_SEI_cyc",
+        "k_LAM_PE_cyc",
+        "k_LAM_NE_cyc"
+      ],
       "measurement_needed": "LLI(EFC), LAM_PE(EFC), LAM_NE(EFC) from IC analysis at RPTs",
       "method": "Multi-objective least-squares with k_LP=0",
       "estimated_runtime": "hours if automated",
       "parameters_frozen": "All FIT-4a results (especially R_SEI)",
       "note": "R_SEI is NOT re-fitted here.",
-      "error_codes": ["FIT4B-E001", "FIT4B-E002", "FIT4B-E003", "SOLVE-E001", "SOLVE-E002", "IDENT-W001", "IDENT-W002", "IDENT-W003"]
+      "error_codes": [
+        "FIT4B-E001",
+        "FIT4B-E002",
+        "FIT4B-E003",
+        "SOLVE-E001",
+        "SOLVE-E002",
+        "IDENT-W001",
+        "IDENT-W002",
+        "IDENT-W003"
+      ]
     },
     "FIT-4c": {
       "name": "Knee location (plating)",
-      "requires_experiments": ["EXP-G"],
-      "fits": ["k_LP"],
+      "requires_experiments": [
+        "EXP-G"
+      ],
+      "fits": [
+        "k_LP"
+      ],
       "measurement_needed": "EFC at knee onset",
       "method": "1D scipy.optimize.minimize_scalar",
       "estimated_runtime": "minutes",
       "parameters_frozen": "ALL other aging parameters",
-      "error_codes": ["FIT4C-E001", "FIT4C-E002", "SOLVE-E001", "SOLVE-E002", "IDENT-W002"]
+      "error_codes": [
+        "FIT4C-E001",
+        "FIT4C-E002",
+        "SOLVE-E001",
+        "SOLVE-E002",
+        "IDENT-W002"
+      ]
     }
   },
-
   "experiments": {
     "EXP-A": {
       "name": "Nominal capacity & full-cell OCV",
       "description": "C/40 complete discharge on fresh cell from V_max to V_min",
       "cells_needed": 2,
       "duration": "~80 hours",
-      "outputs": ["C_nominal_Ah", "V_cell(SOC) OCV curve"],
-      "error_codes": ["DATA-E001"]
+      "outputs": [
+        "C_nominal_Ah",
+        "V_cell(SOC) OCV curve"
+      ],
+      "error_codes": [
+        "DATA-E001"
+      ]
     },
     "EXP-B1": {
       "name": "PE half-cell OCV",
       "description": "Disassemble cell, build CR2032 PE half-cell vs Li metal, C/40 voltage sweep",
       "cells_needed": "1-2 disassembled cells -> 4 coin cells",
       "duration": "~2 weeks (including formation)",
-      "outputs": ["V_PE_0_curve"],
-      "error_codes": ["DATA-E002"]
+      "outputs": [
+        "V_PE_0_curve"
+      ],
+      "error_codes": [
+        "DATA-E002"
+      ]
     },
     "EXP-B2": {
       "name": "NE half-cell OCV",
       "description": "Same as B1 but for NE material",
       "cells_needed": "1-2 disassembled cells -> 4 coin cells",
       "duration": "~2 weeks",
-      "outputs": ["V_NE_0_curve"],
-      "error_codes": ["DATA-E002"]
+      "outputs": [
+        "V_NE_0_curve"
+      ],
+      "error_codes": [
+        "DATA-E002"
+      ]
     },
     "EXP-B3": {
       "name": "Series resistance (EIS)",
       "description": "EIS at 1kHz-10kHz on FRESH cell; high-frequency intercept = R_s",
       "cells_needed": 1,
       "duration": "1 hour",
-      "outputs": ["R_s_LUT"],
-      "error_codes": ["DATA-E003"]
+      "outputs": [
+        "R_s_LUT"
+      ],
+      "error_codes": [
+        "DATA-E003"
+      ]
     },
     "EXP-B4": {
       "name": "Electrode resistance map (GITT)",
       "description": "GITT on fresh cell with multiple SOC x C-rate pulses",
       "cells_needed": 1,
       "duration": "1-2 weeks",
-      "outputs": ["R_NE_LUT", "R_PE_LUT"],
+      "outputs": [
+        "R_NE_LUT",
+        "R_PE_LUT"
+      ],
       "protocol_details": {
         "SOC_points": "10, 30, 50, 70, 90 percent (minimum 5)",
         "C_rates": "-2C, -1C, -C/2, +C/2, +1C, +2C",
@@ -615,23 +807,35 @@
         "relaxation_s": 3600,
         "splits": "Use half-cell GITT if available; else EIS Nyquist fitting"
       },
-      "error_codes": ["DATA-E003"]
+      "error_codes": [
+        "DATA-E003"
+      ]
     },
     "EXP-C": {
       "name": "RC transient",
       "description": "Current step -> rest -> relax; fit two-exponential decay",
       "cells_needed": 1,
       "duration": "4 hours",
-      "outputs": ["C1", "C2"],
-      "error_codes": ["DATA-E001"]
+      "outputs": [
+        "C1",
+        "C2"
+      ],
+      "error_codes": [
+        "DATA-E001"
+      ]
     },
     "EXP-D": {
       "name": "Dynamic protocol validation",
       "description": "First DST cycle on fresh cell, full voltage trace",
       "cells_needed": 1,
       "duration": "1 hour",
-      "outputs": ["fractionR1toRs", "fractionR2toRs"],
-      "error_codes": ["DATA-E001"]
+      "outputs": [
+        "fractionR1toRs",
+        "fractionR2toRs"
+      ],
+      "error_codes": [
+        "DATA-E001"
+      ]
     },
     "EXP-E": {
       "name": "Calendar aging",
@@ -639,9 +843,20 @@
       "cells_needed": "Recommended: 18 (3T x 3SOC x 2 duplicates); Minimum: 4",
       "duration": "6-15 months",
       "RPT_interval": "Every 9-12 weeks",
-      "outputs": ["k_SEI_cal", "k_LAM_PE_cal", "gamma_PE", "R_SEI", "E_a_SEI"],
+      "outputs": [
+        "k_SEI_cal",
+        "k_LAM_PE_cal",
+        "gamma_PE",
+        "R_SEI",
+        "E_a_SEI"
+      ],
       "CRITICAL": "Each RPT MUST include: (1) C/5 capacity, (2) IR pulse or EIS for internal resistance, (3) C/40 OCV for IC analysis -> LLI, LAM_PE, LAM_NE. Additionally: all RPTs must be performed at 25 ± 1 degC with ≥4 h thermal equilibration after removal from storage; channel/fixture assignment must be fixed per cell across the entire aging campaign; BOL/EOL reference-cell calibration and a sentinel cell are required for drift correction. See PARAMETER_SOP.md §二.4 and §二.5 for full protocol.",
-      "error_codes": ["DATA-E001", "FIT4A-E002", "FIT4A-E003", "FIT4A-E004"]
+      "error_codes": [
+        "DATA-E001",
+        "FIT4A-E002",
+        "FIT4A-E003",
+        "FIT4A-E004"
+      ]
     },
     "EXP-F": {
       "name": "Cycle aging (pre-knee)",
@@ -649,27 +864,59 @@
       "cells_needed": "Recommended: 6; Minimum: 2",
       "duration": "1-3 months",
       "RPT_interval": "Every 30-50 EFC",
-      "outputs": ["k_SEI_cyc", "k_LAM_PE_cyc", "k_LAM_NE_cyc"],
+      "outputs": [
+        "k_SEI_cyc",
+        "k_LAM_PE_cyc",
+        "k_LAM_NE_cyc"
+      ],
       "RPT_requirements": "Same RPT protocol as EXP-E. IR measurement is recommended but not strictly required for FIT-4b (R_SEI not re-fitted from cycle data, per rule R2). Temperature control (25 ± 1 degC) and device hygiene requirements are mandatory. See PARAMETER_SOP.md §二.",
-      "error_codes": ["DATA-E001", "FIT4B-E003"]
+      "error_codes": [
+        "DATA-E001",
+        "FIT4B-E003"
+      ]
     },
     "EXP-G": {
       "name": "Cycle aging (through knee)",
       "description": "Continue EXP-F until capacity drops to ~70%",
       "cells_needed": "Same cells as EXP-F",
       "duration": "Additional 3-6 months",
-      "outputs": ["k_LP"],
+      "outputs": [
+        "k_LP"
+      ],
       "RPT_requirements": "Same RPT protocol as EXP-E. IR measurement is recommended but not strictly required for FIT-4b (R_SEI not re-fitted from cycle data, per rule R2). Temperature control (25 ± 1 degC) and device hygiene requirements are mandatory. See PARAMETER_SOP.md §二.",
-      "error_codes": ["DATA-E001", "FIT4C-E002"]
+      "error_codes": [
+        "DATA-E001",
+        "FIT4C-E002"
+      ]
     }
   },
-
   "minimal_viable_experiments": {
-    "for_fresh_cell_simulation_only": ["EXP-A", "EXP-B1", "EXP-B2", "EXP-B4"],
-    "for_aging_prediction_minimum": ["EXP-A", "EXP-B1", "EXP-B2", "EXP-B4", "EXP-F", "EXP-G"],
-    "for_aging_prediction_robust": ["EXP-A", "EXP-B1", "EXP-B2", "EXP-B3", "EXP-B4", "EXP-C", "EXP-E", "EXP-F", "EXP-G"]
+    "for_fresh_cell_simulation_only": [
+      "EXP-A",
+      "EXP-B1",
+      "EXP-B2",
+      "EXP-B4"
+    ],
+    "for_aging_prediction_minimum": [
+      "EXP-A",
+      "EXP-B1",
+      "EXP-B2",
+      "EXP-B4",
+      "EXP-F",
+      "EXP-G"
+    ],
+    "for_aging_prediction_robust": [
+      "EXP-A",
+      "EXP-B1",
+      "EXP-B2",
+      "EXP-B3",
+      "EXP-B4",
+      "EXP-C",
+      "EXP-E",
+      "EXP-F",
+      "EXP-G"
+    ]
   },
-
   "deferred_extensions": {
     "_comment": "Architectural extensions evaluated in web-chat discussions and explicitly deferred. Do NOT begin implementation without a new task card from web chat.",
     "R_temperature_dependence": {
@@ -697,7 +944,6 @@
       "next_step": "Revisit after v1 IC analysis (TODO_ic_analysis.md) is in production use."
     }
   },
-
   "scope_of_validity": {
     "_comment": "Explicit scope limits for the published parameter set. Violating these requires re-fitting and/or model upgrades.",
     "cell_type": "Panasonic NCR 18650B, NCA cathode / Graphite anode, 3.35 Ah nominal",
@@ -705,7 +951,12 @@
     "C_rate_range": "Tested <= 1C in cycling, up to 1.6A (~0.5C) charge",
     "plating_regime": "Irreversible-plating regime only; Baure-Dubarry 2019 observed NO lithium stripping for this cell under DST",
     "upper_cutoff_voltage": "<= 4.2 V (higher voltages likely invalidate LLI_PE=0 assumption)",
-    "charging_protocols_tested": ["DST", "FUDS", "NEDC", "real driving profiles RD1/RD2"],
+    "charging_protocols_tested": [
+      "DST",
+      "FUDS",
+      "NEDC",
+      "real driving profiles RD1/RD2"
+    ],
     "extrapolation_requires_upgrades": [
       "Fast-charge (>1C) -> revise V_LP_eq per Beck 2024",
       "Low-temperature (<15degC) -> dynamic plating onset AND per-process Arrhenius",
@@ -714,7 +965,6 @@
       "Si-containing anodes -> enhance mechanical/molar-volume treatment"
     ]
   },
-
   "critical_review_findings": {
     "_comment": "Results of independent critical review 2026-04-20; full write-up in docs/CRITICAL_REVIEW.md",
     "E1_k_SEI_cal_typo": {
@@ -788,7 +1038,6 @@
       "action": "No change needed."
     }
   },
-
   "external_references": {
     "paper": "Mmeka, Dubarry, Bessler (2025), J. Electrochem. Soc. 172:080538, DOI 10.1149/1945-7111/adf9cb",
     "matlab_source": "Zenodo 10.5281/zenodo.15833031",

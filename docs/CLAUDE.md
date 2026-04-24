@@ -34,6 +34,8 @@
 | "运行 / 调试问题" | `examples/smoke_test.py` 先跑 | 再看 `tests/test_basic.py` |
 | "现场脚本报错" | `docs/07_offline_runbook.md` 对应错误码 | 需外带走 `08_consultation_protocol.md` |
 | "外带诊断给 Claude" | `docs/08_consultation_protocol.md §4` 模板 | — |
+| "新建一个 cell type" | `docs/PARAMETER_SOP.md §二.0` | `material_specs/`, `param_specs/` 下复制模板 |
+| "机制模型升级" | `libquiv_aging/model_versions/` 新增模块 | 同步新增 `schemas/params_<new_version>.schema.v*.json` |
 | "离线环境安装" | `docs/09_offline_bundle_guide.md` | `scripts/install_offline.sh` |
 
 ---
@@ -271,6 +273,23 @@ R_i(t) = R_i^0 · f_{R,i}(t)      # 论文式 (43)
 笔记模板；该模板与 registry 的 `escalation` 字段互锁，两者有任一修改必须
 同步。
 
+### R7: Cell Type 创建顺序
+
+新建一个 cell type 必须按以下顺序：
+
+```
+改 material_specs/ 和 param_specs/ (事实层)
+  → 必要时改 libquiv_aging/model_versions/ (新增机制版本, 仅当当前版本不适用时)
+  → 运行 FIT-X 脚本自动回写 spec (不手工编辑 fit 产出字段)
+  → 写对应 cell type 的测试和 examples (解释层)
+```
+
+**禁止**：
+- 在 `libquiv_aging/` 下创建新的 `*_cell.py` 硬编码工厂（除非是极罕见的测试辅助用途并在 docstring 明确标记）
+- 手工编辑 spec 文件中 `status=fitted` 的字段的 `value`（这些字段只能由 FIT-X 脚本回写）
+
+R7 与 R1 在形式上类似（事实层优先），专门覆盖 cell type 创建这一高频场景。
+
 ---
 
 ## 代码导航
@@ -281,8 +300,11 @@ libquiv_aging/                  核心包
 ├── lookup_tables.py            半电池 OCV + 电阻 LUT 插值
 ├── aging_kinetics.py           全部老化速率律 + 电阻退化因子
 ├── cell_model.py               EquivCircuitCell (DAE→ODE, solve_ivp)
-├── panasonic_ncr18650b.py      NCA/G 参数工厂 (论文默认值)
-├── lfp_graphite.py (TODO)      LFP/G 参数工厂模板
+├── cell_factory.py             通用双 spec 加载器 (create_cell_from_specs)
+├── panasonic_ncr18650b.py      兼容层, 实际参数在 material_specs/ 和 param_specs/ 下
+├── model_versions/             机制模型版本路由
+│   ├── __init__.py             版本注册表
+│   └── mmeka2025.py            当前机制的组装逻辑
 └── data/                       .dat / .mat / .csv 数据文件
 
 examples/
@@ -359,3 +381,4 @@ python examples/smoke_test.py    # 必须全通过
 | 2026-04-23 | v0.2.2 meta 教训制度化: 新增"术语约定"、"破坏性命令清单"、"Claude Code 协作规范"三小节。R5 验收阶段的"禁止自动 commit"条款扩展为"禁止自动 git add / commit / tag", 措辞同步更新。 |
 | 2026-04-24 | v0.2.3 离线工作流落地: 内部 pip 镜像单轨制, 新增 `docs/09_offline_bundle_guide.md` 与配套 scripts (`build_requirements.sh`, `install_offline.sh`, `verify_install.sh`)。 |
 | 2026-04-24 | v0.2.4 清理整顿: 奥卡姆剃刀原则首次应用。08 consultation protocol 追加适用范围声明, IDENT-Wxxx 标记为 draft, 09 offline bundle guide 删减未来扩展段落。详见 MIGRATION_NOTES §十三。 |
+| 2026-04-25 | v0.3.0 cell type 抽象层落地: 双 spec 架构 + 机制模型版本化。新增 `schemas/`, `material_specs/`, `param_specs/` 目录。`panasonic_ncr18650b.py` 重构为兼容层。新增 `create_cell_from_specs` 作为多 cell type 的统一入口。详见 MIGRATION_NOTES §十四。 |

@@ -238,6 +238,18 @@ trigger 条件未经实际 fit 脚本验证, 保持 active 会让 registry
 
 ---
 
+## 十四、2026-04-25 v0.3.0 cell type 抽象层
+
+v0.2.4 清理之后，工作流面临的第一个真实科学任务是让新的 LFP/G 电池能在同一套代码下参数化。原有 `panasonic_ncr18650b.py` 作为硬编码参数工厂，每增加一个 cell type 都要新建一个类似的 Python 模块，且每份模块中参数都以 Python 源码形式存在，违反 R1 "改 JSON 再改代码" 的精神。v0.3.0 引入 cell type 抽象层彻底解决这个问题。
+
+核心设计是**双 spec 架构**：材料 spec 承载物理本征量（半电池 OCV 数据文件路径、电极平衡参数、化学计量范围等），schema 稳定，跨 cell type 只是数值填不同；参数 spec 承载唯象量（老化速率常数、电阻分配、初始退化状态等），schema 按机制模型版本化，当前版本是 mmeka2025，未来 C3 升级路径（R_s 退化）或 S2 升级路径（动态镀锂）将产出新 schema 版本，旧版本保留为学术历史。这种分层服从奥卡姆剃刀，用"是否需要 schema 版本化"这一工程判据切分文件，物理本征/非本征作为字段级元数据保留但不影响加载逻辑。
+
+一个 cell 实例由一对 spec 引用唯一确定，通过 `create_cell_from_specs(material_path, params_path)` 加载。加载器内部完成 schema 验证、派生量计算（C0_PE、C0_NE、Q0_SEI_NE 等由原字段和 FIT-0 修正因子派生）、机制版本路由、AgingModel 组装、电阻闭包构造。机制版本路由由 `libquiv_aging/model_versions/` 下的子模块承担，未来新机制版本只需新增一个子模块和一份对应的 params schema，不修改加载器也不动已有 spec 文件。
+
+`panasonic_ncr18650b.py` 保留为兼容层，内部调用 `create_cell_from_specs` 并指向包含的两份 spec，保证外部 API（`create_panasonic_ncr18650b()`）和所有 22 项既有测试行为完全等价。这是唯一允许保留的"硬编码工厂"形式，且仅作为示例的便捷入口。新 R7 规则明确禁止为其他 cell type 创建类似模块，统一走 spec 路径。
+
+---
+
 ## 版本记录
 
 | 日期 | 变更 |
@@ -247,3 +259,4 @@ trigger 条件未经实际 fit 脚本验证, 保持 active 会让 registry
 | 2026-04-23 | 追加 §十一。v0.2.2 meta 教训制度化 (术语约定 / 破坏性命令清单 / Claude Code 协作规范), R5 验收阶段 git 条款扩展。详见 §十一。 |
 | 2026-04-24 | 追加 §十二。v0.2.3 离线工作流落地: 从 air-gapped 假设迁移到内部 pip 镜像单轨制, 新增 `09_offline_bundle_guide.md` 与配套 scripts。 |
 | 2026-04-24 | 追加 §十三。v0.2.4 清理整顿: 奥卡姆剃刀原则首次显式应用, 修正 08/error_codes_registry/09 三处过度工程。 |
+| 2026-04-25 | 追加 §十四。v0.3.0 cell type 抽象层落地: 双 spec 架构 + model_versions 路由 + panasonic 兼容层。 |

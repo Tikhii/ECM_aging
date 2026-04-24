@@ -65,6 +65,49 @@
 RPT 协议对日历老化（EXP-E）和循环老化（EXP-F/G）**共用同一套步骤**，以保证两组
 数据可比、可用于交叉验证。不同实验对各步骤的"必要性"不同，详见下文 §二.3。
 
+#### §二.0 — Cell Type 创建流程
+
+新 cell type 的参数化按以下步骤，先于各 EXP-X 实验开始前完成：
+
+**第一步：复制示例 spec 为模板**
+
+```bash
+cp material_specs/panasonic_ncr18650b.material.json \
+   material_specs/<my_cell>.material.json
+cp param_specs/panasonic_ncr18650b__mmeka2025.params.json \
+   param_specs/<my_cell>__mmeka2025.params.json
+```
+
+**第二步：编辑材料 spec，填入已知的本征参数**
+
+- `C_nominal_Ah`, `V_max`, `V_min`: 从电池数据手册填入，`status=datasheet`
+- `X0_PE`, `X0_NE`, `dX_PE_alawa`, `dX_NE_alawa`: 查 alawa 数据库或按 `literature_default` 填论文值
+- `LR`, `OFS`: 留 `value=null`, `status=pending_fit`，待 FIT-1 产出
+- `anode_thermo_dat`, `cathode_thermo_dat`: 指向对应材料的 `.dat` 文件（若无，走 EXP-B1/B2 生成）
+- `mvol_*_mode`: 根据电极材料选 `standard` 或 `custom`
+
+**第三步：编辑参数 spec，更新 material_spec_ref 并留空所有 value**
+
+- `material_spec_ref`: 更新为 `<my_cell>.material.json` 的路径
+- 大部分参数 `value=null`, `status=pending_fit`，待 FIT-4a/4b/4c 产出
+- `convention` 类参数（`alpha_f`, `alpha_LP`, `V_LP_eq` 等）直接填论文值，`status=convention`
+
+**第四步：运行 FIT-0 到 FIT-4c 各阶段脚本**
+
+每个脚本成功后自动回写对应 spec 文件的字段，`status` 从 `pending_fit` 变为 `fitted`，附带 `fit_source`, `fit_r_squared` 等 provenance 信息。
+
+**第五步：加载 cell 并运行测试**
+
+```python
+from libquiv_aging import create_cell_from_specs
+cell = create_cell_from_specs(
+    "material_specs/<my_cell>.material.json",
+    "param_specs/<my_cell>__mmeka2025.params.json"
+)
+cell.init(0.5)
+# ... 你的仿真和验证代码 ...
+```
+
 #### §二.1 — RPT 四步骤
 
 ```
@@ -348,6 +391,8 @@ assert rmse_V < 0.020  # 20 mV
 
 **写回**：更新参数工厂中 `LR=...`, `OFS=...`。
 
+**Spec 回写**：FIT-1 成功后，回写 `material_specs/<cell>.material.json` 中的 `LR` 和 `OFS` 字段：`value` 填拟合值，`status` 从 `pending_fit` 改为 `fitted`，填入 `fit_step="FIT-1"`, `fit_source`, `fit_script_version`, `fit_r_squared`。
+
 #### FIT-2: C1, C2（RC 时间常数）
 
 **前置**：SOP-2 完成
@@ -361,6 +406,8 @@ assert rmse_V < 0.020  # 20 mV
 **验收**：目视观察拟合曲线与测量曲线重合；或 RMSE < 5 mV。
 
 **如果没数据**：使用论文默认 `C1=949, C2=3576`，稳态误差 < 5%，可进入下一阶段。
+
+**Spec 回写**：FIT-2 成功后，回写 `param_specs/<cell>__mmeka2025.params.json` 中的 `C1`, `C2` 字段：`status` 改为 `fitted`，附 `fit_step="FIT-2"` 及 provenance 信息。
 
 #### FIT-3: 电阻分配（fractionR1toRs, fractionR2toRs）
 
@@ -389,6 +436,8 @@ assert rmse_V < 0.020  # 20 mV
 > "Despite the 0.5 value looking like a default, it is in fact a FIT RESULT for this specific cell."
 
 不要让读者误以为 `0.5` 是硬编码默认值；它是论文针对 Panasonic NCR18650B 的拟合结果，新体系仍须走 FIT-3。
+
+**Spec 回写**：FIT-3 成功后，回写 `param_specs/<cell>__mmeka2025.params.json` 中的 `fractionR1toRs`, `fractionR2toRs` 字段：`status` 改为 `fitted`，附 `fit_step="FIT-3"` 及 provenance 信息。
 
 **命名提醒**：参数名 `fractionR1toRs` / `fractionR2toRs` 中的 "toRs" 是 MATLAB 原版的历史遗迹，**不表示与 $R_s$ 的语义关系**。这两个参数控制的是电极电阻（R_NE / R_PE）内部的 static/dynamic 劈分，与串联电阻 $R_s$ 独立。详见 `06_parameter_sourcing.md §3.3`。
 
@@ -438,6 +487,8 @@ LAM_PE RMSE  < 0.01 Ah
 
 **写回**：更新 `aging.sei.k_cal`, `aging.sei.Ea`, `aging.lam_pe.k_cal`, `aging.lam_pe.gamma`, `aging.resistance_aging.R_SEI`。
 
+**Spec 回写**：FIT-4a 成功后，回写 `param_specs/<cell>__mmeka2025.params.json` 中的 `k_SEI_cal`, `E_a_SEI`, `k_LAM_PE_cal`, `gamma_PE`, `R_SEI` 字段：`status` 改为 `fitted`，附 `fit_step="FIT-4a"`, `fit_source`, `fit_script_version`, `fit_r_squared` 等 provenance 信息。
+
 #### FIT-4b: 循环老化（knee 前）→ `k_SEI_cyc, k_LAM_PE_cyc, k_LAM_NE_cyc`
 
 **前置**：
@@ -476,6 +527,8 @@ LAM_NE RMSE   < 0.02 Ah
 Capacity RMSE < 2% at EFC=150
 ```
 
+**Spec 回写**：FIT-4b 成功后，回写 `param_specs/<cell>__mmeka2025.params.json` 中的 `k_SEI_cyc`, `k_LAM_PE_cyc`, `k_LAM_NE_cyc` 字段：`status` 改为 `fitted`，附 `fit_step="FIT-4b"` 及 provenance 信息。
+
 #### FIT-4c: Knee 位置 → `k_LP`
 
 **前置**：FIT-4a, 4b 完成；EXP-G 数据（knee 已出现）
@@ -504,6 +557,8 @@ k_LP_fit = 10 ** res.x
 ```
 |knee_EFC_sim - knee_EFC_exp| < 30 EFC
 ```
+
+**Spec 回写**：FIT-4c 成功后，回写 `param_specs/<cell>__mmeka2025.params.json` 中的 `k_LP` 字段：`status` 改为 `fitted`，附 `fit_step="FIT-4c"` 及 provenance 信息。
 
 ---
 
@@ -573,6 +628,7 @@ done
 **时长**：~1 个月
 **能做**：电压预测、电流预测、SOC 估计验证
 **不能做**：任何老化预测
+**准备**：按 §二.0 步骤先创建 spec 文件，再按各 EXP-X 采集数据并跑 FIT-X 脚本。
 
 ### 方案 B：基础老化预测（最小可行）
 **需要**：方案 A + `EXP-F, EXP-G`
@@ -581,11 +637,13 @@ done
 - 无日历数据 → `k_SEI_cal, E_a, k_LAM_PE_cal, γ_PE, R_SEI` 固定到文献值或 NCA/G 默认
 - 循环拟合只能得 `k_SEI_cyc, k_LAM_NE_cyc, k_LP`（LFP 下 `k_LAM_PE_cyc` 可设 0）
 - **内阻预测精度退化**（因为 R_SEI 没拟合）
+**准备**：按 §二.0 步骤先创建 spec 文件，再按各 EXP-X 采集数据并跑 FIT-X 脚本。
 
 ### 方案 C：全方案（高置信度）
 **需要**：方案 B + `EXP-B3, EXP-C, EXP-E`
 **时长**：~12–15 个月
 **优势**：全部参数可拟合；多温度外推可靠
+**准备**：按 §二.0 步骤先创建 spec 文件，再按各 EXP-X 采集数据并跑 FIT-X 脚本。
 
 ---
 
