@@ -238,6 +238,25 @@ Mmeka 论文只实现了**一种 knee 机理**：镀锂-电阻正反馈。
 
 ---
 
+### N1 [MODERATE] LR 与 OFS 在 V_cell(SOC) 上的共线性
+
+**问题**：
+LR 和 OFS 在 V_cell(SOC) 数据上存在强共线性。OFS 仅通过 (1 - OFS/100) 因子
+影响 X_PE 的 SOC 范围, 这可被 LR 对 X_NE 范围的调整反向补偿。OFS 的独立可
+识别性依赖半电池 OCV 在特定 X 值附近的局部特征 (stage transitions, dV/dX 极值),
+要求 EXP-A 数据 SOC 覆盖到这些特征点。
+
+**证据**：
+v0.4.0 FIT-1 实施过程中, 100 点均匀采样的合成数据上, LR 反演相对误差 0.04%,
+OFS 反演相对误差 3.8%。真实 EXP-A 数据可能因为 stage transition 附近自然采样
+更密而表现更好, 但未验证。
+
+**判断**：
+记录现象。FIT-1 工作流上, 若 OFS uncertainty 偏大, 考虑 `--fix-OFS` 选项
+(待 v0.4.x 实施) 把 OFS 固定到 datasheet 或 alawa 默认值, 只拟合 LR。
+
+---
+
 ## 三、作用域卡片（给下游使用者）
 
 当你实例化 `create_panasonic_ncr18650b()` 时，请默认以下前提：
@@ -314,6 +333,7 @@ Mmeka 论文只实现了**一种 knee 机理**：镀锂-电阻正反馈。
 | "能不能用于大电池组" | § C1 + § 三作用域卡片 |
 | "这模型能解释所有 knee 吗" | § C6 |
 | "新体系怎么扩展" | § 三升级路径 |
+| "OFS 拟合不准 / LR OFS 共线" | § N1 |
 
 当用户提出"代码里为什么是这个值"时，Claude Code 应：
 
@@ -328,3 +348,4 @@ Mmeka 论文只实现了**一种 knee 机理**：镀锂-电阻正反馈。
 | 日期 | 变更 |
 | --- | --- |
 | 2026-04-20 | 初版。12 条 findings (E1-E2, S1-S3, C1-C6, C_X_LAM) 全部记录。与 `PARAMETERS.json v2.0` 配套。 |
+| 2026-04-25 | 新增 N1 (LR/OFS 共线性)。v0.4.0 FIT-1 实施中发现, 详见 MIGRATION_NOTES §十五。 |

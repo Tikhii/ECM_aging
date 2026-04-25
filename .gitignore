@@ -28,6 +28,9 @@ examples/outputs/
 *.png
 *.jpg
 
+# Run artifacts from FIT scripts
+runs/
+
 # MATLAB
 *.asv
 .claude/

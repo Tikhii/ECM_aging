@@ -393,6 +393,35 @@ assert rmse_V < 0.020  # 20 mV
 
 **Spec 回写**：FIT-1 成功后，回写 `material_specs/<cell>.material.json` 中的 `LR` 和 `OFS` 字段：`value` 填拟合值，`status` 从 `pending_fit` 改为 `fitted`，填入 `fit_step="FIT-1"`, `fit_source`, `fit_script_version`, `fit_r_squared`。
 
+**实际脚本**: `scripts/fit_electrode_balance.py`
+
+**CLI 用法**:
+```
+python scripts/fit_electrode_balance.py \
+    --material-spec material_specs/<cell>.material.json \
+    --exp-a-csv experiments/EXP-A/cell_<id>_fullcycle_C40.csv
+```
+
+**可选参数**:
+- `--preflight-only`: 仅做前置检查不拟合 (此模式下 `--exp-a-csv` 可省略)
+- `--dry-run`: 用合成数据反演, 验证脚本逻辑
+- `--require-pending`: 严格模式, 仅当 LR/OFS 为 pending_fit 时执行
+- `--temperature`: OCV 合成参考温度, 默认 298.15K
+- `--maxiter`: scipy 最大迭代次数, 默认 500
+
+成功后, LR 和 OFS 自动写回材料 spec, status 变为 fitted, 含完整
+provenance (fit_source, fit_r_squared, uncertainty 等)。运行产物保存在
+`runs/{YYYYmmdd_HHMMSS}_fit1_{cell_type}/` 目录, 含 `fit_config.json`,
+`fit_report.md`, `fit_diagnostic.json` 三份文件。
+
+**错误码** (见 `docs/07_offline_runbook.md §3 FIT1`):
+- FIT1-E001: 材料 spec dX/X0 字段未填
+- FIT1-E002: RMSE > 50 mV 失败档
+- FIT1-E003: 优化器未收敛
+- FIT1-W001: RMSE 在 20-50 mV marginal 区间 (warn 级别, spec 仍写回)
+
+**关于 OFS 的可识别性**：LR 和 OFS 在 V_cell(SOC) 数据上有强共线性，OFS 的独立识别依赖 EXP-A 数据在 stage transition 等局部特征处的覆盖。若拟合后 OFS uncertainty 量级与 OFS 值本身相当（如 σ_OFS / OFS > 10%），建议把 OFS 固定到 datasheet 或 alawa 默认值，只拟合 LR。详见 docs/CRITICAL_REVIEW.md N1。
+
 #### FIT-2: C1, C2（RC 时间常数）
 
 **前置**：SOP-2 完成

@@ -250,6 +250,61 @@ v0.2.4 清理之后，工作流面临的第一个真实科学任务是让新的 
 
 ---
 
+## 十五、v0.4.0 第一阶段: FIT-1 电极平衡拟合脚本 (2026-04-25)
+
+v0.3.0 完成了 cell type 抽象层基础设施, 但还缺一件关键拼图: 让 FIT
+步骤的输出实际写入 spec 文件。在 v0.3.0 之前, LR 和 OFS 等 fitting
+产出都是论文作者手工硬编码到 panasonic_ncr18650b.py 中。v0.3.0 引入
+material spec 后, 这些字段以 manually_set status 进入 spec 但没有
+脚本作为产出端。v0.4.0 第一阶段填补这个缺口, 实施 FIT 脚本系列的
+第一个成员: FIT-1 电极平衡拟合。
+
+FIT-1 选择作为模板的理由经过几轮讨论后定型: 它的双变量结构 (LR,
+OFS) 与后续 FIT-2 (C1, C2) 和 FIT-3 (fractionR1toRs, fractionR2toRs)
+同构, 内部循环完全代数化 (open_circuit_voltage 合成, 不需 cell 仿真),
+计算量小 (1-2 秒), 物理意义清晰, 在工作流中是必选步骤。FIT-0 因为
+是单变量且可选 (论文修正因子通常直接复用), 推到 v0.4.x 后期或不做。
+
+实施过程中产出两份代码资产: `scripts/fit_electrode_balance.py` 是
+FIT-1 主脚本和 CLI 入口; `libquiv_aging/fitting.py` 是 FIT 脚本系列的
+共享基础设施, 含 preflight 检查、value_with_provenance 构造、spec
+原子写回、numerical Hessian 估计、git/file hash provenance、run
+artifact 写出等通用工具。FIT-2/3 实施时直接复用该模块。
+
+工作流上, 每次 FIT-1 成功执行会产生三层效应: 第一是材料 spec 中
+LR 和 OFS 字段的更新, 含完整 fitting provenance (fit_step="FIT-1",
+fit_source 指向 EXP-A CSV 的 hash, fit_script_version 是 git commit,
+fit_r_squared 和 uncertainty 反映质量); 第二是 `runs/{run_id}/` 目录
+下的三份运行产物, 不入 git 但可手动归档; 第三是 stdout 的人类可读
+摘要。这套机制为 FIT-2/3/4 提供了完整模板。
+
+特别说明 marginal 档 (FIT1-W001): 当 RMSE 在 20-50mV 之间, 拟合通过
+但质量低于推荐阈值。脚本仍写回 spec 但 fit_r_squared 字段记录此次
+拟合质量, 供未来审计。这是按 v0.3.0 的"R² 单一 fitted status"决策
+落地的: 不引入 fitted_marginal enum, marginal 信号通过 fit_r_squared
+隐式表达。
+
+OFS 弱可识别性: 实施过程中, dry-run 测试暴露了 FIT-1 的一个真实物理
+限制: LR 和 OFS 在 V_cell(SOC) 数据上存在强共线性。OFS 仅通过
+(1 - OFS/100) 因子影响 X_PE 的 SOC 范围 (2% OFS 对应 0.98, 2.5% 对应
+0.975), 这种小幅缩放可被 LR 通过反向调整 X_NE 范围吸收。OFS 的独立
+可识别性依赖半电池 OCV 在 stage transition 等特定 X 值处的局部特征。
+100 点均匀采样的合成数据下, LR 反演相对误差 0.04% 但 OFS 反演相对误差
+达 3.8%, dry-run 容差据此调整为 LR 0.5%、OFS 20%、RMSE < 2mV。真实
+EXP-A C/40 数据 (几千点, 在 stage transition 附近自然采样更密) 可能
+表现更好, 但本阶段未验证。这一发现已作为 N1 条目加入
+`docs/CRITICAL_REVIEW.md`, 并在 `docs/PARAMETER_SOP.md §三.1` 末尾
+给出工作流警示 (若 σ_OFS / OFS > 10%, 考虑固定 OFS, 只拟合 LR)。
+FIT-1 未来可加 `--fix-OFS` 选项, 作为 v0.4.x patch。
+
+错误码方面, 新增 FIT1-Exxx 系列占用 exit code 80-89 块, FIT2/3 预留
+90-109。registry 现有 ENV/DATA/FIT4A/FIT4B/FIT4C/SOLVE/IDENT 七个
+作用域扩展为八个 (新增 FIT1)。schema 的 patternProperties 和 scope
+enum 同步扩展。runbook 章节相应重新编号 (新增 §3 FIT1, 原 §3-§7
+顺延为 §4-§8)。
+
+---
+
 ## 版本记录
 
 | 日期 | 变更 |
@@ -260,3 +315,4 @@ v0.2.4 清理之后，工作流面临的第一个真实科学任务是让新的 
 | 2026-04-24 | 追加 §十二。v0.2.3 离线工作流落地: 从 air-gapped 假设迁移到内部 pip 镜像单轨制, 新增 `09_offline_bundle_guide.md` 与配套 scripts。 |
 | 2026-04-24 | 追加 §十三。v0.2.4 清理整顿: 奥卡姆剃刀原则首次显式应用, 修正 08/error_codes_registry/09 三处过度工程。 |
 | 2026-04-25 | 追加 §十四。v0.3.0 cell type 抽象层落地: 双 spec 架构 + model_versions 路由 + panasonic 兼容层。 |
+| 2026-04-25 | 追加 §十五。v0.4.0 第一阶段: FIT-1 电极平衡拟合脚本落地, libquiv_aging/fitting.py 基础设施就位。 |

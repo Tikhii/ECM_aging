@@ -1036,6 +1036,12 @@
       "severity": "LOW",
       "summary": "X_LAM=0 (fully delithiated lost AM) is community-standard alawa convention.",
       "action": "No change needed."
+    },
+    "N1_LR_OFS_collinearity": {
+      "severity": "MODERATE",
+      "summary": "LR 和 OFS 在 V_cell(SOC) 数据上存在强共线性。OFS 仅通过 (1-OFS/100) 因子影响 X_PE 的 SOC 范围, 这可被 LR 对 X_NE 范围的调整反向补偿。OFS 的独立可识别性依赖半电池 OCV 在特定 X 值附近的局部特征 (stage transitions, dV/dX 极值), 要求 EXP-A 数据 SOC 覆盖到这些特征点。",
+      "evidence": "v0.4.0 FIT-1 实施过程中, 100 点均匀采样的合成数据上, LR 反演相对误差 0.04%, OFS 反演相对误差 3.8%。真实 EXP-A 数据可能因为 stage transition 附近自然采样更密而表现更好, 但未验证。",
+      "action": "记录现象。FIT-1 工作流上, 若 OFS uncertainty 偏大, 考虑 --fix-OFS 选项 (待 v0.4.x 实施) 把 OFS 固定到 datasheet 或 alawa 默认值, 只拟合 LR。"
     }
   },
   "external_references": {

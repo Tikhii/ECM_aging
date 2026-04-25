@@ -37,6 +37,7 @@
 | "新建一个 cell type" | `docs/PARAMETER_SOP.md §二.0` | `material_specs/`, `param_specs/` 下复制模板 |
 | "机制模型升级" | `libquiv_aging/model_versions/` 新增模块 | 同步新增 `schemas/params_<new_version>.schema.v*.json` |
 | "离线环境安装" | `docs/09_offline_bundle_guide.md` | `scripts/install_offline.sh` |
+| "拟合电极平衡 LR/OFS" | `scripts/fit_electrode_balance.py` | `docs/PARAMETER_SOP.md §三.1` |
 
 ---
 
@@ -301,6 +302,7 @@ libquiv_aging/                  核心包
 ├── aging_kinetics.py           全部老化速率律 + 电阻退化因子
 ├── cell_model.py               EquivCircuitCell (DAE→ODE, solve_ivp)
 ├── cell_factory.py             通用双 spec 加载器 (create_cell_from_specs)
+├── fitting.py                   FIT 脚本系列共享基础设施
 ├── panasonic_ncr18650b.py      兼容层, 实际参数在 material_specs/ 和 param_specs/ 下
 ├── model_versions/             机制模型版本路由
 │   ├── __init__.py             版本注册表
@@ -312,10 +314,10 @@ examples/
 ├── figure7_simulation.py       完整复现论文 Figure 7
 └── analysis_template.py        用户自定义分析的起点
 
-scripts/ (SOP-5 规范, 待生成)
-├── build_halfcell_dat.py       EXP-B1/B2 数据 → .dat
-├── build_resistance_mat.py     EXP-B4 GITT 数据 → .mat
-├── fit_electrode_balance.py    FIT-1 (LR, OFS)
+scripts/
+├── fit_electrode_balance.py    FIT-1: LR/OFS 拟合 (已实现)
+├── build_halfcell_dat.py       EXP-B1/B2 数据 → .dat (待生成)
+├── build_resistance_mat.py     EXP-B4 GITT 数据 → .mat (待生成)
 ├── fit_rc_transient.py         FIT-2 (C1, C2)
 ├── fit_resistance_distribution.py  FIT-3
 ├── fit_ic_to_dms.py            RPT C/40 → (LLI, LAM_PE, LAM_NE) 抽取 (SOP-4.5)
@@ -382,3 +384,4 @@ python examples/smoke_test.py    # 必须全通过
 | 2026-04-24 | v0.2.3 离线工作流落地: 内部 pip 镜像单轨制, 新增 `docs/09_offline_bundle_guide.md` 与配套 scripts (`build_requirements.sh`, `install_offline.sh`, `verify_install.sh`)。 |
 | 2026-04-24 | v0.2.4 清理整顿: 奥卡姆剃刀原则首次应用。08 consultation protocol 追加适用范围声明, IDENT-Wxxx 标记为 draft, 09 offline bundle guide 删减未来扩展段落。详见 MIGRATION_NOTES §十三。 |
 | 2026-04-25 | v0.3.0 cell type 抽象层落地: 双 spec 架构 + 机制模型版本化。新增 `schemas/`, `material_specs/`, `param_specs/` 目录。`panasonic_ncr18650b.py` 重构为兼容层。新增 `create_cell_from_specs` 作为多 cell type 的统一入口。详见 MIGRATION_NOTES §十四。 |
+| 2026-04-25 | v0.4.0 第一阶段: FIT-1 电极平衡拟合脚本落地。新增 `scripts/fit_electrode_balance.py` 和 `libquiv_aging/fitting.py` 基础设施。错误码扩展 FIT1-Exxx/W001。详见 MIGRATION_NOTES §十五。 |
