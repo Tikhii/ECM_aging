@@ -38,6 +38,7 @@
 | "机制模型升级" | `libquiv_aging/model_versions/` 新增模块 | 同步新增 `schemas/params_<new_version>.schema.v*.json` |
 | "离线环境安装" | `docs/09_offline_bundle_guide.md` | `scripts/install_offline.sh` |
 | "拟合电极平衡 LR/OFS" | `scripts/fit_electrode_balance.py` | `docs/PARAMETER_SOP.md §三.1` |
+| "做 IC 分析提取退化模式" | `docs/SPEC_ic_analysis.md` | `docs/PARAMETER_SOP.md §SOP-4.5` |
 
 ---
 
@@ -409,3 +410,4 @@ python examples/smoke_test.py    # 必须全通过
 | 2026-04-25 | v0.3.0 cell type 抽象层落地: 双 spec 架构 + 机制模型版本化。新增 `schemas/`, `material_specs/`, `param_specs/` 目录。`panasonic_ncr18650b.py` 重构为兼容层。新增 `create_cell_from_specs` 作为多 cell type 的统一入口。详见 MIGRATION_NOTES §十四。 |
 | 2026-04-25 | v0.4.0 第一阶段: FIT-1 电极平衡拟合脚本落地。新增 `scripts/fit_electrode_balance.py` 和 `libquiv_aging/fitting.py` 基础设施。错误码扩展 FIT1-Exxx/W001。详见 MIGRATION_NOTES §十五。 |
 | 2026-04-25 | v0.4.1 工作流升级: 新增 R8 规则把 README/QUICKSTART 同步纳入 release 流程。详见 MIGRATION_NOTES §十六。 |
+| 2026-04-25 | v0.4.2 SPEC 提升: 把 docs/TODO_ic_analysis.md 升级为 docs/SPEC_ic_analysis.md, 同步引用与接口约定。详见 MIGRATION_NOTES §十七。 |

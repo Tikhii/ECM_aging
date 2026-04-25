@@ -941,7 +941,7 @@
       "evaluated_in": "2026-04-22 web-chat Q6",
       "summary": "Joint inversion across all RPTs of a cell with monotonicity / smoothness priors on (LLI, LAM_PE, LAM_NE) trajectories.",
       "blocking": "Not blocking. v1 single-RPT inversion is sufficient for FIT-4a/b. Revisit only if v1 noise floor proves limiting.",
-      "next_step": "Revisit after v1 IC analysis (TODO_ic_analysis.md) is in production use."
+      "next_step": "Revisit after v1 IC analysis (SPEC_ic_analysis.md) is in production use."
     }
   },
   "scope_of_validity": {

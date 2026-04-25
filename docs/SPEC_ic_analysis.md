@@ -1,6 +1,6 @@
-# TODO: IC Analysis for RPT → (LLI, LAM_PE, LAM_NE) Extraction
+# SPEC: IC Analysis for RPT → (LLI, LAM_PE, LAM_NE) Extraction
 
-**Status**: Spec frozen 2026-04-22. Ready for implementation.
+**Status**: Spec frozen 2026-04-22. Promoted from TODO to SPEC on 2026-04-25 (v0.4.2 patch). Pending implementation in v0.5.0.
 **Assignee**: Claude Code (local execution on libquiv-aging repo).
 **Blocks**: FIT-4a (calendar aging), FIT-4b (cycle preknee). Both need 
 (LLI_Ah, LAM_PE_Ah, LAM_NE_Ah) per RPT as their primary constraints.
@@ -127,7 +127,7 @@ $\hat\sigma^2 = \text{SSE} / (N - 3)$.
 ```python
 from dataclasses import dataclass
 import numpy as np
-from typing import Callable, Optional
+from typing import Optional
 
 @dataclass
 class ICAnalysisResult:
@@ -150,7 +150,8 @@ def analyze_ic(
     Q_obs_Ah: np.ndarray,
     V_obs_V: np.ndarray,
     *,
-    cell_factory: Callable,
+    material_spec_path: str | Path,
+    params_spec_path: str | Path,
     smoothing_window_frac: float = 0.05,
     smoothing_polyorder: int = 3,
     bounds: Optional[dict] = None,
@@ -180,7 +181,8 @@ def synthesize_V_ocv(
     LAM_NE_Ah: float,
     LLI_Ah: float,
     *,
-    cell_factory: Callable,
+    material_spec_path: str | Path,
+    params_spec_path: str | Path,
 ) -> np.ndarray:
     """Quasi-equilibrium forward model per paper Eqs. 1, 18–26 at I=0 limit.
 
@@ -194,7 +196,8 @@ def heuristic_initial_guess(
     Q_obs_Ah: np.ndarray,
     V_obs_V: np.ndarray,
     *,
-    cell_factory: Callable,
+    material_spec_path: str | Path,
+    params_spec_path: str | Path,
 ) -> dict:
     """Returns {'LLI_Ah', 'LAM_PE_Ah', 'LAM_NE_Ah'} starting point for optimizer.
 
@@ -244,6 +247,13 @@ python scripts/fit_ic_to_dms.py \
   }
 }
 ```
+
+**Note on cell type identification**: The `--cell-type` flag is a convenience that 
+maps to the canonical spec pair `material_specs/<cell_type>.material.json` + 
+`param_specs/<cell_type>__mmeka2025.params.json`. For non-default schemas or 
+non-mmeka2025 mechanism versions, the implementation may extend the CLI to accept 
+explicit `--material-spec` and `--params-spec` paths. See v0.3.0 cell_factory 
+double-spec architecture (MIGRATION_NOTES §十四).
 
 **Diagnostic PNG** (2×2 layout):
 - (0,0): V(Q) observed + model + residual

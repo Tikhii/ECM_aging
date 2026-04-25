@@ -339,6 +339,46 @@ description 等"对外项目对象"也存在类似问题。如发现, 在 R8 基
 
 ---
 
+## 十七、v0.4.2 SPEC_ic_analysis 提升 (2026-04-25)
+
+v0.4.1 完成后, 一次例行盘点暴露了 docs/TODO_ic_analysis.md 这份文件的真实
+性质。表面看它是一个待办清单, 文件名为 TODO_ic_analysis.md; 但实质内容是
+一份冻结于 2026-04-22 的完整实施规格 (spec), 含 Step 0 reconnaissance 命令、
+forward model 数学推导、objective function、initial guess heuristic、
+optimizer 配置 + bounds、Module API + 三个函数签名、CLI script + 输入输出
+schema、5 个 acceptance tests、performance target、numerical subtleties、
+out-of-scope 项。它在 docs/PARAMETER_SOP.md §SOP-4.5、§SOP-5 表格、§3.2 RPT
+CSV schema 等三处已被作为权威规格引用, 内容也已在 2026-04-22 documentation
+PR 中纳入 SOP 体系。文件存在于 docs/ 目录约三天, 但因为文件名 TODO 后缀的
+误导, 既不被 README 视为对外文档展示, 也未被 CLAUDE.md 任务路由表收录。
+
+这暴露了一个比 R8 (README 同步) 更微妙的工作流盲点: **已冻结的、跨多个
+release 的实施计划如何持续可见**。MIGRATION_NOTES.md 记录已完成的演化历史,
+权威文档记录当前状态, 但项目缺少"已规划但待实施的 backlog"的台账。如果不
+是这次盘点偶然发现, TODO_ic_analysis.md 可能在 FIT-4a/4b 实施时才被重新
+注意, 那时距其冻结已经数周到数月。
+
+修复方案是 v0.4.2 patch 把文件升级为 SPEC: git mv 重命名为 SPEC_ic_analysis.md,
+顶部 Status 段落明确标注"Spec frozen, pending v0.5.0 implementation",
+Module API 段中三个函数签名从 v0.3.0 之前的 `cell_factory: Callable` 接口更新
+为 v0.3.0+ 双 spec 接口 `material_spec_path + params_spec_path`, CLI 段落
+增加注释说明 `--cell-type` 与 spec 路径的映射关系, 以及五处文件名引用
+(SOP §SOP-4.5 两处 + PARAMETERS.json deferred_extensions + CLAUDE.md 任务路由
+表新增一行 + 版本纪要追加一行)。
+
+这次发现没有立即引出 R9 规则。理由是: R9 候选已经有"信息不对称协作约定"在前面排队
+但被判定为不应固化 (临时基础设施不应进入工程权威文档), 暂时只有"backlog 文档台账"
+单一候选。R9 的引入需要至少两次类似盲点暴露才有制度化价值, 单次发现作为元教训
+记录在 MIGRATION_NOTES 中即可。如果未来再发现类似的"冻结文档但被工作流忽略"事件,
+届时再制度化为 R9 ("backlog 文档台账维护")。
+
+本次 patch 同时验证了一个更小的元教训: 文件命名约定带有真实工程语义。`TODO_*.md`
+和 `SPEC_*.md` 在工程师心智中是不同性质的文件, 误用会产生持续的注意力税。
+未来类似的命名升级 (例如 `WIP_*.md` → `DRAFT_*.md` → `SPEC_*.md` → `IMPLEMENTED_*.md`)
+应在文件性质变化时及时执行, 而不是等到下一次盘点。
+
+---
+
 ## 版本记录
 
 | 日期 | 变更 |
@@ -351,3 +391,4 @@ description 等"对外项目对象"也存在类似问题。如发现, 在 R8 基
 | 2026-04-25 | 追加 §十四。v0.3.0 cell type 抽象层落地: 双 spec 架构 + model_versions 路由 + panasonic 兼容层。 |
 | 2026-04-25 | 追加 §十五。v0.4.0 第一阶段: FIT-1 电极平衡拟合脚本落地, libquiv_aging/fitting.py 基础设施就位。 |
 | 2026-04-25 | 追加 §十六。v0.4.1 R8 规则: README 与 release 同步, 工作流类别缺陷的修复机制。 |
+| 2026-04-25 | 追加 §十七。v0.4.2 SPEC 提升: TODO_ic_analysis.md → SPEC_ic_analysis.md, 暴露 backlog 文档可见性盲点。 |

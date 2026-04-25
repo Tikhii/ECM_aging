@@ -601,7 +601,7 @@ k_LP_fit = 10 ** res.x
 - 目标 cell 的参数工厂可用（例如 `create_panasonic_ncr18650b`）
 - RPT 的 C/40 数据已存为 CSV，列含 `Q_Ah` 和 `V_cell_V`
 
-**脚本**：`scripts/fit_ic_to_dms.py`（实现见 `docs/TODO_ic_analysis.md`）
+**脚本**：`scripts/fit_ic_to_dms.py`（实现见 `docs/SPEC_ic_analysis.md`）
 
 **调用**：
 
@@ -621,7 +621,7 @@ done
 `LLI_Ah, LAM_PE_Ah, LAM_NE_Ah` 列，供 FIT-4a/b 读取。
 
 **方法论依据**：Dubarry & Anseán 2022, Front. Energy Res. 10:1023555。算法 
-细节、验收标准、out-of-scope 项见 `docs/TODO_ic_analysis.md`。
+细节、验收标准、out-of-scope 项见 `docs/SPEC_ic_analysis.md`。
 
 **验收**：
 - `pytest tests/test_ic_analysis.py` 全部通过
