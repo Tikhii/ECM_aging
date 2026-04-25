@@ -1,6 +1,6 @@
 {
   "_comment": "Fact-layer registry of offline-workflow error codes. Edit order: this file first, then docs/07_offline_runbook.md, then scripts/ raise sites. When runbook and registry disagree, registry wins (see R6 / CLAUDE.md).",
-  "_updated": "2026-04-23",
+  "_updated": "2026-04-25",
   "version": "0.1.0",
   "codes": {
     "ENV-E001": {
@@ -134,6 +134,110 @@
       "escalation": "§6.例 1 — 数据契约违规",
       "since_version": "0.1.0",
       "status": "active"
+    },
+
+    "FIT1-E001": {
+      "scope": "FIT1",
+      "level": "E",
+      "title": "材料 spec 中 dX 或 X0 字段未填",
+      "trigger": "执行 fit_electrode_balance.py 时, 材料 spec 中 dX_PE_alawa, dX_NE_alawa, X0_PE, X0_NE 任一字段的 value 为 null (status 为 pending_fit)。",
+      "consequence": "FIT-1 内部循环依赖这些 fresh-cell 本征参数构造 X_PE(SOC) 和 X_NE(SOC) 映射。若任一字段缺失, 内部循环无法建立, 拟合无意义。",
+      "cross_refs": [
+        "docs/PARAMETER_SOP.md §一.2 SOP-1 创建 cell type 骨架",
+        "schemas/material.schema.v1.json",
+        "material_specs/panasonic_ncr18650b.material.json"
+      ],
+      "remediation": [
+        "运行 python -c \"import json; s=json.load(open('material_specs/<cell>.material.json')); [print(k, s[k]['value']) for k in ['dX_PE_alawa','dX_NE_alawa','X0_PE','X0_NE']]\" 查看哪个字段为 null。",
+        "对照 PARAMETER_SOP.md §一.2 SOP-1, 从 datasheet 或 alawa 默认值填入相应字段, status 设为 datasheet, literature_default 或 convention。",
+        "重新执行 fit_electrode_balance.py。"
+      ],
+      "script_behavior": {
+        "exit_code": 80,
+        "action": "refuse"
+      },
+      "escalation": "docs/08_consultation_protocol.md §6 例 2 拟合前置条件不足",
+      "since_version": "0.4.0",
+      "status": "active",
+      "notes": "前置条件错误。X0_PE/NE 不影响优化变量但决定起点; dX_PE/NE 决定化学计量映射的范围。任一缺失都使 FIT-1 不可执行。"
+    },
+
+    "FIT1-E002": {
+      "scope": "FIT1",
+      "level": "E",
+      "title": "EXP-A OCV 拟合 RMSE 超过失败阈值",
+      "trigger": "fit_electrode_balance.py 完成优化后, RMSE_V > 50 mV 量级。",
+      "consequence": "电极平衡参数 LR 和 OFS 的拟合质量已超出可信范围。可能原因: EXP-A 数据本身存在问题 (例如错误的 SOC 标度、非平衡测试如 C/10 而非 C/40); 半电池 OCV 数据 (.dat 文件) 不匹配该批次电池的实际化学; 或电池本身已经显著老化, 不应作为 fresh-cell 表征。强行回写会污染所有下游 FIT 步骤。",
+      "cross_refs": [
+        "docs/PARAMETER_SOP.md §三.1 FIT-1 验收标准",
+        "docs/PARAMETERS.json::experiments::EXP-A",
+        "schemas/material.schema.v1.json"
+      ],
+      "remediation": [
+        "检查 EXP-A CSV 是否真为 C/40 测试 (准平衡), 而非 C/10 或 C/3 (动力学污染)。",
+        "检查半电池 OCV .dat 文件是否对应正确的电极材料 (NCA vs LFP vs NMC), 必要时重新做 EXP-B1/B2 并重新生成 .dat。",
+        "若电池实际已经老化 (从 C_nominal vs 实测放电容量的差异判断), 该 EXP-A 数据不适合做 FIT-1, 需要新 fresh-cell 数据。",
+        "排查完成后重新运行。"
+      ],
+      "script_behavior": {
+        "exit_code": 81,
+        "action": "refuse"
+      },
+      "escalation": "docs/08_consultation_protocol.md §6 例 1 数据契约违规",
+      "since_version": "0.4.0",
+      "status": "active",
+      "notes": "失败档拒绝写回 spec。20-50 mV 之间的 marginal 档由 FIT1-W001 处理。"
+    },
+
+    "FIT1-E003": {
+      "scope": "FIT1",
+      "level": "E",
+      "title": "scipy.optimize.minimize 未收敛",
+      "trigger": "Nelder-Mead 优化器返回 res.success == False, 或迭代次数达到 maxiter (500) 仍未收敛。",
+      "consequence": "拟合过程未达到稳定最优, 返回的 LR/OFS 值不可信。多见于初值离真值过远、目标函数地形病态、或数据数值范围异常。",
+      "cross_refs": [
+        "docs/PARAMETER_SOP.md §三.1 FIT-1 算法",
+        "scripts/fit_electrode_balance.py"
+      ],
+      "remediation": [
+        "检查 EXP-A 数据的 V_cell 数值范围 (典型 2.5-4.2V), SOC 范围 (典型 0-1)。任一越界提示数据格式问题。",
+        "检查材料 spec 中初值 LR=1.04, OFS=2.0 是否对当前电池体系合理。LFP 体系下初值可能要改为 LR=1.05, OFS=3.0。",
+        "若初值合理但仍不收敛, 在脚本中加 --maxiter 2000 重试。",
+        "持续不收敛时上报到 08_consultation_protocol。"
+      ],
+      "script_behavior": {
+        "exit_code": 82,
+        "action": "refuse"
+      },
+      "escalation": "docs/08_consultation_protocol.md §6 例 2 拟合前置条件不足",
+      "since_version": "0.4.0",
+      "status": "active",
+      "notes": "若收敛但 RMSE 超阈, 走 FIT1-E002 而非本条。"
+    },
+
+    "FIT1-W001": {
+      "scope": "FIT1",
+      "level": "W",
+      "title": "EXP-A OCV 拟合 RMSE 在 marginal 区间",
+      "trigger": "fit_electrode_balance.py 完成优化后, 20 mV <= RMSE_V <= 50 mV 量级。",
+      "consequence": "拟合通过失败阈值但低于推荐质量阈值。LR 和 OFS 写回 spec 但 fit_r_squared 字段反映质量较低。下游 FIT-2/3/4 的预测精度可能受影响, 特别是 IR 预测。",
+      "cross_refs": [
+        "docs/PARAMETER_SOP.md §三.1 FIT-1 验收标准",
+        "schemas/material.schema.v1.json"
+      ],
+      "remediation": [
+        "若可接受当前精度 (例如初步建模阶段), 继续推进 FIT-2/3 但记录 marginal 状态。",
+        "若不可接受, 按 FIT1-E002 的 remediation 路径排查 EXP-A 数据质量。",
+        "无论选择哪条, fit_r_squared 字段会持久化记录此次拟合质量供未来审计。"
+      ],
+      "script_behavior": {
+        "exit_code": 88,
+        "action": "warn"
+      },
+      "escalation": "docs/08_consultation_protocol.md §6 例 6 识别性警告",
+      "since_version": "0.4.0",
+      "status": "active",
+      "notes": "warn 级别不阻塞下游, spec 仍被回写, status 仍为 fitted。fit_r_squared 字段是质量信号的载体。"
     },
 
     "FIT4A-E001": {

@@ -26,7 +26,7 @@
 
 ```
 {SCOPE}-{LEVEL}{NUMBER}
-  SCOPE  ∈ {ENV, DATA, FIT4A, FIT4B, FIT4C, SOLVE, IDENT}
+  SCOPE  ∈ {ENV, DATA, FIT1, FIT4A, FIT4B, FIT4C, SOLVE, IDENT}
   LEVEL  ∈ {E (error 停机), W (warn 继续), I (info 提示)}
   NUMBER = 3 位数字, 每个 (SCOPE, LEVEL) 组合内部唯一, 一经发放不复用
 ```
@@ -221,7 +221,114 @@ exit code 22, refuse, 打印本条目编号 (`[DATA-E003]`)。
 
 ---
 
-## §3 FIT-4a 相关错误 (FIT4A)
+## §3 FIT-1 相关错误 (FIT1)
+
+### FIT1-E001: 材料 spec 中 dX 或 X0 字段未填
+
+**触发条件**
+执行 `fit_electrode_balance.py` 时, 材料 spec 中 `dX_PE_alawa`, `dX_NE_alawa`,
+`X0_PE`, `X0_NE` 任一字段的 value 为 null (status 为 `pending_fit`)。
+
+**物理/方法学后果**
+FIT-1 内部循环依赖这些 fresh-cell 本征参数构造 X_PE(SOC) 和 X_NE(SOC) 映射。若任
+一字段缺失, 内部循环无法建立, 拟合无意义。
+
+**权威文档交叉引用**
+- `docs/PARAMETER_SOP.md §一.2 SOP-1 创建 cell type 骨架`
+- `schemas/material.schema.v1.json`
+- `material_specs/panasonic_ncr18650b.material.json`
+
+**现场可选处置**
+1. 运行 `python -c "import json; s=json.load(open('material_specs/<cell>.material.json')); [print(k, s[k]['value']) for k in ['dX_PE_alawa','dX_NE_alawa','X0_PE','X0_NE']]"` 查看哪个字段为 null。
+2. 对照 `PARAMETER_SOP.md §一.2 SOP-1`, 从 datasheet 或 alawa 默认值填入相应字段, status 设为 `datasheet`, `literature_default` 或 `convention`。
+3. 重新执行 `fit_electrode_balance.py`。
+
+**脚本应当行为**
+exit code 80, refuse, 打印本条目编号 (`[FIT1-E001]`)。
+
+**何时升级到在线咨询**
+见 `docs/08_consultation_protocol.md §6 例 2 拟合前置条件不足`。
+
+### FIT1-E002: EXP-A OCV 拟合 RMSE 超过失败阈值
+
+**触发条件**
+`fit_electrode_balance.py` 完成优化后, RMSE_V > 50 mV 量级。
+
+**物理/方法学后果**
+电极平衡参数 LR 和 OFS 的拟合质量已超出可信范围。可能原因: EXP-A 数据本身存在问题
+(例如错误的 SOC 标度、非平衡测试如 C/10 而非 C/40); 半电池 OCV 数据 (`.dat` 文件)
+不匹配该批次电池的实际化学; 或电池本身已经显著老化, 不应作为 fresh-cell 表征。强行
+回写会污染所有下游 FIT 步骤。
+
+**权威文档交叉引用**
+- `docs/PARAMETER_SOP.md §三.1 FIT-1 验收标准`
+- `docs/PARAMETERS.json::experiments::EXP-A`
+- `schemas/material.schema.v1.json`
+
+**现场可选处置**
+1. 检查 EXP-A CSV 是否真为 C/40 测试 (准平衡), 而非 C/10 或 C/3 (动力学污染)。
+2. 检查半电池 OCV `.dat` 文件是否对应正确的电极材料 (NCA vs LFP vs NMC), 必要时重新做 EXP-B1/B2 并重新生成 `.dat`。
+3. 若电池实际已经老化 (从 C_nominal vs 实测放电容量的差异判断), 该 EXP-A 数据不适合做 FIT-1, 需要新 fresh-cell 数据。
+4. 排查完成后重新运行。
+
+**脚本应当行为**
+exit code 81, refuse, 打印本条目编号 (`[FIT1-E002]`)。
+
+**何时升级到在线咨询**
+见 `docs/08_consultation_protocol.md §6 例 1 数据契约违规`。
+
+### FIT1-E003: scipy.optimize.minimize 未收敛
+
+**触发条件**
+Nelder-Mead 优化器返回 `res.success == False`, 或迭代次数达到 maxiter (500) 仍未收敛。
+
+**物理/方法学后果**
+拟合过程未达到稳定最优, 返回的 LR/OFS 值不可信。多见于初值离真值过远、目标函数地形
+病态、或数据数值范围异常。
+
+**权威文档交叉引用**
+- `docs/PARAMETER_SOP.md §三.1 FIT-1 算法`
+- `scripts/fit_electrode_balance.py`
+
+**现场可选处置**
+1. 检查 EXP-A 数据的 V_cell 数值范围 (典型 2.5-4.2V), SOC 范围 (典型 0-1)。任一越界提示数据格式问题。
+2. 检查材料 spec 中初值 LR=1.04, OFS=2.0 是否对当前电池体系合理。LFP 体系下初值可能要改为 LR=1.05, OFS=3.0。
+3. 若初值合理但仍不收敛, 在脚本中加 `--maxiter 2000` 重试。
+4. 持续不收敛时上报到 `08_consultation_protocol`。
+
+**脚本应当行为**
+exit code 82, refuse, 打印本条目编号 (`[FIT1-E003]`)。
+
+**何时升级到在线咨询**
+见 `docs/08_consultation_protocol.md §6 例 2 拟合前置条件不足`。
+
+### FIT1-W001: EXP-A OCV 拟合 RMSE 在 marginal 区间
+
+**触发条件**
+`fit_electrode_balance.py` 完成优化后, 20 mV <= RMSE_V <= 50 mV 量级。
+
+**物理/方法学后果**
+拟合通过失败阈值但低于推荐质量阈值。LR 和 OFS 写回 spec 但 `fit_r_squared` 字段反映
+质量较低。下游 FIT-2/3/4 的预测精度可能受影响, 特别是 IR 预测。
+
+**权威文档交叉引用**
+- `docs/PARAMETER_SOP.md §三.1 FIT-1 验收标准`
+- `schemas/material.schema.v1.json`
+
+**现场可选处置**
+1. 若可接受当前精度 (例如初步建模阶段), 继续推进 FIT-2/3 但记录 marginal 状态。
+2. 若不可接受, 按 FIT1-E002 的 remediation 路径排查 EXP-A 数据质量。
+3. 无论选择哪条, `fit_r_squared` 字段会持久化记录此次拟合质量供未来审计。
+
+**脚本应当行为**
+exit code 88, warn, 打印本条目编号 (`[FIT1-W001]`)。
+
+**何时升级到在线咨询**
+见 `docs/08_consultation_protocol.md §6 例 6 识别性警告`。
+
+---
+
+## §4 FIT-4a 相关错误 (FIT4A)
 
 ### FIT4A-E001: Tier I/II/III 参数存在未填 placeholder
 
@@ -331,7 +438,7 @@ exit code 33, refuse, 打印本条目编号 (`[FIT4A-E004]`)。
 
 ---
 
-## §4 FIT-4b 相关错误 (FIT4B)
+## §5 FIT-4b 相关错误 (FIT4B)
 
 ### FIT4B-E001: 检测到 FIT-4a 参数被解冻
 
@@ -412,7 +519,7 @@ exit code 42, refuse, 打印本条目编号 (`[FIT4B-E003]`)。
 
 ---
 
-## §5 FIT-4c 相关错误 (FIT4C)
+## §6 FIT-4c 相关错误 (FIT4C)
 
 ### FIT4C-E001: 除 k_LP 外任一参数未冻结
 
@@ -468,7 +575,7 @@ exit code 51, refuse, 打印本条目编号 (`[FIT4C-E002]`)。
 
 ---
 
-## §6 数值求解器类错误 (SOLVE)
+## §7 数值求解器类错误 (SOLVE)
 
 ### SOLVE-E001: scipy solve_ivp BDF 积分失败
 
@@ -523,7 +630,7 @@ exit code 61, refuse, 打印本条目编号 (`[SOLVE-E002]`)。
 
 ---
 
-## §7 可识别性警告 (IDENT)
+## §8 可识别性警告 (IDENT)
 
 > 本节三条警告码 (IDENT-W001/W002/W003) 当前 status 为 draft。
 > 它们的 trigger 条件和阈值是基于理论预判的占位规格, 尚未在
@@ -623,6 +730,10 @@ exit code 72, warn, 打印本条目编号 (`[IDENT-W003]`)。
 | DATA-E001 | DATA | E | RPT CSV 列名或单位不符 SOP §3.2 | 20 | refuse | active |
 | DATA-E002 | DATA | E | .dat 文件 x 列非单调或越界 | 21 | refuse | active |
 | DATA-E003 | DATA | E | 电阻 .mat 形状不是 1001×2001 | 22 | refuse | active |
+| FIT1-E001 | FIT1 | E | 材料 spec 中 dX 或 X0 字段未填 | 80 | refuse | active |
+| FIT1-E002 | FIT1 | E | EXP-A OCV 拟合 RMSE 超过失败阈值 | 81 | refuse | active |
+| FIT1-E003 | FIT1 | E | scipy.optimize.minimize 未收敛 | 82 | refuse | active |
+| FIT1-W001 | FIT1 | W | EXP-A OCV 拟合 RMSE 在 marginal 区间 | 88 | warn | active |
 | FIT4A-E001 | FIT4A | E | Tier I/II/III 参数存在未填 placeholder | 30 | refuse | active |
 | FIT4A-E002 | FIT4A | E | EXP-E 温度点过少, E_a 不可识别 | 31 | refuse | active |
 | FIT4A-E003 | FIT4A | E | IR 列缺失率过高 | 32 | refuse | active |
