@@ -291,6 +291,29 @@ R_i(t) = R_i^0 · f_{R,i}(t)      # 论文式 (43)
 
 R7 与 R1 在形式上类似（事实层优先），专门覆盖 cell type 创建这一高频场景。
 
+### R8: README 与 release 同步
+
+每次打 release/vX.Y.0 tag 之前, README.md 必须经过审查。如果本次
+release 引入的改动属于以下任一类:
+- 新公共 API (导出函数 / 类 / 命令行脚本)
+- 新目录结构 (新顶层目录如 schemas/, material_specs/)
+- 新工作流入口 (新 tag 命名约定、新 air-gapped 流程)
+- 新概念 (cell type、机制版本路由、双 spec 架构等)
+
+则 README.md 的更新必须作为 release 任务包的一个独立子阶段, 与代码 /
+文档 / 错误码改动同等优先级, 不视为"事后想起来再做"的可选项。
+
+QUICKSTART.md 同样适用本规则, 因其本质是 README.md 的精简执行版。
+
+docs/vX.Y.Z patch 不强制更新 README, 但若该 patch 修复了 README 中
+描述的功能, 则需同步。
+
+R8 与 R5 (文档一致性协议) 的关系: R5 覆盖内部权威文档之间的一致性,
+R8 覆盖项目对外形象与代码状态之间的一致性。两者互补不冲突。
+
+R8 与 R1-R7 共同构成本工程的工作流契约。R1-R6 管模型与代码正确性,
+R7 管 cell type 创建顺序, R8 管对外文档同步。
+
 ---
 
 ## 代码导航
@@ -385,3 +408,4 @@ python examples/smoke_test.py    # 必须全通过
 | 2026-04-24 | v0.2.4 清理整顿: 奥卡姆剃刀原则首次应用。08 consultation protocol 追加适用范围声明, IDENT-Wxxx 标记为 draft, 09 offline bundle guide 删减未来扩展段落。详见 MIGRATION_NOTES §十三。 |
 | 2026-04-25 | v0.3.0 cell type 抽象层落地: 双 spec 架构 + 机制模型版本化。新增 `schemas/`, `material_specs/`, `param_specs/` 目录。`panasonic_ncr18650b.py` 重构为兼容层。新增 `create_cell_from_specs` 作为多 cell type 的统一入口。详见 MIGRATION_NOTES §十四。 |
 | 2026-04-25 | v0.4.0 第一阶段: FIT-1 电极平衡拟合脚本落地。新增 `scripts/fit_electrode_balance.py` 和 `libquiv_aging/fitting.py` 基础设施。错误码扩展 FIT1-Exxx/W001。详见 MIGRATION_NOTES §十五。 |
+| 2026-04-25 | v0.4.1 工作流升级: 新增 R8 规则把 README/QUICKSTART 同步纳入 release 流程。详见 MIGRATION_NOTES §十六。 |
