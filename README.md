@@ -8,10 +8,10 @@
 
 ## 工程特点
 
-- **模块化设计**：将原 758 行单文件 `LIBquivAging.m` 拆分为 5 个单一职责的模块（热力学 LUT、电阻 LUT、老化动力学、主模型类、电池参数工厂），便于 Claude Code 按需检索和修改。
+- **模块化设计**：将原 758 行单文件 `LIBquivAging.m` 拆分为多个单一职责的模块, 含核心模型、查找表、老化动力学、cell type 抽象层、FIT 脚本基础设施等, 便于 Claude Code 按需检索和修改。
 - **面向研究**：所有数值参数都集中到可配置 `dataclass` 中（`SEIParameters`、`PlatingParameters` 等），方便替换化学体系或运行敏感性研究。
 - **高性能**：通过标量快速插值 + Newton warm-start 求解器，单次完整 DST 放电耗时 30 秒左右（原 MATLAB 代码 ~40 秒）。
-- **完整测试集**：15 个 pytest 用例覆盖初始化、CC/CV/CP 三种模式、CCCV 循环和老化。
+- **完整测试集**：69 个 pytest 用例覆盖核心模型、cell type 加载、FIT 脚本基础设施。
 
 ## 目录结构
 
@@ -20,39 +20,105 @@ libquiv_aging_py/
 ├── README.md                     # 本文件
 ├── QUICKSTART.md                 # 10 分钟 Mac 上手清单
 ├── environment.yml               # ★ conda 环境定义 (推荐入口)
+├── environment-frozen.yml        # 冻结版 (air-gapped 部署用)
+├── requirements.txt              # 从 frozen.yml 派生的 pip 清单
 ├── pyproject.toml                # 现代 Python 项目配置
-├── requirements.txt              # pip 依赖 (若不用 conda)
+├── .gitignore                    # 含 runs/ 排除
 ├── .vscode/                      # VS Code 调试 & 设置
 │
 ├── libquiv_aging/                # ★ 核心代码包
 │   ├── __init__.py               # 公共 API
 │   ├── constants.py              # 物理常数
-│   ├── lookup_tables.py          # 半电池 OCV / 电阻 LUT 与插值
-│   ├── aging_kinetics.py         # 所有老化速率律 (SEI/Plating/LAM)
+│   ├── lookup_tables.py          # 半电池 OCV / 电阻 LUT
+│   ├── aging_kinetics.py         # 老化速率律 (SEI/Plating/LAM)
 │   ├── cell_model.py             # EquivCircuitCell 主类 (ODE 求解)
-│   ├── panasonic_ncr18650b.py    # NCR18650B 参数工厂
+│   ├── cell_factory.py           # 通用 cell 加载器 (双 spec)
+│   ├── fitting.py                # FIT 脚本系列共享基础设施
+│   ├── model_versions/           # 机制模型版本路由
+│   │   ├── __init__.py           # 版本注册表
+│   │   └── mmeka2025.py          # 当前机制的组装逻辑
+│   ├── panasonic_ncr18650b.py    # NCR18650B 兼容层入口
 │   └── data/                     # 配套数据 (.dat / .mat / .csv)
+│
+├── schemas/                      # ★ JSON Schema 定义
+│   ├── material.schema.v1.json
+│   └── params_mmeka2025.schema.v1.json
+│
+├── material_specs/               # ★ 材料 spec (本征参数)
+│   └── panasonic_ncr18650b.material.json
+│
+├── param_specs/                  # ★ 参数 spec (唯象参数)
+│   └── panasonic_ncr18650b__mmeka2025.params.json
+│
+├── scripts/                      # 拟合脚本与工具
+│   ├── fit_electrode_balance.py  # FIT-1: LR/OFS 拟合
+│   ├── check_parameter_consistency.py
+│   ├── install_offline.sh        # air-gapped 安装入口
+│   ├── verify_install.sh
+│   └── build_requirements.sh
 │
 ├── examples/                     # 可运行示例
 │   ├── smoke_test.py             # 快速功能验证
-│   ├── figure7_simulation.py     # 复现论文图 7 的 DST 循环老化
-│   └── analysis_template.py      # 自己做分析用的起点模板
+│   ├── figure7_simulation.py     # 复现论文图 7
+│   └── analysis_template.py      # 自定义分析模板
 │
-├── tests/                        # pytest 单元测试
-│   └── test_basic.py
+├── tests/                        # pytest 测试 (69 用例)
+│   ├── test_basic.py             # 原始 22 个核心模型测试
+│   ├── test_schemas.py           # schema 与 spec 验证
+│   ├── test_cell_factory.py      # cell_factory 加载器
+│   ├── test_panasonic_equivalence.py  # 兼容层等价性
+│   ├── test_fitting.py           # FIT 基础设施
+│   ├── test_fit_electrode_balance.py  # FIT-1 端到端
+│   ├── test_error_codes_registry.py   # 错误码 registry 验证
+│   └── golden_panasonic_snapshot.json # 回归测试金标准
 │
-└── docs/                         # ★ 详细文档 (中文)
-    ├── 01_setup_guide.md         # macOS + conda + VS Code + Claude Code 安装
-    ├── 02_model_overview.md      # 模型数学结构与 DAE 系统说明
-    ├── 03_inputs_guide.md        # 如何获取/格式化模型输入数据
-    ├── 04_outputs_guide.md       # 如何解读输出、进行评估
-    ├── 05_workflow_examples.md   # 常见工作流 (参数研究、新电池等)
-    ├── 06_parameter_sourcing.md  # 深度参数来源分析 (LFP/Gr 案例)
-    ├── CLAUDE.md                 # 给 AI 助手的路由手册
+├── runs/                         # FIT 脚本运行产物 (.gitignore 排除)
+│
+└── docs/                         # ★ 详细文档
+    ├── 01_setup_guide.md         # macOS + conda 环境搭建
+    ├── 02_model_overview.md      # 模型数学结构与 DAE 系统
+    ├── 03_inputs_guide.md        # 输入数据获取/格式化
+    ├── 04_outputs_guide.md       # 输出解读与评估
+    ├── 05_workflow_examples.md   # 工作流示例
+    ├── 06_parameter_sourcing.md  # 参数来源深度分析
+    ├── 07_offline_runbook.md     # 离线现场错误码手册
+    ├── 08_consultation_protocol.md # 跨 air-gap 咨询协议
+    ├── 09_offline_bundle_guide.md  # 离线工作站部署指南
+    ├── CLAUDE.md                 # AI 代理路由手册 (R1-R8)
     ├── PARAMETERS.json           # ★ 参数元数据 (单一事实来源)
-    ├── PARAMETER_SOP.md          # 参数获取标准作业流程 (SOP)
-    └── CRITICAL_REVIEW.md        # 批判性审查结果 + 作用域卡片
+    ├── PARAMETER_SOP.md          # 参数获取 SOP
+    ├── CRITICAL_REVIEW.md        # 批判性审查 (S/C/N 系列)
+    ├── MIGRATION_NOTES.md        # 跨会话演化笔记
+    ├── error_codes_registry.json # 错误码事实层
+    └── error_codes.schema.json   # 错误码 schema
 ```
+
+## 工作流概览
+
+本工程已演化为多层架构。一个完整的 cell type 由两份 spec 文件
+定义: 材料 spec (本征参数, 跨机制稳定) 加上参数 spec (唯象参数,
+随机制版本变化)。加载入口是 `create_cell_from_specs(material_path,
+params_path)`, 内部根据参数 spec 的 `model_version` 字段路由到对应
+机制的组装函数。当前机制版本是 mmeka2025, 未来 `CRITICAL_REVIEW.md`
+中的升级路径 (R_s 退化、动态镀锂等) 会引入新机制版本, 旧 spec
+保留为历史。
+
+参数化工作流: 新 cell type 通过复制 panasonic 示例 spec 起步, 填入
+Tier I 直测参数, 准备 EXP-A 到 EXP-G 实验数据 (详见 `PARAMETER_SOP.md`
+§一二), 运行 `scripts/` 下的 FIT-X 拟合脚本依次产出参数。FIT-1 的
+第一个脚本 `fit_electrode_balance.py` 已实现, 拟合 LR 和 OFS 并自动
+回写到材料 spec 含完整 fit provenance (`fit_step`, `fit_source`,
+`fit_r_squared`, `uncertainty` 等)。FIT-2/3/4 待 v0.4.x 和 v0.5.0
+实施。
+
+版本演化通过 git tag 标记: `docs/vX.Y.Z` 是文档基建或错误码 patch,
+`release/vX.Y.0` 是代码能力 minor release。截至 v0.4.0 已有八层 tag
+阶梯, 完整演化路径见 `MIGRATION_NOTES.md`。
+
+air-gapped 实验室部署通过内部 pip 镜像单轨制, 详见
+`docs/09_offline_bundle_guide.md`。错误码体系 (ENV / DATA / FIT1 /
+FIT4A / FIT4B / FIT4C / SOLVE / IDENT 八个作用域) 见
+`docs/07_offline_runbook.md` 和 `docs/error_codes_registry.json`。
 
 ## 快速开始
 
@@ -69,7 +135,14 @@ python examples/smoke_test.py
 
 # 4. 运行论文图 7 的快速版 (约 5 分钟)
 python examples/figure7_simulation.py
+
+# 5. 试运行 FIT-1 拟合脚本 (dry-run 模式, 用合成数据反演验证)
+python scripts/fit_electrode_balance.py \
+    --material-spec material_specs/panasonic_ncr18650b.material.json \
+    --dry-run
 ```
+
+应输出 LR≈1.04, OFS≈2.0 (反演相对误差 < 0.5% 和 < 20%)。
 
 运行结果保存在 `examples/outputs/`（PNG 图片）。
 
@@ -85,10 +158,16 @@ python examples/figure7_simulation.py
 | 理解方程结构和数学约定 | `docs/02_model_overview.md` |
 | 用自己的电池数据替换参数 | `docs/03_inputs_guide.md` |
 | 评估模型预测好坏 | `docs/04_outputs_guide.md` |
-| 参数敏感性研究 / 参数辨识 | `docs/05_workflow_examples.md` |
-| 系统化参数获取（实验 DOE 到拟合 SOP） | `docs/PARAMETER_SOP.md` |
+| 参数敏感性研究 | `docs/05_workflow_examples.md` |
+| 系统化参数获取 (实验 DOE 到拟合 SOP) | `docs/PARAMETER_SOP.md` |
+| 创建新 cell type (双 spec 架构) | `docs/PARAMETER_SOP.md` §二.0 |
+| 拟合电极平衡 LR/OFS | `scripts/fit_electrode_balance.py` + `docs/PARAMETER_SOP.md` §三.1 |
+| 离线实验室部署 | `docs/09_offline_bundle_guide.md` |
+| 现场错误码手册 | `docs/07_offline_runbook.md` |
+| 跨 air-gap 向在线 Claude 咨询 | `docs/08_consultation_protocol.md` |
 | 查参数元数据 / 论文错误 / 批判性审查 | `docs/PARAMETERS.json` + `docs/CRITICAL_REVIEW.md` |
-| 给 AI 助手（Claude Code）的路由手册 | `docs/CLAUDE.md` |
+| 查项目演化历史 | `docs/MIGRATION_NOTES.md` |
+| 给 AI 代理 (Claude Code) 的路由手册 | `docs/CLAUDE.md` |
 
 ## 引用
 

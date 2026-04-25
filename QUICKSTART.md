@@ -81,7 +81,7 @@ python -c "import libquiv_aging; print(libquiv_aging.__file__)"
 ## ☑ Step 4 · 验证环境
 
 ```bash
-# 跑 15 个单元测试 (~25 秒)
+# 跑 69 个单元测试 (~20 秒)
 pytest tests/ -v
 
 # 烟雾测试 (~10 秒)
@@ -154,9 +154,14 @@ conda deactivate
 | --- | --- |
 | 理解模型在做什么 | `docs/02_model_overview.md` |
 | 用到我自己的电池上 | `docs/03_inputs_guide.md` |
+| 创建新 cell type (双 spec) | `docs/PARAMETER_SOP.md` §二.0 |
 | 解读仿真输出 | `docs/04_outputs_guide.md` |
 | 看完整工作流示例 | `docs/05_workflow_examples.md` |
-| 从模板开始写自己的分析 | 复制 `examples/analysis_template.py` |
+| 用 FIT-1 拟合电极平衡 | `scripts/fit_electrode_balance.py` + `docs/PARAMETER_SOP.md` §三.1 |
+| 在离线实验室部署 | `docs/09_offline_bundle_guide.md` |
+| 现场报错速查 | `docs/07_offline_runbook.md` |
+| 从模板开始写自己的分析 | `examples/analysis_template.py` |
+| 查项目演化历史 | `docs/MIGRATION_NOTES.md` |
 
 ## 🆘 常见问题速查
 
@@ -169,6 +174,35 @@ conda deactivate
 | 图窗不弹 | 脚本开头加 `import matplotlib; matplotlib.use('MacOSX')`；或保存成 PNG |
 | 仿真报 NaN | 把 `acceleration_factor` 降到 1，定位是哪个老化率炸了 |
 | conda 和 pip 混用起冲突 | 永远**先 conda 装、后 pip 装**；本工程 `environment.yml` 已经按此编排 |
+
+---
+
+## 🧬 v0.3 后新功能速览
+
+本工程的 cell type 现在通过两份 spec 文件定义 (材料 spec + 参数 spec),
+加载入口是 `create_cell_from_specs`:
+
+```python
+from libquiv_aging import create_cell_from_specs
+cell = create_cell_from_specs(
+    "material_specs/panasonic_ncr18650b.material.json",
+    "param_specs/panasonic_ncr18650b__mmeka2025.params.json",
+)
+cell.init(SOC=0.5)
+```
+
+旧的 `create_panasonic_ncr18650b()` 仍然可用作便捷入口, 行为完全等价。
+
+拟合 LR 和 OFS 用 FIT-1 脚本:
+
+```bash
+# dry-run 模式 (合成数据验证脚本)
+python scripts/fit_electrode_balance.py \
+    --material-spec material_specs/panasonic_ncr18650b.material.json \
+    --dry-run
+```
+
+详见 `docs/PARAMETER_SOP.md` §三.1 和 `docs/05_workflow_examples.md`。
 
 ---
 
