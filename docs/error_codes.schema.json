@@ -22,7 +22,7 @@
       "type": "object",
       "description": "Map of error code ID to code definition. Keys must match pattern and match the entry's scope prefix.",
       "patternProperties": {
-        "^(ENV|DATA|FIT1|FIT4A|FIT4B|FIT4C|SOLVE|IDENT)-[EWI][0-9]{3}$": {
+        "^(ENV|DATA|FIT1|FIT2|FIT4A|FIT4B|FIT4C|SOLVE|IDENT)-[EWI][0-9]{3}$": {
           "$ref": "#/definitions/code"
         }
       },
@@ -49,7 +49,7 @@
       "properties": {
         "scope": {
           "type": "string",
-          "enum": ["ENV", "DATA", "FIT1", "FIT4A", "FIT4B", "FIT4C", "SOLVE", "IDENT"]
+          "enum": ["ENV", "DATA", "FIT1", "FIT2", "FIT4A", "FIT4B", "FIT4C", "SOLVE", "IDENT"]
         },
         "level": {
           "type": "string",

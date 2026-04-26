@@ -11,7 +11,7 @@
 - **模块化设计**：将原 758 行单文件 `LIBquivAging.m` 拆分为多个单一职责的模块, 含核心模型、查找表、老化动力学、cell type 抽象层、FIT 脚本基础设施等, 便于 Claude Code 按需检索和修改。
 - **面向研究**：所有数值参数都集中到可配置 `dataclass` 中（`SEIParameters`、`PlatingParameters` 等），方便替换化学体系或运行敏感性研究。
 - **高性能**：通过标量快速插值 + Newton warm-start 求解器，单次完整 DST 放电耗时 30 秒左右（原 MATLAB 代码 ~40 秒）。
-- **完整测试集**：69 个 pytest 用例覆盖核心模型、cell type 加载、FIT 脚本基础设施。
+- **完整测试集**：87 个 pytest 用例覆盖核心模型、cell type 加载、FIT 脚本基础设施 (含 FIT-1, FIT-2)。
 
 ## 目录结构
 
@@ -90,7 +90,8 @@ libquiv_aging_py/
     ├── CRITICAL_REVIEW.md        # 批判性审查 (S/C/N 系列)
     ├── MIGRATION_NOTES.md        # 跨会话演化笔记
     ├── error_codes_registry.json # 错误码事实层
-    └── error_codes.schema.json   # 错误码 schema
+    ├── error_codes.schema.json   # 错误码 schema
+    └── UPGRADE_LITERATURE/       # 模型升级方向的文献 starter pack
 ```
 
 ## 工作流概览
@@ -105,19 +106,20 @@ params_path)`, 内部根据参数 spec 的 `model_version` 字段路由到对应
 
 参数化工作流: 新 cell type 通过复制 panasonic 示例 spec 起步, 填入
 Tier I 直测参数, 准备 EXP-A 到 EXP-G 实验数据 (详见 `PARAMETER_SOP.md`
-§一二), 运行 `scripts/` 下的 FIT-X 拟合脚本依次产出参数。FIT-1 的
-第一个脚本 `fit_electrode_balance.py` 已实现, 拟合 LR 和 OFS 并自动
-回写到材料 spec 含完整 fit provenance (`fit_step`, `fit_source`,
-`fit_r_squared`, `uncertainty` 等)。FIT-2/3/4 待 v0.4.x 和 v0.5.0
-实施。
+§一二), 运行 `scripts/` 下的 FIT-X 拟合脚本依次产出参数。已实现:
+`fit_electrode_balance.py` (FIT-1, LR/OFS) 和 `fit_rc_transient.py`
+(FIT-2, C1/C2 RC 弛豫双指数, dispatch 模式预留 fractional-order /
+DRT 升级)。两者均自动回写到对应 spec 含完整 fit provenance (`fit_step`,
+`fit_source`, `fit_r_squared`, `relaxation_metadata` 等)。FIT-3/4 待
+v0.5.x 和 v0.6.0 实施。
 
 版本演化通过 git tag 标记: `docs/vX.Y.Z` 是文档基建或错误码 patch,
-`release/vX.Y.0` 是代码能力 minor release。截至 v0.4.0 已有八层 tag
+`release/vX.Y.0` 是代码能力 minor release。截至 v0.5.0 已有九层 tag
 阶梯, 完整演化路径见 `MIGRATION_NOTES.md`。
 
 air-gapped 实验室部署通过内部 pip 镜像单轨制, 详见
 `docs/09_offline_bundle_guide.md`。错误码体系 (ENV / DATA / FIT1 /
-FIT4A / FIT4B / FIT4C / SOLVE / IDENT 八个作用域) 见
+FIT2 / FIT4A / FIT4B / FIT4C / SOLVE / IDENT 九个作用域) 见
 `docs/07_offline_runbook.md` 和 `docs/error_codes_registry.json`。
 
 ## 快速开始
@@ -162,6 +164,8 @@ python scripts/fit_electrode_balance.py \
 | 系统化参数获取 (实验 DOE 到拟合 SOP) | `docs/PARAMETER_SOP.md` |
 | 创建新 cell type (双 spec 架构) | `docs/PARAMETER_SOP.md` §二.0 |
 | 拟合电极平衡 LR/OFS | `scripts/fit_electrode_balance.py` + `docs/PARAMETER_SOP.md` §三.1 |
+| 拟合 RC 弛豫电容 C1/C2 | `scripts/fit_rc_transient.py` + `docs/PARAMETER_SOP.md` §三.2 |
+| 模型升级方向 (RC 不够用 / 长弛豫等) | 文献入口在 `docs/UPGRADE_LITERATURE/` (目前含 `fractional_order_RC.md`, 对应 `CRITICAL_REVIEW.md` C7) |
 | 离线实验室部署 | `docs/09_offline_bundle_guide.md` |
 | 现场错误码手册 | `docs/07_offline_runbook.md` |
 | 跨 air-gap 向在线 Claude 咨询 | `docs/08_consultation_protocol.md` |

@@ -38,7 +38,9 @@
 | "机制模型升级" | `libquiv_aging/model_versions/` 新增模块 | 同步新增 `schemas/params_<new_version>.schema.v*.json` |
 | "离线环境安装" | `docs/09_offline_bundle_guide.md` | `scripts/install_offline.sh` |
 | "拟合电极平衡 LR/OFS" | `scripts/fit_electrode_balance.py` | `docs/PARAMETER_SOP.md §三.1` |
+| "拟合 RC 弛豫电容 C1/C2" | `scripts/fit_rc_transient.py` | `docs/PARAMETER_SOP.md §三.2` |
 | "做 IC 分析提取退化模式" | `docs/SPEC_ic_analysis.md` | `docs/PARAMETER_SOP.md §SOP-4.5` |
+| "RC 拓扑不够用 / 长弛豫拟合差" | `docs/CRITICAL_REVIEW.md` C7 | `docs/UPGRADE_LITERATURE/fractional_order_RC.md` |
 
 ---
 
@@ -354,7 +356,7 @@ scripts/
 ├── fit_electrode_balance.py    FIT-1: LR/OFS 拟合 (已实现)
 ├── build_halfcell_dat.py       EXP-B1/B2 数据 → .dat (待生成)
 ├── build_resistance_mat.py     EXP-B4 GITT 数据 → .mat (待生成)
-├── fit_rc_transient.py         FIT-2 (C1, C2)
+├── fit_rc_transient.py         FIT-2: C1/C2 RC 弛豫拟合 (已实现, 双指数, dispatch 可扩展)
 ├── fit_resistance_distribution.py  FIT-3
 ├── fit_ic_to_dms.py            RPT C/40 → (LLI, LAM_PE, LAM_NE) 抽取 (SOP-4.5)
 ├── fit_calendar.py             FIT-4a (含 R_SEI!)
@@ -424,3 +426,4 @@ python examples/smoke_test.py    # 必须全通过
 | 2026-04-25 | v0.4.1 工作流升级: 新增 R8 规则把 README/QUICKSTART 同步纳入 release 流程。详见 MIGRATION_NOTES §十六。 |
 | 2026-04-25 | v0.4.2 SPEC 提升: 把 docs/TODO_ic_analysis.md 升级为 docs/SPEC_ic_analysis.md, 同步引用与接口约定。详见 MIGRATION_NOTES §十七。 |
 | 2026-04-26 | v0.4.3 R8 成员扩展: 落地 LICENSE 和 NOTICE 文件, 把 LICENSE/NOTICE/pyproject.toml description 正式纳入 R8 范畴, 各自触发条件独立于 README/QUICKSTART 的四类触发。同步清理 pyproject.toml authors 占位符。 |
+| 2026-04-26 | v0.5.0 FIT-2 RC 弛豫拟合落地: 新增 `scripts/fit_rc_transient.py` 与 `libquiv_aging/relaxation_fitting.py` (dispatch 模式准备升级路径)。错误码扩展 FIT2-Exxx/W001。`CRITICAL_REVIEW.md` 新增 C7 (RC 拓扑对长弛豫的不足) 与 `docs/UPGRADE_LITERATURE/fractional_order_RC.md` 升级文献入口。详见 MIGRATION_NOTES §十八。 |

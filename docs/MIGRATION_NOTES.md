@@ -383,6 +383,92 @@ Module API 段中三个函数签名从 v0.3.0 之前的 `cell_factory: Callable`
 
 ---
 
+## 十八、v0.5.0 FIT-2 RC 弛豫拟合落地 (2026-04-26)
+
+### 18.1 任务范畴与边界
+
+FIT-2 在 v0.4.0 已写入 `PARAMETERS.json::fit_steps::FIT-2` 但脚本是占位; 本次
+v0.5.0 把脚本 (`scripts/fit_rc_transient.py`) 与拟合内核
+(`libquiv_aging/relaxation_fitting.py`) 实装。任务包覆盖六个子阶段:
+1) 错误码事实层扩展 (FIT2-Exxx/W001), 2) 脚本主流程, 3) 测试 (内核单测 +
+端到端集成), 4) 文档同步 (PARAMETERS.json finding, CRITICAL_REVIEW C7,
+PARAMETER_SOP §三.2, 07 runbook §4, CLAUDE.md, 升级文献入口),
+5) 验证, 6) 完成报告。本节聚焦设计决策, 实现细节走代码与 spec。
+
+### 18.2 三个核心架构决策
+
+**18.2.1 C6 → C7 全工程重映射**
+
+进入本任务时, `CRITICAL_REVIEW.md` 已存在 C6_knee_mechanism_scope。RC 拓扑
+不足是新发现, 编号上有两个选择:
+- A: 复用 C6 编号 (扩大 C6 语义)
+- B: 新建 C7, 保留 C6
+
+选 B。理由: C6 是关于 knee 的 scope-of-validity 警示, 与 RC 拓扑物理上无关;
+合并会让 finding 的诊断焦点稀释。`CRITICAL_REVIEW.md` 路由表与版本日志
+同步增加 C7 行, `PARAMETERS.json::critical_review_findings` 新增
+`C7_RC_topology_inadequacy_for_long_relaxation` 记录 (与 C7 章节互锁,
+满足 R5 派生层一致性要求)。
+
+**18.2.2 RELAXATION_MODELS dispatch 模式而非硬编码 two_exponential**
+
+CLI 的 `--relaxation-model` 参数是 dispatch 表 key, 默认
+`two_exponential`, 当前唯一注册项。后续 fractional-order / Mittag-Leffler /
+DRT 升级 (见 `docs/UPGRADE_LITERATURE/fractional_order_RC.md`) 通过新增
+注册项实现, 不需改 CLI 主流程, 也不需改 spec writeback 逻辑 (`fitting.py::
+write_back_to_spec` 是模型无关的)。
+
+权衡: 提前引入 dispatch 增加一次性复杂度 (一个 dict + 一个 getter), 但
+避免了后续升级时把 fit 函数重写一遍。判断依据: C7 是已识别的、近期可达的
+升级方向, 不是远期假设, 结构性投资合理。这是奥卡姆剃刀的反向应用 — 当
+后续路径已明且邻近, 不预先抽象会让升级时引入更多回归风险。
+
+**18.2.3 tau→R 双候选映射 + amplitude RSS 选择 + 歧义警告**
+
+two_exponential 拟合返回 (tau1, tau2), 但 RC 拓扑里 tau1 可能锚到 R_NE 或
+R_PE (取决于哪个电极的 RC 时常数更短)。脚本同时计算两候选映射:
+candidate_A = (tau1↔R_NE, tau2↔R_PE), candidate_B = (tau1↔R_PE, tau2↔R_NE),
+对每个候选用 LUT 查到的 R_NE/R_PE 计算预期振幅 (A1, A2), 与拟合得到的
+振幅做 RSS 比较, 选 RSS 小者为 chosen, 另一个为 alternate。当
+|RSS_chosen - RSS_alt| / max < 10% 时触发 FIT2-W001 (mapping_marginal=true)。
+该字段持久化到 `relaxation_metadata`, FIT-3/4 在见到 mapping_marginal 时应
+放宽 C1/C2 拟合权重。
+
+权衡: 不让用户手选映射方向是关键 — 所有判别必须由 LUT + 数据驱动, 否则
+C1/C2 就成了人工调参的载体, 失去 R7 工作流约束的物理意义。
+
+### 18.3 spec writeback: relaxation_metadata 嵌入而非新字段
+
+`schemas/params_mmeka2025.schema.v1.json` 的 value_with_provenance 在
+v0.3.0 已设 `additionalProperties: true`。本次直接利用此口子把
+`relaxation_metadata` (含 model name, tau_chosen, mapping label,
+mapping_marginal, rmse, r_squared) 嵌入 C1/C2 的 entry, 不需要 schema
+迁移。这与 `additionalProperties: true` 设计原意一致: 拟合产出的诊断
+信息属于"伴随数据", 不应升格为顶层字段污染 schema 的核心契约。
+
+### 18.4 与 R5/R6/R8 的对齐路径
+
+- **R6** (错误码先行): `error_codes.schema.json` 双扩展 (`scope.enum` +
+  `patternProperties` regex), 然后 registry 添加 FIT2-E001..E003/W001
+  (含完整 11 字段), 然后 runbook 派生 §4 FIT-2, 然后脚本 raise 点
+  使用对应 exit code。先 fact 后 derived 的因果链未被绕过。
+- **R5** (派生层一致性): runbook §4-§9 整体重编号 (FIT2 插入引发
+  FIT4A/B/C/SOLVE/IDENT 顺移), `PARAMETER_SOP.md` 中所有指向 runbook
+  的章节号引用同步刷新。
+- **R8** (对外文档同步): README.md FIT 步骤状态行, QUICKSTART.md 测试
+  数与脚本清单, 同 release 任务包内更新。
+
+### 18.5 经验留痕
+
+本次任务把 "升级路径" 从内部 backlog 提升为入库文档 (`docs/UPGRADE_LITERATURE/
+fractional_order_RC.md`)。理由: C7 finding 的可信度依赖于"升级路径不是
+画饼"的可证伪性。把候选模型与必读文献写入 repo 等于给后续 v0.6+ 的
+评估任务留下了可追溯的入口, 比把这些信息散落在 CRITICAL_REVIEW.md 的
+"建议" 段更易被未来的人 (或 AI) 找到。这是 v0.4.2 SPEC 提升经验
+(§十七) 在 backlog 文档上的一次延伸应用。
+
+---
+
 ## 版本记录
 
 | 日期 | 变更 |
@@ -396,3 +482,4 @@ Module API 段中三个函数签名从 v0.3.0 之前的 `cell_factory: Callable`
 | 2026-04-25 | 追加 §十五。v0.4.0 第一阶段: FIT-1 电极平衡拟合脚本落地, libquiv_aging/fitting.py 基础设施就位。 |
 | 2026-04-25 | 追加 §十六。v0.4.1 R8 规则: README 与 release 同步, 工作流类别缺陷的修复机制。 |
 | 2026-04-25 | 追加 §十七。v0.4.2 SPEC 提升: TODO_ic_analysis.md → SPEC_ic_analysis.md, 暴露 backlog 文档可见性盲点。 |
+| 2026-04-26 | 追加 §十八。v0.5.0 FIT-2 RC 弛豫拟合落地: dispatch 模式准备升级路径, C6→C7 重映射, tau→R 双候选 + 歧义警告。 |

@@ -343,19 +343,22 @@ def make_value_with_provenance(
     }
 
 
-def write_back_to_material_spec(
+def write_back_to_spec(
     spec_path: Path,
+    schema_path: Path,
     updates: dict[str, dict],
 ) -> None:
-    """把若干字段更新写回材料 spec 文件。
+    """把若干字段更新写回任意 spec 文件 (material_spec 或 param_spec)。
 
     Parameters
     ----------
     spec_path : Path
-        材料 spec JSON 文件路径。
+        spec JSON 文件路径 (material 或 params)。
+    schema_path : Path
+        schema JSON 文件路径, 用于写回前的验证。
     updates : dict[str, dict]
         字段名 -> 新的 value_with_provenance dict。
-        例如 {'LR': {...}, 'OFS': {...}}
+        例如 {'C1': {...}, 'C2': {...}} 或 {'LR': {...}, 'OFS': {...}}
 
     Steps:
     1. 读取现有 spec
@@ -372,8 +375,6 @@ def write_back_to_material_spec(
 
     spec["last_modified_at"] = datetime.now(timezone.utc).isoformat()
 
-    # Validate against schema before writing
-    schema_path = _find_material_schema(spec_path)
     with open(schema_path) as f:
         schema = json.load(f)
     try:
@@ -383,12 +384,20 @@ def write_back_to_material_spec(
             f"Schema validation failed after applying updates: {e.message}"
         ) from e
 
-    # Atomic write: write to .tmp then rename
     tmp_path = spec_path.with_suffix(".tmp")
     with open(tmp_path, "w") as f:
         json.dump(spec, f, indent=2, ensure_ascii=False)
         f.write("\n")
     tmp_path.rename(spec_path)
+
+
+def write_back_to_material_spec(
+    spec_path: Path,
+    updates: dict[str, dict],
+) -> None:
+    """material_spec 写回的兼容层。新代码请用 write_back_to_spec。"""
+    schema_path = _find_material_schema(spec_path)
+    write_back_to_spec(spec_path, schema_path, updates)
 
 
 def _find_material_schema(spec_path: Path) -> Path:
@@ -402,6 +411,21 @@ def _find_material_schema(spec_path: Path) -> Path:
     raise FileNotFoundError(
         "Cannot find schemas/material.schema.v1.json in any parent directory "
         f"of {spec_path}"
+    )
+
+
+def find_params_schema(spec_path: Path, schema_filename: str) -> Path:
+    """Locate a params schema (e.g. params_mmeka2025.schema.v1.json) relative
+    to spec_path's project root.
+    """
+    current = spec_path.resolve().parent
+    while current != current.parent:
+        candidate = current / "schemas" / schema_filename
+        if candidate.exists():
+            return candidate
+        current = current.parent
+    raise FileNotFoundError(
+        f"Cannot find schemas/{schema_filename} in any parent directory of {spec_path}"
     )
 
 

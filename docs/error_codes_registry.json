@@ -1,6 +1,6 @@
 {
   "_comment": "Fact-layer registry of offline-workflow error codes. Edit order: this file first, then docs/07_offline_runbook.md, then scripts/ raise sites. When runbook and registry disagree, registry wins (see R6 / CLAUDE.md).",
-  "_updated": "2026-04-25",
+  "_updated": "2026-04-26",
   "version": "0.1.0",
   "codes": {
     "ENV-E001": {
@@ -238,6 +238,114 @@
       "since_version": "0.4.0",
       "status": "active",
       "notes": "warn 级别不阻塞下游, spec 仍被回写, status 仍为 fitted。fit_r_squared 字段是质量信号的载体。"
+    },
+
+    "FIT2-E001": {
+      "scope": "FIT2",
+      "level": "E",
+      "title": "RC 弛豫 CSV 列名或单位不符 SOP §三.2",
+      "trigger": "执行 fit_rc_transient.py 时, 输入 CSV 缺失必填列 (time_s, voltage_V, current_pre_step_A, soc_at_step, t_step_s) 或列单位与 PARAMETER_SOP.md §三.2 表格不一致 (例如 ms 而非 s, mV 而非 V)。",
+      "consequence": "两指数模型的时间轴或电压轴被错误尺度化, 拟合得到的 tau1/tau2 量级错位; 进而 C1=tau1/R1 / C2=tau2/R2 的物理量纲错误, 写回 param_spec 后污染所有依赖 RC 暂态的下游仿真。",
+      "cross_refs": [
+        "docs/PARAMETER_SOP.md §三.2 FIT-2 数据契约",
+        "docs/PARAMETERS.json::fit_steps::FIT-2",
+        "scripts/fit_rc_transient.py"
+      ],
+      "remediation": [
+        "用 pandas.read_csv 检视实际列名与 dtypes, 比对 SOP §三.2 表格, 打印首个不匹配列。",
+        "如只是单位错 (ms vs s, mV vs V), 在数据生成侧补单位换算并重新导出, 不要在拟合脚本里临时缩放。",
+        "如缺列, 回溯 EXP-B4 的 GITT 脉冲后弛豫导出脚本, 重新生成 CSV。",
+        "排查后重新执行 fit_rc_transient.py。"
+      ],
+      "script_behavior": {
+        "exit_code": 90,
+        "action": "refuse"
+      },
+      "escalation": "docs/08_consultation_protocol.md §6 例 1 数据契约违规",
+      "since_version": "0.5.0",
+      "status": "active",
+      "notes": "前置数据契约错误。脚本应在加载阶段而非拟合阶段拒绝, 避免 curve_fit 给出貌似收敛但物理量纲错误的结果。"
+    },
+
+    "FIT2-E002": {
+      "scope": "FIT2",
+      "level": "E",
+      "title": "scipy.optimize.curve_fit 未收敛或返回非有限协方差",
+      "trigger": "fit_rc_transient.py 调用 scipy.optimize.curve_fit 拟合两指数模型时, 抛出 RuntimeError ('Optimal parameters not found') 或返回的 pcov 含 inf/nan (典型于初值离真值过远、bounds 过窄、或弛豫信号被噪声淹没)。",
+      "consequence": "tau1/tau2 估计不可信, 进而 C1=tau1/R1 与 C2=tau2/R2 不可信; 强行写回 param_spec 会污染下游基于 RC 暂态的所有仿真。误差棒不可计算, 识别性也无从评估。",
+      "cross_refs": [
+        "docs/PARAMETER_SOP.md §三.2 FIT-2 算法",
+        "scripts/fit_rc_transient.py",
+        "libquiv_aging/relaxation_fitting.py"
+      ],
+      "remediation": [
+        "检视 voltage_V(time_s) 弛豫曲线: 是否呈现两段衰减形态? 若仅单段或基本平直, 数据信噪比不足以支持双指数, 应回到 EXP-B4 重新设计脉冲幅度。",
+        "检查初值: 默认 tau1≈1s, tau2≈30s 是否对当前电池体系合理。LFP 体系下 tau2 可能需放大到 60–100s。",
+        "若初值合理但仍不收敛, 检查 bounds 是否过窄, 适当放宽后重试。",
+        "持续不收敛时上报到 docs/08_consultation_protocol.md。"
+      ],
+      "script_behavior": {
+        "exit_code": 91,
+        "action": "refuse"
+      },
+      "escalation": "docs/08_consultation_protocol.md §6 例 2 拟合前置条件不足",
+      "since_version": "0.5.0",
+      "status": "active",
+      "notes": "若收敛但 RMSE 超阈, 走 FIT2-E003 而非本条。"
+    },
+
+    "FIT2-E003": {
+      "scope": "FIT2",
+      "level": "E",
+      "title": "RC 弛豫拟合 RMSE 超过失败阈值",
+      "trigger": "fit_rc_transient.py 完成 curve_fit 后, V(t) 残差 RMSE 量级超过 5 mV, 或两指数模型的 R^2 量级低于 0.95。",
+      "consequence": "两指数 RC 模型对当前弛豫数据已失效。可能原因: (a) 数据本身存在多于两个时间常数的弛豫机制 (例如长时间扩散 / 固相扩散主导, 见 CRITICAL_REVIEW.md C7); (b) 弛豫窗口截断过早, 长 tau 段未充分采集; (c) 电池实际处于非平衡态 (SOC drift)。强行回写 C1/C2 会污染下游仿真。",
+      "cross_refs": [
+        "docs/PARAMETER_SOP.md §三.2 FIT-2 验收标准",
+        "docs/CRITICAL_REVIEW.md C7 RC 拓扑对长弛豫的不足",
+        "docs/UPGRADE_LITERATURE/fractional_order_RC.md"
+      ],
+      "remediation": [
+        "目视 residuals(t) 图: 若残差呈系统性漂移 (而非随机噪声), 强烈提示需要分数阶 / Mittag-Leffler 升级路径, 见 CRITICAL_REVIEW C7。",
+        "确认弛豫窗口是否充分覆盖到 V(t) 接近 V_inf (典型应 ≥ 5·tau2)。如否, 重做 EXP-B4 延长采样。",
+        "若窗口已足且残差非系统性, 检查 SOC drift 与温度漂移是否破坏稳态前提。",
+        "排查后仍 RMSE 超阈, 不写回 spec, 进入升级路径调研而非强行接受劣质拟合。"
+      ],
+      "script_behavior": {
+        "exit_code": 92,
+        "action": "refuse"
+      },
+      "escalation": "docs/08_consultation_protocol.md §6 例 1 数据契约违规",
+      "since_version": "0.5.0",
+      "status": "active",
+      "notes": "失败档拒绝写回 spec。残差呈现系统性结构是 C7 升级路径的入口信号。"
+    },
+
+    "FIT2-W001": {
+      "scope": "FIT2",
+      "level": "W",
+      "title": "RC 弛豫拟合 RMSE 在 marginal 区间或 tau-to-R 映射出现倒序候选",
+      "trigger": "fit_rc_transient.py 完成 curve_fit 后, 1 mV ≤ RMSE ≤ 5 mV 量级, 或 tau-to-R 映射的两个候选 (tau1↔R1+tau2↔R2) 与 (tau1↔R2+tau2↔R1) 的 RMSE 差异在量级 10% 以内 (映射不唯一)。",
+      "consequence": "RC 暂态拟合通过失败阈值但低于推荐质量阈值。C1/C2 写回 spec 但 fit_r_squared 字段反映质量较低。下游仿真在脉冲响应段精度受影响, 但稳态预测影响有限。tau-to-R 映射倒序候选意味着 C1↔C2 角色可能被互换, 物理解释需谨慎。",
+      "cross_refs": [
+        "docs/PARAMETER_SOP.md §三.2 FIT-2 验收标准",
+        "docs/CRITICAL_REVIEW.md C7 RC 拓扑对长弛豫的不足",
+        "scripts/fit_rc_transient.py"
+      ],
+      "remediation": [
+        "若可接受当前精度 (例如初步建模阶段), 继续推进但记录 marginal 状态到 fit_report 与 spec 的 fit_r_squared 字段。",
+        "若 tau-to-R 映射两候选 RMSE 接近, 在 fit_report 标注双候选并按 RMSE 较低者写回, 但下游分析需审慎。",
+        "若不可接受, 按 FIT2-E003 的 remediation 路径排查弛豫窗口与升级路径。",
+        "无论选择哪条, fit_r_squared 与 mapping_candidates 字段会持久化记录此次拟合质量供未来审计。"
+      ],
+      "script_behavior": {
+        "exit_code": 93,
+        "action": "warn"
+      },
+      "escalation": "docs/08_consultation_protocol.md §6 例 6 识别性警告",
+      "since_version": "0.5.0",
+      "status": "active",
+      "notes": "warn 级别不阻塞下游, spec 仍被回写, status 仍为 fitted。fit_r_squared 与 mapping_candidates 字段是质量信号的载体。"
     },
 
     "FIT4A-E001": {

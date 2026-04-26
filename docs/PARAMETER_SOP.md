@@ -199,6 +199,7 @@ R2），但失去对 Fig. 6b 式"日历参数预测循环 IR 增长"的独立验
 | 电阻 LUT | `.mat` | `libquiv_aging/data/{name}Resistances.mat` | 3 个 (1001×2001) 矩阵：`RsAlawa`, `RNEAlawa`, `RPEAlawa` |
 | 全电池 OCV | `.csv` | `experiments/EXP-A/{cell_id}_ocv.csv` | 列：`time_s, V_cell, I_A, Q_Ah, SOC` |
 | 阶跃响应 | `.csv` | `experiments/EXP-C/{cell_id}_step.csv` | 列：`time_s, V_cell, I_A` |
+| GITT 弛豫 (FIT-2) | `.csv` | `experiments/EXP-B4/{cell_id}_relaxation.csv` | 列：`time_s [s], voltage_V [V], current_pre_step_A [A], soc_at_step [0..1], t_step_s [s]` (后三列每行同值, 表示单脉冲) |
 
 **`.dat` 文件示例（alawa 格式）**：
 ```
@@ -373,7 +374,7 @@ R_NE_0 = luts.interp_RNE(c_rate=-1/3, X_ne=0.5) / C_nominal_Ah
 
 **前置**：SOP-2 子步 2.1 完成
 
-→ 失败时参见 `docs/07_offline_runbook.md §7`（`IDENT-W002` 系列）。
+→ 失败时参见 `docs/07_offline_runbook.md §9`（`IDENT-W002` 系列）。
 
 **输入**：
 - 全电池 OCV：`experiments/EXP-A/cell_01_fullcycle_C40.csv`
@@ -424,25 +425,78 @@ provenance (fit_source, fit_r_squared, uncertainty 等)。运行产物保存在
 
 #### FIT-2: C1, C2（RC 时间常数）
 
-**前置**：SOP-2 完成
+**前置**：FIT-1 完成 (LR/OFS 已 fitted, 用于 SOC↔X_NE/X_PE 化学计量映射), 且
+`param_specs/<cell>__mmeka2025.params.json::resistance_mat` 指向有效 .mat 文件。
 
-→ 失败时参见 `docs/07_offline_runbook.md §7`（`IDENT-W002` 系列）。
+→ 失败时参见 `docs/07_offline_runbook.md §4 FIT2`。
 
-**输入**：EXP-C 阶跃响应 CSV
+**输入**：EXP-B4 GITT 弛豫 CSV (列契约见 §三.2 数据契约表):
+- `time_s` 绝对时间秒
+- `voltage_V` 电池端电压 V
+- `current_pre_step_A` 脉冲终止前的恒定电流 A (整列必须相同)
+- `soc_at_step` 脉冲发生时的 SOC ∈ [0,1] (整列必须相同)
+- `t_step_s` 脉冲终止时刻的绝对时间 s (整列必须相同)
 
-**算法**：`scipy.optimize.curve_fit` 拟合 `V(t) = V_inf + A1*exp(-t/τ1) + A2*exp(-t/τ2)`；然后 `C_i = τ_i / R_i`。
+数据要求: 弛豫窗口至少应覆盖到 V(t) 接近 V_inf 的段, 经验上 ≥ 5·tau2 (tau2
+约 30-100 s)。窗口截断过早会触发 FIT2-W001 / FIT2-E003。
 
-**验收**：目视观察拟合曲线与测量曲线重合；或 RMSE < 5 mV。
+**脚本**：`scripts/fit_rc_transient.py`
 
-**如果没数据**：使用论文默认 `C1=949, C2=3576`，稳态误差 < 5%，可进入下一阶段。
+**CLI 用法**:
+```
+python scripts/fit_rc_transient.py \
+  --material-spec material_specs/<cell>.material.json \
+  --params-spec param_specs/<cell>__mmeka2025.params.json \
+  --exp-b4-csv experiments/EXP-B4/<cell>_relaxation.csv \
+  [--relaxation-model two_exponential] \
+  [--temperature 298.15] \
+  [--require-pending] [--preflight-only] [--dry-run]
+```
 
-**Spec 回写**：FIT-2 成功后，回写 `param_specs/<cell>__mmeka2025.params.json` 中的 `C1`, `C2` 字段：`status` 改为 `fitted`，附 `fit_step="FIT-2"` 及 provenance 信息。
+**算法**：
+1. `scipy.optimize.curve_fit` 拟合两指数 `V(t) = V_inf + A1*exp(-t/tau1) + A2*exp(-t/tau2)`,
+   tau1<tau2 在拟合后强制排序
+2. 用 `param_specs/...::resistance_mat` 提供的 LUT 在 `(C_rate=I_pre/C_nominal, X_NE)` 与
+   `(C_rate, X_PE)` 处插值, 得到 `R_NE`, `R_PE` (T_ref 仅写入 fit_report 元数据)
+3. tau-to-R 双候选映射:
+   - 候选 A: tau1↔R_NE, tau2↔R_PE → C1 = tau1/R_NE, C2 = tau2/R_PE
+   - 候选 B: tau2↔R_NE, tau1↔R_PE → C1 = tau2/R_NE, C2 = tau1/R_PE
+   - 选择标准: 幅值 RSS = (A_NE - (-I_pre·R_NE))^2 + (A_PE - (-I_pre·R_PE))^2 较小者
+4. 若两候选 RSS 差异 <10%, 触发 FIT2-W001 (映射边缘), 仍写回选定候选, 但 fit_report
+   持久化双候选 C1/C2 与各自 RSS
+
+**验收**：
+- 通过: RMSE ≤ 1 mV 且 R² ≥ 0.95
+- marginal (FIT2-W001, exit 93): 1 mV < RMSE ≤ 5 mV, 仍写回, 但 fit_r_squared 反映
+- fail (FIT2-E003, exit 92): RMSE > 5 mV 或 R² < 0.95, 拒绝写回, 残差呈系统性时
+  指向 docs/CRITICAL_REVIEW.md C7 升级路径 (docs/UPGRADE_LITERATURE/fractional_order_RC.md)
+
+**升级接口预留**：`--relaxation-model` 当前只接受 `two_exponential`。未来引入分数阶 RC
+/ Mittag-Leffler / DRT 时, 在 `libquiv_aging/relaxation_fitting.py::RELAXATION_MODELS`
+追加新的拟合函数即可, CLI 与脚本接口保持兼容。详见 §C7 与升级文献。
+
+**如果没数据**：保留 spec 中 `manually_set` 状态的 paper 默认 (NCR18650B: C1≈949,
+C2≈3576), 标记 status 不变, 不假装走过 FIT-2。
+
+**Spec 回写**：FIT-2 成功后, 回写 `param_specs/<cell>__mmeka2025.params.json` 中的
+`C1`, `C2` 字段: `status` 改为 `fitted`, 附 `fit_step="FIT-2"` 及完整 provenance,
+并附 `relaxation_metadata` 子对象 (含 model, T_ref_K, soc_at_step, I_pre_A, C_rate,
+X_NE, X_PE, R_NE_LUT, R_PE_LUT, tau1_s, tau2_s, A1_V, A2_V, V_inf_V, mapping,
+alternate_*, amplitude_rss_*, mapping_marginal)。运行产物保存在
+`runs/{YYYYmmdd_HHMMSS}_fit2_{cell_type}/` 目录, 含 `fit_config.json`,
+`fit_report.md`, `fit_diagnostic.json`。
+
+**错误码** (见 `docs/07_offline_runbook.md §4 FIT2`):
+- FIT2-E001 (exit 90): 弛豫 CSV 列名/单位/单脉冲一致性违规
+- FIT2-E002 (exit 91): curve_fit 未收敛或协方差非有限
+- FIT2-E003 (exit 92): RMSE 或 R² 越过失败阈值, 残差系统性时指向 C7 升级
+- FIT2-W001 (exit 93): RMSE 在 marginal 区间或 tau-to-R 映射两候选 RSS 差异 <10%
 
 #### FIT-3: 电阻分配（fractionR1toRs, fractionR2toRs）
 
 **前置**：SOP-2 完成（需要 `R_NE_LUT`, `R_PE_LUT` 已就位）
 
-→ 失败时参见 `docs/07_offline_runbook.md §7`（`IDENT-W002` 系列；bound 命中常见于 FIT-3 搜索区间）。
+→ 失败时参见 `docs/07_offline_runbook.md §9`（`IDENT-W002` 系列；bound 命中常见于 FIT-3 搜索区间）。
 
 **输入**：EXP-D 的 DST 首循环数据 `experiments/EXP-D/cell_01_dst_firstcycle.csv`（列：`time_s, V_cell, I_A`）
 
@@ -483,7 +537,7 @@ provenance (fit_source, fit_r_squared, uncertainty 等)。运行产物保存在
 - EXP-E 数据已整理成 `cell_Ex_rpt.csv`（含 `time_s, C_measured_Ah, R_IR_mOhm, LLI_Ah, LAM_PE_Ah`）
 - **关键**：至少一个温度的数据；若有多温度则 `E_a` 可自动识别，否则 `E_a` 固定为 55500 J/mol
 
-→ 失败时参见 `docs/07_offline_runbook.md §3`（`FIT4A-Exxx` 系列）。
+→ 失败时参见 `docs/07_offline_runbook.md §5`（`FIT4A-Exxx` 系列）。
 
 **脚本**：`scripts/fit_calendar.py`（见 SOP-5）
 
@@ -524,7 +578,7 @@ LAM_PE RMSE  < 0.01 Ah
 - FIT-4a 完成，**所有电阻相关参数（含 R_SEI）冻结**
 - EXP-F 数据整理好（含 `EFC, LLI_Ah, LAM_PE_Ah, LAM_NE_Ah`）
 
-→ 失败时参见 `docs/07_offline_runbook.md §4`（`FIT4B-Exxx` 系列）。
+→ 失败时参见 `docs/07_offline_runbook.md §6`（`FIT4B-Exxx` 系列）。
 
 **脚本**：`scripts/fit_cycle_preknee.py`
 
@@ -562,7 +616,7 @@ Capacity RMSE < 2% at EFC=150
 
 **前置**：FIT-4a, 4b 完成；EXP-G 数据（knee 已出现）
 
-→ 失败时参见 `docs/07_offline_runbook.md §5`（`FIT4C-Exxx` 系列）。
+→ 失败时参见 `docs/07_offline_runbook.md §7`（`FIT4C-Exxx` 系列）。
 
 **脚本**：`scripts/fit_knee.py`
 
@@ -639,7 +693,7 @@ done
 | `build_halfcell_dat.py` | `scripts/` | CSV → alawa `.dat` | `python scripts/build_halfcell_dat.py --input X.csv --output Y.dat --material PE` |
 | `build_resistance_mat.py` | `scripts/` | GITT CSV → `.mat` | `python scripts/build_resistance_mat.py --input gitt.csv --CN 3.0 --output R.mat` |
 | `fit_electrode_balance.py` | `scripts/` | FIT-1 | `python scripts/fit_electrode_balance.py --fullcell ocv.csv --pe-dat PE.dat --ne-dat NE.dat` |
-| `fit_rc_transient.py` | `scripts/` | FIT-2 | `python scripts/fit_rc_transient.py --step step.csv` |
+| `fit_rc_transient.py` | `scripts/` | FIT-2 (C1, C2 RC 弛豫) | `python scripts/fit_rc_transient.py --material-spec material_specs/<cell>.material.json --params-spec param_specs/<cell>__mmeka2025.params.json --exp-b4-csv experiments/EXP-B4/<cell>_relaxation.csv` |
 | `fit_resistance_distribution.py` | `scripts/` | FIT-3 | `python scripts/fit_resistance_distribution.py --dst experiments/EXP-D/cell_01_dst_firstcycle.csv` |
 | `fit_ic_to_dms.py` | `scripts/` | RPT C/40 → (LLI, LAM_PE, LAM_NE) | `python scripts/fit_ic_to_dms.py --aged-data ... --cell-type panasonic_ncr18650b --output ...` |
 | `fit_calendar.py` | `scripts/` | FIT-4a | `python scripts/fit_calendar.py --rpt-dir experiments/EXP-E/` |

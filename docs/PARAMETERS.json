@@ -622,19 +622,32 @@
     "FIT-2": {
       "name": "RC transient fitting",
       "requires_experiments": [
-        "EXP-C"
+        "EXP-B4"
       ],
       "fits": [
         "C1",
         "C2"
       ],
-      "measurement_needed": "V(t) relaxation after current step",
-      "method": "scipy.optimize.curve_fit two-exponential",
+      "measurement_needed": "V(t) relaxation after current pulse termination at known SOC and pulse current",
+      "method": "scipy.optimize.curve_fit two-exponential V(t)=V_inf+A1*exp(-t/tau1)+A2*exp(-t/tau2), then C_i = tau_i / R_i via R_NE/R_PE LUT lookup at (C_rate=I_pre/C_nominal, X_NE/X_PE).",
+      "relaxation_model_default": "two_exponential",
+      "relaxation_model_options": ["two_exponential"],
+      "tau_to_R_mapping": "Two candidates A: tau1->R_NE+tau2->R_PE; B: tau2->R_NE+tau1->R_PE. Selection by amplitude RSS against expected -I_pre*R_NE/-I_pre*R_PE. Both candidates persisted to fit_report. See PARAMETER_SOP.md §三.2.",
       "estimated_runtime": "seconds",
       "blocks_what": "Nothing hard",
+      "writes_to_spec": "param_specs/<cell>__mmeka2025.params.json",
+      "preconditions": [
+        "material_specs/<cell>.material.json LR/OFS fitted (FIT-1 完成) so X_NE/X_PE map is consistent",
+        "param_specs/<cell>__mmeka2025.params.json resistance_mat 指向有效 .mat 文件"
+      ],
       "error_codes": [
+        "FIT2-E001",
+        "FIT2-E002",
+        "FIT2-E003",
+        "FIT2-W001",
         "IDENT-W002"
-      ]
+      ],
+      "upgrade_path": "见 docs/CRITICAL_REVIEW.md C7 与 docs/UPGRADE_LITERATURE/fractional_order_RC.md。当 RMSE 持续超阈或残差呈现系统性结构, 走分数阶 RC / Mittag-Leffler 升级路径。"
     },
     "FIT-3": {
       "name": "Resistance distribution",
@@ -1031,6 +1044,12 @@
       "summary": "Plating-positive-feedback is one of >=6 knee pathways in Attia 2022 framework.",
       "evidence": "Attia 2022 J. Electrochem. Soc. 169:060517.",
       "action": "Do not claim universal knee explanation."
+    },
+    "C7_RC_topology_inadequacy_for_long_relaxation": {
+      "severity": "MODERATE for long pulses / low temperature, LOW for short pulses near room T",
+      "summary": "Two-RC topology (论文 Fig. 3 与 FIT-2 模型) 用两个集中时间常数 tau1, tau2 描述电极弛豫, 但实测在 >100 s 量级的弛豫窗口中, 残差常呈系统性结构 (慢段拖尾、固相扩散主导项无法被两个指数充分捕获)。FIT-3 已在 PARAMETERS.json::fit_steps::FIT-3::known_limitation 注明 RMSE 30-50 mV 的下限属此源。强行用更多 RC 串扩并不解决根本问题, 且引入识别性恶化。",
+      "evidence": "FIT-2 实测残差结构 + 论文 Fig. 3d ~250s 电压阶跃 RC ladder 跟不上的现象 + 文献中分数阶 ECM / Mittag-Leffler 弛豫 / DRT 已被多次提议为 long-tail relaxation 的更适配描述。",
+      "action": "短期 (v0.5.x): 在 FIT2-W001 / FIT2-E003 中暴露残差结构, 让 marginal 与 fail 档明确指向本条。中长期 (v0.6+): 评估分数阶 RC (Constant Phase Element CPE) 与 Mittag-Leffler 弛豫升级路径, 见 docs/UPGRADE_LITERATURE/fractional_order_RC.md。relaxation_fitting.py 已为升级预留 RELAXATION_MODELS 调度入口。"
     },
     "C_X_LAM_convention": {
       "severity": "LOW",

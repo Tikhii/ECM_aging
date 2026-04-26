@@ -26,7 +26,7 @@
 
 ```
 {SCOPE}-{LEVEL}{NUMBER}
-  SCOPE  ∈ {ENV, DATA, FIT1, FIT4A, FIT4B, FIT4C, SOLVE, IDENT}
+  SCOPE  ∈ {ENV, DATA, FIT1, FIT2, FIT4A, FIT4B, FIT4C, SOLVE, IDENT}
   LEVEL  ∈ {E (error 停机), W (warn 继续), I (info 提示)}
   NUMBER = 3 位数字, 每个 (SCOPE, LEVEL) 组合内部唯一, 一经发放不复用
 ```
@@ -328,7 +328,131 @@ exit code 88, warn, 打印本条目编号 (`[FIT1-W001]`)。
 
 ---
 
-## §4 FIT-4a 相关错误 (FIT4A)
+## §4 FIT-2 相关错误 (FIT2)
+
+### FIT2-E001: RC 弛豫 CSV 列名或单位不符 SOP §三.2
+
+**触发条件**
+执行 `fit_rc_transient.py` 时, EXP-B4 弛豫 CSV (`exp_b4_relaxation.csv`) 缺失
+SOP §三.2 表格中列出的必填列 (`time_s`, `voltage_V`, `current_pre_step_A`,
+`soc_at_step`, `t_step_s`), 或列单位头不一致, 或样本数低于最小阈值 (10 行)。
+
+**物理/方法学后果**
+two-exponential 模型需要 t_step 标记切换零点; current_pre_step 决定振幅
+A1/A2 的符号与 LUT 查询的 C-rate; soc_at_step 决定查 X_PE/X_NE 的位点。
+任一缺失会让 tau→R 反演失去物理锚点, C1/C2 写回参数 spec 时携带错误来源
+标签, 污染下游 FIT-3/4 的初值。
+
+**权威文档交叉引用**
+- `docs/PARAMETER_SOP.md §三.2 弛豫数据 CSV 模式`
+- `docs/PARAMETERS.json::experiments::EXP-B4`
+- `scripts/fit_rc_transient.py`
+
+**现场可选处置**
+1. 用 `pandas.read_csv(...).dtypes` 比对 SOP §三.2 的列契约, 打印首个不匹配
+   列名或缺失列名。
+2. 若是单位错 (mV vs V, mA vs A), 在数据导出端修复, 不要在 fit 脚本内做
+   隐式换算。
+3. 若是行数不足, 检查 GITT 弛豫窗是否被提前裁剪 (典型: 弛豫窗应至少持续
+   到 5τ2 量级)。
+
+**脚本应当行为**
+exit code 90, refuse, 打印本条目编号 (`[FIT2-E001]`)。
+
+**何时升级到在线咨询**
+见 `docs/08_consultation_protocol.md §6.例 1 — 数据契约违规`。
+
+### FIT2-E002: scipy.optimize.curve_fit 未收敛或返回非有限协方差
+
+**触发条件**
+`fit_two_exponential_relaxation()` 返回 `converged=False`, 或 `pcov` 含
+非有限元 (NaN/Inf), 或 sigma 数量级超出工程合理域 (例如 σ_C / C > 量级 1)。
+
+**物理/方法学后果**
+返回的 (V_inf, A1, tau1, A2, tau2) 落入数值病态区, 后续 tau→R 双候选映射
+失去意义; C1/C2 写回会让 FIT-3/4 的初值携带未识别误差。
+
+**权威文档交叉引用**
+- `docs/PARAMETER_SOP.md §三.2 FIT-2 算法`
+- `scripts/fit_rc_transient.py`
+- `libquiv_aging/relaxation_fitting.py`
+
+**现场可选处置**
+1. 检查弛豫数据是否真的进入"两指数可分"状态: 画 V(t) 半对数图, 应能
+   看到至少两个时间常数尺度。
+2. 若数据只显示单一时间常数, 强行套 two_exponential 会病态; 改用单指数
+   预拟合得到初值, 或重新设计 GITT 脉冲幅度让两 RC 时常数都被激发。
+3. 调高 `--maxfev` 至 10000 量级重试。
+4. 若仍失败, 数据本身可能不适配 RC 拓扑, 走 `FIT2-E003` 升级路径。
+
+**脚本应当行为**
+exit code 91, refuse, 打印本条目编号 (`[FIT2-E002]`)。
+
+**何时升级到在线咨询**
+见 `docs/08_consultation_protocol.md §6.例 2 — 拟合前置条件不足`。
+
+### FIT2-E003: RC 弛豫拟合 RMSE 超过失败阈值
+
+**触发条件**
+two_exponential 模型拟合完成后, RMSE_V 超过失败阈值量级 (5 mV) 或
+R² 低于 0.95。
+
+**物理/方法学后果**
+RC 等效电路 (二阶) 无法描述当前弛豫窗的真实物理。常见原因: 长尾段含
+扩散控制成分 (Warburg / CPE), 或界面是分布式 (DRT)。继续写回 C1/C2
+会使 FIT-3/4 在仿真中匹配不出 GITT 实测的电压回弹形态。
+
+**权威文档交叉引用**
+- `docs/CRITICAL_REVIEW.md C7 RC 拓扑对长弛豫的不足`
+- `docs/PARAMETER_SOP.md §三.2 FIT-2 验收标准`
+- `docs/UPGRADE_LITERATURE/fractional_order_RC.md`
+
+**现场可选处置**
+1. 画残差 vs 时间, 目视确认是单调漂移、对数尾还是阶跃。对数尾常对应
+   扩散主导, 应转入升级路径。
+2. 缩短弛豫窗到 5τ2 内, 让长尾段不进入拟合; 若窄窗能压住 RMSE, 标注
+   `relaxation_metadata.window_truncated_by_user=true` 并接受。
+3. 若长窗仍超阈, 不再写回 C1/C2, 而是把数据归档到 `runs/{run_id}/exp_b4/`
+   等待 C7 升级 (fractional-order RC 或 DRT)。
+
+**脚本应当行为**
+exit code 92, refuse, 打印本条目编号 (`[FIT2-E003]`)。
+
+**何时升级到在线咨询**
+见 `docs/08_consultation_protocol.md §6.例 2 — 拟合前置条件不足`。
+
+### FIT2-W001: RC 弛豫拟合 RMSE 在 marginal 区间或 tau→R 映射不确定
+
+**触发条件**
+拟合 RMSE 落入 marginal 区间 (1 mV ≤ RMSE_V ≤ 5 mV), 或两候选 tau→R
+映射 (tau1↔R_NE / tau1↔R_PE) 的振幅 RSS 比值 < 10% (映射歧义)。
+
+**物理/方法学后果**
+C1/C2 仍写回 spec, 但 `relaxation_metadata.mapping_marginal=true` 字段
+持久化记录歧义。下游 FIT-3/4 应在该字段为 true 时主动放宽 C1/C2 的
+拟合权重或重启更宽搜索域。
+
+**权威文档交叉引用**
+- `docs/PARAMETER_SOP.md §三.2 FIT-2 验收标准`
+- `docs/CRITICAL_REVIEW.md C7 RC 拓扑对长弛豫的不足`
+- `scripts/fit_rc_transient.py`
+
+**现场可选处置**
+1. 若是 RMSE marginal: 在 fit_report 中标注质量分位, 视后续步骤可接受度
+   决定是否补做更高 SOC/温度点的 EXP-B4。
+2. 若是映射歧义: 再做一次 EXP-B4 在不同 SOC (例如 0.3 vs 0.7), 用两个
+   独立点的 R_NE/R_PE 量级判别 tau1 应锚到哪个电极。
+3. 不要靠手工选择压低歧义 — 必须由数据驱动。
+
+**脚本应当行为**
+exit code 93, warn, 打印本条目编号 (`[FIT2-W001]`)。
+
+**何时升级到在线咨询**
+见 `docs/08_consultation_protocol.md §6.例 6 — 识别性警告`。
+
+---
+
+## §5 FIT-4a 相关错误 (FIT4A)
 
 ### FIT4A-E001: Tier I/II/III 参数存在未填 placeholder
 
@@ -438,7 +562,7 @@ exit code 33, refuse, 打印本条目编号 (`[FIT4A-E004]`)。
 
 ---
 
-## §5 FIT-4b 相关错误 (FIT4B)
+## §6 FIT-4b 相关错误 (FIT4B)
 
 ### FIT4B-E001: 检测到 FIT-4a 参数被解冻
 
@@ -519,7 +643,7 @@ exit code 42, refuse, 打印本条目编号 (`[FIT4B-E003]`)。
 
 ---
 
-## §6 FIT-4c 相关错误 (FIT4C)
+## §7 FIT-4c 相关错误 (FIT4C)
 
 ### FIT4C-E001: 除 k_LP 外任一参数未冻结
 
@@ -575,7 +699,7 @@ exit code 51, refuse, 打印本条目编号 (`[FIT4C-E002]`)。
 
 ---
 
-## §7 数值求解器类错误 (SOLVE)
+## §8 数值求解器类错误 (SOLVE)
 
 ### SOLVE-E001: scipy solve_ivp BDF 积分失败
 
@@ -630,7 +754,7 @@ exit code 61, refuse, 打印本条目编号 (`[SOLVE-E002]`)。
 
 ---
 
-## §8 可识别性警告 (IDENT)
+## §9 可识别性警告 (IDENT)
 
 > 本节三条警告码 (IDENT-W001/W002/W003) 当前 status 为 draft。
 > 它们的 trigger 条件和阈值是基于理论预判的占位规格, 尚未在
@@ -734,6 +858,10 @@ exit code 72, warn, 打印本条目编号 (`[IDENT-W003]`)。
 | FIT1-E002 | FIT1 | E | EXP-A OCV 拟合 RMSE 超过失败阈值 | 81 | refuse | active |
 | FIT1-E003 | FIT1 | E | scipy.optimize.minimize 未收敛 | 82 | refuse | active |
 | FIT1-W001 | FIT1 | W | EXP-A OCV 拟合 RMSE 在 marginal 区间 | 88 | warn | active |
+| FIT2-E001 | FIT2 | E | RC 弛豫 CSV 列名或单位不符 SOP §三.2 | 90 | refuse | active |
+| FIT2-E002 | FIT2 | E | scipy.optimize.curve_fit 未收敛或返回非有限协方差 | 91 | refuse | active |
+| FIT2-E003 | FIT2 | E | RC 弛豫拟合 RMSE 超过失败阈值 | 92 | refuse | active |
+| FIT2-W001 | FIT2 | W | RC 弛豫拟合 RMSE 在 marginal 区间或 tau→R 映射不确定 | 93 | warn | active |
 | FIT4A-E001 | FIT4A | E | Tier I/II/III 参数存在未填 placeholder | 30 | refuse | active |
 | FIT4A-E002 | FIT4A | E | EXP-E 温度点过少, E_a 不可识别 | 31 | refuse | active |
 | FIT4A-E003 | FIT4A | E | IR 列缺失率过高 | 32 | refuse | active |
