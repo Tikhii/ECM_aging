@@ -337,6 +337,10 @@ R8 与 R5 的边界划分清楚: R5 管内部权威文档之间的一致性 (PAR
 description 等"对外项目对象"也存在类似问题。如发现, 在 R8 基础上扩
 展成员清单, 不另立新规则。
 
+> 状态更新 (v0.4.3, 2026-04-26): LICENSE、NOTICE、pyproject.toml description
+> 已落实为 R8 成员, 各自触发条件记录在 `docs/CLAUDE.md` R8 §成员扩展。
+> CONTRIBUTING.md 仍为潜在扩展, 待项目首次接受外部贡献时再落地。
+
 ---
 
 ## 十七、v0.4.2 SPEC_ic_analysis 提升 (2026-04-25)
