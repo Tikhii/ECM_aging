@@ -262,8 +262,8 @@
       "code_location": "EquivCircuitCell.C1",
       "paper_value_NCA_G": 949.28,
       "units": "F",
-      "experiment": "EXP-C: Current-step relaxation test on fresh cell",
-      "fit_step": "FIT-2: Fit two-exponential relaxation",
+      "experiment": "EXP-B4 GITT relaxation (since v0.5.0; was EXP-C current-step relaxation in v0.4.x and earlier)",
+      "fit_step": "FIT-2: Fit two-exponential relaxation V(t) = V_inf + A1*exp(-t/tau1) + A2*exp(-t/tau2), then C_i = tau_i / R_i via R_NE/R_PE LUT lookup",
       "paper_errata": null,
       "spec_location": "params_mmeka2025_spec.C1",
       "spec_nature": "phenomenological"
@@ -275,7 +275,7 @@
       "code_location": "EquivCircuitCell.C2",
       "paper_value_NCA_G": 3576.07,
       "units": "F",
-      "experiment": "EXP-C",
+      "experiment": "EXP-B4 GITT relaxation (since v0.5.0; was EXP-C in v0.4.x and earlier)",
       "fit_step": "FIT-2: jointly with C1",
       "paper_errata": null,
       "spec_location": "params_mmeka2025_spec.C2",
@@ -825,14 +825,15 @@
       ]
     },
     "EXP-C": {
-      "name": "RC transient",
-      "description": "Current step -> rest -> relax; fit two-exponential decay",
+      "name": "RC transient (deprecated for FIT-2 since v0.5.0)",
+      "description": "Current step -> rest -> relax; legacy protocol for fitting two-exponential decay. Replaced by EXP-B4 GITT relaxation in FIT-2 (v0.5.0). Definition retained for documentation continuity; do not use for new fits unless EXP-B4 GITT protocol is infeasible.",
       "cells_needed": 1,
       "duration": "4 hours",
-      "outputs": [
-        "C1",
-        "C2"
-      ],
+      "outputs": [],
+      "deprecated_for": ["FIT-2"],
+      "deprecated_since_version": "0.5.0",
+      "deprecated_replacement": "EXP-B4",
+      "deprecated_note": "FIT-2 changed input from EXP-C current-step relaxation to EXP-B4 GITT relaxation in v0.5.0. EXP-B4 GITT pulses provide both R_NE_LUT/R_PE_LUT (original purpose) and the relaxation V(t) needed for two-exponential fitting, eliminating the need for a separate EXP-C protocol. See PARAMETERS.json::fit_steps::FIT-2::measurement_needed for current data contract.",
       "error_codes": [
         "DATA-E001"
       ]
@@ -924,7 +925,6 @@
       "EXP-B2",
       "EXP-B3",
       "EXP-B4",
-      "EXP-C",
       "EXP-E",
       "EXP-F",
       "EXP-G"

@@ -1,6 +1,6 @@
 # SPEC: IC Analysis for RPT → (LLI, LAM_PE, LAM_NE) Extraction
 
-**Status**: Spec frozen 2026-04-22. Promoted from TODO to SPEC on 2026-04-25 (v0.4.2 patch). Pending implementation in v0.5.0.
+**Status**: Spec frozen 2026-04-22. Promoted from TODO to SPEC on 2026-04-25 (v0.4.2 patch). Pending implementation in v0.5.x or v0.6.0 (deferred from v0.5.0 in favor of FIT-2 RC transient implementation; see MIGRATION_NOTES.md §十八).
 **Assignee**: Claude Code (local execution on libquiv-aging repo).
 **Blocks**: FIT-4a (calendar aging), FIT-4b (cycle preknee). Both need 
 (LLI_Ah, LAM_PE_Ah, LAM_NE_Ah) per RPT as their primary constraints.

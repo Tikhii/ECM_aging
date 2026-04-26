@@ -198,7 +198,7 @@ R2），但失去对 Fig. 6b 式"日历参数预测循环 IR 增长"的独立验
 | 半电池 OCV | `.dat` (alawa 格式) | `libquiv_aging/data/{material}Alawa.dat` | 3 列：`x`, `dH [J/mol]`, `dS [J/mol/K]`；`*` 开头为注释 |
 | 电阻 LUT | `.mat` | `libquiv_aging/data/{name}Resistances.mat` | 3 个 (1001×2001) 矩阵：`RsAlawa`, `RNEAlawa`, `RPEAlawa` |
 | 全电池 OCV | `.csv` | `experiments/EXP-A/{cell_id}_ocv.csv` | 列：`time_s, V_cell, I_A, Q_Ah, SOC` |
-| 阶跃响应 | `.csv` | `experiments/EXP-C/{cell_id}_step.csv` | 列：`time_s, V_cell, I_A` |
+| ~~阶跃响应 (deprecated v0.5.0)~~ | `.csv` | `experiments/EXP-C/{cell_id}_step.csv` | 列：`time_s, V_cell, I_A`。**已被 EXP-B4 GITT 弛豫替代用于 FIT-2,见 PARAMETERS.json::experiments::EXP-C deprecated 字段**。 |
 | GITT 弛豫 (FIT-2) | `.csv` | `experiments/EXP-B4/{cell_id}_relaxation.csv` | 列：`time_s [s], voltage_V [V], current_pre_step_A [A], soc_at_step [0..1], t_step_s [s]` (后三列每行同值, 表示单脉冲) |
 
 **`.dat` 文件示例（alawa 格式）**：
@@ -247,8 +247,10 @@ my_project/
     │   └── cell_01_fullcycle_C40.csv
     ├── EXP-B1/
     │   └── halfcell_PE_coin_03_C40.csv     # 还需经脚本转成 .dat
-    ├── EXP-C/
-    │   └── cell_01_step_50SOC.csv
+    ├── EXP-B4/
+    │   └── cell_01_relaxation.csv     # GITT 弛豫,FIT-2 输入 (v0.5.0+)
+    ├── EXP-C/                         # deprecated for FIT-2 since v0.5.0
+    │   └── cell_01_step_50SOC.csv     # 历史协议,见 PARAMETERS.json EXP-C deprecated 字段
     ├── EXP-E/
     │   ├── cell_E1_rpt.csv          # 每个 cell 一个 RPT 历史文件
     │   ├── cell_E2_rpt.csv

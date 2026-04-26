@@ -52,6 +52,7 @@ libquiv_aging_py/
 │
 ├── scripts/                      # 拟合脚本与工具
 │   ├── fit_electrode_balance.py  # FIT-1: LR/OFS 拟合
+│   ├── fit_rc_transient.py       # FIT-2: C1/C2 RC 弛豫双指数拟合 (dispatch 模式)
 │   ├── check_parameter_consistency.py
 │   ├── install_offline.sh        # air-gapped 安装入口
 │   ├── verify_install.sh
@@ -62,13 +63,15 @@ libquiv_aging_py/
 │   ├── figure7_simulation.py     # 复现论文图 7
 │   └── analysis_template.py      # 自定义分析模板
 │
-├── tests/                        # pytest 测试 (69 用例)
+├── tests/                        # pytest 测试 (87 用例)
 │   ├── test_basic.py             # 原始 22 个核心模型测试
 │   ├── test_schemas.py           # schema 与 spec 验证
 │   ├── test_cell_factory.py      # cell_factory 加载器
 │   ├── test_panasonic_equivalence.py  # 兼容层等价性
 │   ├── test_fitting.py           # FIT 基础设施
 │   ├── test_fit_electrode_balance.py  # FIT-1 端到端
+│   ├── test_relaxation_fitting.py     # FIT-2 内核单测 (RELAXATION_MODELS)
+│   ├── test_fit_rc_transient.py       # FIT-2 端到端
 │   ├── test_error_codes_registry.py   # 错误码 registry 验证
 │   └── golden_panasonic_snapshot.json # 回归测试金标准
 │

@@ -469,6 +469,94 @@ fractional_order_RC.md`)。理由: C7 finding 的可信度依赖于"升级路径
 
 ---
 
+## 十九、v0.5.1 派生层语义辐射修复 (2026-04-26)
+
+v0.5.0-fit2 完成后做了一次全面状态审计 (Project Knowledge GitHub 集成
+sync 后的检索), 暴露 v0.5.0 任务包执行时 R5 派生层一致性的一处实质漏洞。
+
+### 19.1 漏洞性质
+
+FIT-2 实施改用 EXP-B4 GITT 弛豫数据源 (替换原 EXP-C 阶跃响应), 这是一个
+"输入实验切换"动作。任务包正确更新了 `PARAMETERS.json::fit_steps::FIT-2`
+的 `requires_experiments` 字段, 但**未同步更新**:
+
+- `PARAMETERS.json::experiments::EXP-C::outputs` (仍含 C1/C2)
+- `PARAMETERS.json::parameters::C1/C2::experiment` (仍写 EXP-C)
+- `PARAMETERS.json::minimal_viable_experiments::for_aging_prediction_robust`
+  (仍含 EXP-C 而非 EXP-B4 用于 RC 的语义)
+- `docs/SPEC_ic_analysis.md` 的 Status 行 (仍写 "pending v0.5.0",
+  但 v0.5.0 已被 FIT-2 占用)
+- `docs/PARAMETER_SOP.md §3.1 / §3.3` (CSV 格式表与目录约定)
+- `docs/README.md` 目录结构图 tests/ 和 scripts/ 两段 (R8 同步执行
+  不彻底, 只改了文字说明, 目录树未同步)
+
+这些字段都是 fit_steps::FIT-2 的"语义辐射"目标——它们引用同一组实验和
+参数, 但分属不同的派生层。FIT-2 修改触发的连锁反应未被任务包 §4 文档
+同步段全面捕获。
+
+### 19.2 元教训
+
+R5 协议要求"扫→确→编→验"四步, 但扫描阶段的 grep 关键词如何**全面**
+覆盖语义辐射目标, 是一个未明确建立的规范。本次失察的根因是:
+
+- 扫描时只 grep 了直接关键词 (`FIT-2`, `C1`, `C2`)
+- 未 grep 间接关键词 (`EXP-C` 作为旧数据源在所有引用它的字段中)
+- 未做"输入实验切换"专项审视 (任何 fit_steps::FIT-X::requires_experiments
+  的修改都需要扫描所有标注 `experiment: EXP-X-old` 的派生字段)
+
+这与 v0.4.2 SPEC 提升时识别的 "TODO_*.md → SPEC_*.md 命名升级语义辐射"
+是同根问题。两次都暴露了"修改一个权威字段, 派生字段未自动同步"的工作流
+盲点。
+
+### 19.3 制度化决策
+
+**不立即引入 R9 规则**。理由:
+
+- R5 协议本身要求"扫描-确认"的覆盖性, 本次失察不是规则缺失, 而是**规则
+  执行细节不够具体**。引入 R9 会与 R5 重复
+- 更合适的做法是在 R5 的 "扫描阶段" 描述中**显式补充**"语义辐射目标"
+  概念, 即修改 fit_steps / experiments / parameters 等核心结构时, 必须
+  把所有以这些结构为引用源的字段都纳入扫描
+
+**待办**: 下次 docs/CLAUDE.md 修订时, 在 R5 协议 "1. 扫描阶段" 段中加入
+"语义辐射目标"小节, 列出已知的辐射模式 (fit_steps↔experiments↔parameters
+三角, README↔QUICKSTART, 等)。本次 v0.5.1 patch 不动 CLAUDE.md, 把这
+一改进留给下次更轻量的文档治理 patch 做。
+
+### 19.4 EXP-C 命运决策
+
+PARAMETERS.json 的 EXP-C 字段从 "active" 改为 "deprecated for FIT-2",
+保留实验定义本身但 outputs 改为空, 新增 deprecated_* 元数据字段。理由:
+
+- R6 错误码协议精神 "编号一经发放不复用" 推广到实验编号
+- 完全删除会破坏历史 git history 中对 EXP-C 的引用解析
+- 若未来 EXP-B4 GITT 协议在某些 cell type 下不可行, EXP-C 的简化阶跃
+  响应仍可作为 fallback (但需要新任务包扩展 FIT-2 接受 EXP-C 列契约,
+  本 patch 不做)
+
+### 19.5 PARAMETER_SOP.md 与 README.md 同步
+
+PARAMETER_SOP.md §3.1 数据格式表 EXP-C 行加 deprecated 标记, §3.3 目录
+约定加 EXP-B4 行并对 EXP-C 加 deprecated 注释。README.md 目录结构图的
+tests/ 段加 test_relaxation_fitting.py 和 test_fit_rc_transient.py 两
+行 (并将测试数 69 → 87), scripts/ 段加 fit_rc_transient.py 行。
+
+06_parameter_sourcing.md §3.2 仍引用 EXP-C 阶跃响应作为 RC 拟合数据源,
+但因其是叙事性文档 (R1 协议中"叙事文档与权威文档冲突时以权威为准"),
+本 patch 不动, 留给下次大整理或 IC analysis 任务包附带处理。
+
+CLAUDE.md 代码导航段的 "tests/test_basic.py 15 个回归测试" 描述也是
+v0.2.x 时代过期内容, 同样推迟到下次治理 patch。
+
+### 19.6 经验留痕
+
+本次审计的触发条件是 Project Knowledge GitHub 集成完成 sync 后的全面
+检索, 这种检索在以前 (集成不可用时) 成本极高, 现在变成日常可用工具。
+未来每次 release tag 落定后值得固定执行一次类似审计, 把派生层不一致
+问题在第一时间捕获, 不积累到下下次 release 才发现。
+
+---
+
 ## 版本记录
 
 | 日期 | 变更 |
@@ -483,3 +571,4 @@ fractional_order_RC.md`)。理由: C7 finding 的可信度依赖于"升级路径
 | 2026-04-25 | 追加 §十六。v0.4.1 R8 规则: README 与 release 同步, 工作流类别缺陷的修复机制。 |
 | 2026-04-25 | 追加 §十七。v0.4.2 SPEC 提升: TODO_ic_analysis.md → SPEC_ic_analysis.md, 暴露 backlog 文档可见性盲点。 |
 | 2026-04-26 | 追加 §十八。v0.5.0 FIT-2 RC 弛豫拟合落地: dispatch 模式准备升级路径, C6→C7 重映射, tau→R 双候选 + 歧义警告。 |
+| 2026-04-26 | 追加 §十九。v0.5.1 派生层语义辐射修复: EXP-C deprecated for FIT-2, SPEC_ic_analysis Status 更新, PARAMETER_SOP §3.1/§3.3 同步, README 目录结构图 tests/ + scripts/ 段补齐。元教训: R5 扫描阶段需引入"语义辐射目标"概念。 |

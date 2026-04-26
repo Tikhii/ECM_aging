@@ -427,3 +427,4 @@ python examples/smoke_test.py    # 必须全通过
 | 2026-04-25 | v0.4.2 SPEC 提升: 把 docs/TODO_ic_analysis.md 升级为 docs/SPEC_ic_analysis.md, 同步引用与接口约定。详见 MIGRATION_NOTES §十七。 |
 | 2026-04-26 | v0.4.3 R8 成员扩展: 落地 LICENSE 和 NOTICE 文件, 把 LICENSE/NOTICE/pyproject.toml description 正式纳入 R8 范畴, 各自触发条件独立于 README/QUICKSTART 的四类触发。同步清理 pyproject.toml authors 占位符。 |
 | 2026-04-26 | v0.5.0 FIT-2 RC 弛豫拟合落地: 新增 `scripts/fit_rc_transient.py` 与 `libquiv_aging/relaxation_fitting.py` (dispatch 模式准备升级路径)。错误码扩展 FIT2-Exxx/W001。`CRITICAL_REVIEW.md` 新增 C7 (RC 拓扑对长弛豫的不足) 与 `docs/UPGRADE_LITERATURE/fractional_order_RC.md` 升级文献入口。详见 MIGRATION_NOTES §十八。 |
+| 2026-04-26 | v0.5.1 派生层语义辐射修复: EXP-C deprecated for FIT-2, PARAMETERS.json 三处字段 + SPEC_ic_analysis Status + PARAMETER_SOP §3.1/§3.3 + README 目录结构图同步。详见 MIGRATION_NOTES §十九。 |
