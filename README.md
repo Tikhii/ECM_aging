@@ -169,10 +169,48 @@ python scripts/fit_electrode_balance.py \
 | 查项目演化历史 | `docs/MIGRATION_NOTES.md` |
 | 给 AI 代理 (Claude Code) 的路由手册 | `docs/CLAUDE.md` |
 
-## 引用
+## 许可证 (License)
 
-若在学术工作中使用，请引用原论文（见顶部），并可注明本 Python 移植。
+本工程采用 **Creative Commons Attribution-NonCommercial 4.0 International
+(CC BY-NC 4.0)** 许可证发布，与上游 Zenodo MATLAB 代码保持一致。完整法律条款
+见仓库根目录 `LICENSE`，归属与派生关系见 `NOTICE`。
 
-## 许可
+### 派生关系澄清
 
-代码遵循原作者的 **CC BY-NC 4.0** 许可（非商业使用）。
+本 Python 实现是 Mmeka, Dubarry & Bessler (2025) 论文**配套 MATLAB 代码**
+（Zenodo: [10.5281/zenodo.15833031](https://doi.org/10.5281/zenodo.15833031),
+CC BY-NC 4.0）的派生作品。
+
+注意：原论文正文本身使用更严格的 CC BY-NC-**ND** 4.0（禁止衍生），但**不是**
+本代码的法律来源。本代码的法律来源是 Zenodo 上的 MATLAB 源码，其许可证不含
+ND 条款，因此允许产生派生作品。
+
+### Non-Commercial 范围的解释性声明
+
+CC BY-NC 4.0 中 "non-commercial" 的官方定义是 *"not primarily intended for
+or directed towards commercial advantage or monetary compensation"*。作为
+版权持有人，对常见模糊场景作如下声明。**本声明不修改 CC 许可条款本身**，
+仅用于降低使用者的咨询成本。
+
+**明确允许（无需联系作者）**:
+
+- 学术研究使用，包括博士论文、会议与期刊投稿、研究项目原型代码
+- 高校与研究机构的教学使用
+- 个人学习与非营利开源贡献
+
+**需事先联系作者**:
+
+- 工业界（包括初创公司）的内部研究、产品开发、咨询项目
+- 嵌入到商业产品中的使用，包括 SaaS、BMS 固件、电池诊断或寿命预测服务
+- 任何收费的培训或咨询服务中作为示例代码使用
+
+联系方式：通过本仓库 GitHub Issues 提出。
+
+### 引用 (Citation)
+
+如在学术工作中使用本代码，请同时引用：
+
+1. **原论文**: Mmeka P. O., Dubarry M., Bessler W. G. *J. Electrochem. Soc.*
+   **172** 080538 (2025). DOI: [10.1149/1945-7111/adf9cb](https://doi.org/10.1149/1945-7111/adf9cb)
+2. **本 Python 移植**: 仓库 URL，或未来发布的 Zenodo DOI（建议在版本稳定
+   后注册）。

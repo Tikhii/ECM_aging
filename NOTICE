@@ -1,0 +1,58 @@
+================================================================================
+libquiv-aging — Python port of Mmeka–Dubarry–Bessler (2025) aging model
+================================================================================
+
+This work is a Python port of the MATLAB implementation accompanying:
+
+  Mmeka P. O., Dubarry M., Bessler W. G.
+  "Physics-Informed Aging-Sensitive Equivalent Circuit Model for
+   Predicting the Knee in Lithium-Ion Batteries"
+  Journal of The Electrochemical Society, 172, 080538 (2025)
+  DOI: 10.1149/1945-7111/adf9cb
+
+--------------------------------------------------------------------------------
+Original MATLAB implementation
+--------------------------------------------------------------------------------
+
+  Authors:  P. O. Mmeka, M. Dubarry, W. G. Bessler
+  Archive:  Zenodo, DOI 10.5281/zenodo.15833031
+  License:  Creative Commons Attribution-NonCommercial 4.0 International
+            (CC BY-NC 4.0)
+
+The original MATLAB code is the legal source of this Python port. The model
+equations and aging mechanisms are reproduced as a derivative work under the
+terms of CC BY-NC 4.0.
+
+--------------------------------------------------------------------------------
+Python port (this repository)
+--------------------------------------------------------------------------------
+
+  Copyright (c) 2026 Tikhii
+  License:    Creative Commons Attribution-NonCommercial 4.0 International
+              (CC BY-NC 4.0)
+  Repository: https://github.com/Tikhii/libquiv-aging
+
+The Python port introduces structural changes (modular decomposition,
+substitution of ode23t with scipy.integrate.solve_ivp BDF, scalar-fast
+interpolation, dataclass-based parameter packs, pytest infrastructure) but
+reproduces the mathematical model and aging mechanisms of the original work
+without alteration to the underlying physics.
+
+--------------------------------------------------------------------------------
+Underlying journal article (informational only — NOT the source of this port)
+--------------------------------------------------------------------------------
+
+The journal article itself is licensed CC BY-NC-ND 4.0 (No Derivatives) and is
+referenced here only for citation and scientific context. The legal source of
+this Python port is the Zenodo MATLAB archive listed above, which is licensed
+CC BY-NC 4.0 (without the No-Derivatives clause), under whose terms this
+derivative work is distributed.
+
+--------------------------------------------------------------------------------
+Citation
+--------------------------------------------------------------------------------
+
+If you use this code in academic work, please cite both:
+
+  (1) The original paper by Mmeka, Dubarry, and Bessler (DOI above), and
+  (2) This Python port — repository URL, or a Zenodo DOI if/when one is minted.
