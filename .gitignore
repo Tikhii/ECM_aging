@@ -34,3 +34,5 @@ runs/
 # MATLAB
 *.asv
 .claude/
+docs/tasks/.reports/
+*.session.log
