@@ -845,6 +845,75 @@ frozen SPEC 契约,流程上的几个验证:
 5 + 子阶段 7 已部分覆盖,作为 release 最后的 sanity check 值得固化为
 默认动作 (§十九 §19.6 已提议,本任务再次应用)。
 
+### 20.9 协同层迁移到 Obsidian + iCloud (release 后工作流改进)
+
+v0.5.2 release tag (release/v0.5.2-ic-analysis) 落定后, 协同层从仓库
+内 docs/tasks/ 路径迁移到 Obsidian vault (iCloud Drive sync), 切断
+任务包/子阶段报告与 git 历史的耦合。这是本工程协同模式的一次结构
+性调整, 与 v0.5.2 代码工作无直接关系, 但因起源于 v0.5.2 任务执行
+过程中的实践反思, 在此一并记录。
+
+**背景**: v0.5.2 任务包 TASK_ic_analysis_v0.5.x.md (1118 行) 在 docs/
+tasks/ 中作为 untracked 文件存在, docs/tasks/.reports/ 子目录 git
+ignored 用于 CC 子阶段执行报告。这套机制在 v0.5.2 八子阶段中跑通,
+但暴露三个工程问题:
+
+- 每次 web chat ↔ CC 协同需要 iPhone Safari → Files → Working Copy
+  → GitHub → Mac git pull 五步流转, 路径过长
+- CC 报告经 Blink ssh + tmux + cat + iOS 触屏选择回传, 长报告费力
+- 任务包是否入 git 反复决策, 每次 release 都要做一次"入还是不入"的
+  判断, 信息不对称
+
+**根因**: 任务包/报告本质是过程文档, 与代码工程层 (代码 + 权威文档
++ release tag) 的语义不同。强行让协同层走 git 通道, 会污染历史并
+增加每次 commit 的判断负担。
+
+**修复**: 引入 Obsidian + iCloud Drive 作为协同层主路径, git 仅承担
+代码工程层。
+
+[协同层]                    [代码工程层]
+任务包 + 子阶段报告           代码 + 权威文档
+↓                           ↓
+Obsidian vault              git 仓库
+(iCloud sync)               (GitHub)
+↓                           ↓
+iPhone ↔ Mac                本地 ↔ 远程
+临时, 流转, 手稿             永久, 归档, 可追溯
+
+**实施**: vault 路径 ~/Library/Mobile Documents/iCloud~md~obsidian/
+Documents/libquiv-aging-tasks/, 按 release 组织子目录 (v0.5.2-ic-
+analysis/, v0.6.0-fit-4/ 等)。Mac 与 iPhone 各装 Obsidian (免费, 不
+用 Obsidian Sync 付费服务, 仅靠 iCloud Drive)。仓库内 docs/tasks/
+移除, .gitignore 从 docs/tasks/.reports/ 扩展为 docs/tasks/ 整目录
+(防止未来误入)。
+
+**边界划分**: MIGRATION_NOTES.md 本身仍在 git 中——它是"已完成历史
+决策的精炼记录"; Obsidian vault 是"过程文档"。两者分工明确, 互不
+冲突: vault 内的子阶段执行报告将逐步老化, 永久价值的精炼内容已经
+通过本节 (§20.x) 沉淀到 git。
+
+**风险与缓解**:
+- iCloud sync 延迟 (Wi-Fi 5-30 秒, 蜂窝 1-2 分钟): 协同节奏不依赖
+  即时同步, 用户每个子阶段后停下 review 的工作模式天然容忍延迟
+- vault 数据丢失 (iCloud 损坏 / 误删): vault 内容是过程文档, 损失
+  不影响 release; 关键决策已由 §20.1-§20.8 在 git 中固化
+- 跨设备冲突 (Mac 和 iPhone 同时编辑同一文件): 实践中 web chat ↔
+  CC 的同步性强 (一端写, 另一端 review), 同时编辑罕见; iCloud 的
+  冲突副本机制可兜底
+
+**此前 R8 grep 模板弱点 (§20.4.2 / §20.7.4) 不受影响**: R8 验收针对
+代码工程层的目录树/文件名一致性, 与协同层无关。Obsidian vault 是
+工程师视角的"工作笔记本", 不进入 R8 验收范围。
+
+**预期收益**: web chat 端给的下一个任务包(预计 v0.6.0 FIT-4 准备)
+将首次走完整 Obsidian 流程, 验证协同效率提升。若工作流顺畅, 之后
+每次 release 都按此模式; 若发现新摩擦, 在 v0.6.x patch 中调整。
+
+**这次没立即引出新规则**: 协同层迁移属工作流改进, 不是治理协议改动,
+不需要新 R 规则。docs/CLAUDE.md "Claude Code 协作规范" 段需要在下次
+任务包起草前更新, 把"任务包放 docs/tasks/" 改为"任务包放 Obsidian
+vault", 这是 R8 派生层连锁同步的轻量延伸, 不视为本次 patch 范围。
+
 ---
 
 ## 版本记录
@@ -863,3 +932,4 @@ frozen SPEC 契约,流程上的几个验证:
 | 2026-04-26 | 追加 §十八。v0.5.0 FIT-2 RC 弛豫拟合落地: dispatch 模式准备升级路径, C6→C7 重映射, tau→R 双候选 + 歧义警告。 |
 | 2026-04-26 | 追加 §十九。v0.5.1 派生层语义辐射修复: EXP-C deprecated for FIT-2, SPEC_ic_analysis Status 更新, PARAMETER_SOP §3.1/§3.3 同步, README 目录结构图 tests/ + scripts/ 段补齐。元教训: R5 扫描阶段需引入"语义辐射目标"概念。 |
 | 2026-04-28 | 追加 §二十。v0.5.2 IC analysis 落地 (frozen SPEC 兑现): `libquiv_aging/ic_analysis.py` + `scripts/fit_ic_to_dms.py` + `tests/test_ic_analysis.py` (22 用例) + 错误码 ICA scope (E001/E002/E003/W001/W002)。三决策: Path B + dual brentq + bracket、fit_quality 阈值文献依据、不回写 spec。子阶段 4 T4 阻塞由 paper Fig. 6c "sum(DMs) ≠ cap_loss 非线性关系"印证 forward model 物理正确,T4 改写为 cap_loss self-consistency。R9 候选 #5 (实证驱动校验) 与 #4 合并,等第二次事件制度化。R8 grep 模板弱点 (v0.5.0 漏 relaxation_fitting.py 在目录树) 同步补齐。|
+| 2026-04-28 | 追加 §20.9。协同层迁移到 Obsidian + iCloud: 任务包/子阶段执行报告从仓库内 docs/tasks/ 迁移到 vault (iCloud Drive sync), 切断协同与 git 历史的耦合。代码工程层 (git) 与协同层 (Obsidian) 边界正式划清。为下一次任务包 (预计 v0.6.0 FIT-4 准备) 走完整 Obsidian 流程做准备。 |
