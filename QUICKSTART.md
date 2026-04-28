@@ -81,7 +81,7 @@ python -c "import libquiv_aging; print(libquiv_aging.__file__)"
 ## ☑ Step 4 · 验证环境
 
 ```bash
-# 跑 87 个单元测试 (~30 秒)
+# 跑 109 个单元测试 (~45 秒)
 pytest tests/ -v
 
 # 烟雾测试 (~10 秒)

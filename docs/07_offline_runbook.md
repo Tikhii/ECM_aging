@@ -26,7 +26,7 @@
 
 ```
 {SCOPE}-{LEVEL}{NUMBER}
-  SCOPE  ∈ {ENV, DATA, FIT1, FIT2, FIT4A, FIT4B, FIT4C, SOLVE, IDENT}
+  SCOPE  ∈ {ENV, DATA, FIT1, FIT2, ICA, FIT4A, FIT4B, FIT4C, SOLVE, IDENT}
   LEVEL  ∈ {E (error 停机), W (warn 继续), I (info 提示)}
   NUMBER = 3 位数字, 每个 (SCOPE, LEVEL) 组合内部唯一, 一经发放不复用
 ```
@@ -452,7 +452,174 @@ exit code 93, warn, 打印本条目编号 (`[FIT2-W001]`)。
 
 ---
 
-## §5 FIT-4a 相关错误 (FIT4A)
+## §5 IC 分析相关错误 (ICA)
+
+### ICA-E001: RPT C/40 CSV 列契约违规或样本不足
+
+**触发条件**
+执行 `fit_ic_to_dms.py` 时, 输入 CSV 缺失必填列 (`Q_Ah`, `V_cell_V`),
+或样本数量级低于 50 行, 或 Q range 量级低于 1.5 Ah, 或材料/参数 spec
+文件不存在。
+
+**物理/方法学后果**
+IC analysis 的 quasi-equilibrium forward model 需要 V(Q) 在足够 Q
+跨度上有足量样本以分辨 graphite stage 1↔2↔3 features。任一前置条件
+破坏会让 `scipy.optimize.least_squares` 在病态目标上收敛到错误最优,
+写回的 (LLI, LAM_PE, LAM_NE) 三元组污染下游 FIT-4a/b 拟合的初值与
+残差权重。
+
+**权威文档交叉引用**
+- `docs/SPEC_ic_analysis.md`
+- `docs/PARAMETER_SOP.md §3.2 老化实验数据 (每次 RPT 一行)`
+- `docs/PARAMETER_SOP.md §SOP-4.5 IC 分析提取 DMs`
+
+**现场可选处置**
+1. 用 `pandas.read_csv(...).dtypes` 检视实际列名, 比对 SPEC 输入契约,
+   打印首个不匹配列。
+2. 若样本量级不足, 回溯 RPT 导出脚本, 确认 C/40 放电窗未被提前裁剪。
+3. 若 Q range 不足 (典型 panasonic ncr18650b 应 ≥ 1.5 Ah 量级),
+   检查放电是否到达 V_min 截止条件。
+4. 若 spec 文件不存在, 确认 `--cell-type` 与 `material_specs/<cell>.material.json`
+   文件名是否对齐, 并按 SOP-1 完成 cell type 骨架。
+
+**脚本应当行为**
+exit code 100, refuse, 打印本条目编号 (`[ICA-E001]`)。
+
+**何时升级到在线咨询**
+见 `docs/08_consultation_protocol.md §6.例 1 — 数据契约违规`。
+
+### ICA-E002: scipy.optimize.least_squares 未收敛或协方差非有限
+
+**触发条件**
+`fit_ic_to_dms.py` 调用 `least_squares` 完成后, `result.status` 量级
+≤ 0 (未收敛); 或 J^T J 病态使条件数量级 ≥ 1e12; 或 Hessian 反演
+返回的 std 含 NaN/Inf。
+
+**物理/方法学后果**
+(LLI, LAM_PE, LAM_NE) 估计与误差棒不可信。强行写回会让下游 FIT-4a/b
+把数值病态当作真实老化轨迹, k_SEI / k_LAM_* 估计被严重污染。误差棒
+不可计算意味着识别性已无从评估。
+
+**权威文档交叉引用**
+- `docs/SPEC_ic_analysis.md`
+- `scripts/fit_ic_to_dms.py`
+- `libquiv_aging/ic_analysis.py`
+
+**现场可选处置**
+1. 检查 V(Q) 曲线形态: 是否呈现 graphite stage 1↔2↔3 的清晰特征?
+   若曲线过平直或仅显示单一过渡, 数据信噪比不足以支持三参数同时识别。
+2. 检查初值: `heuristic_initial_guess` 给出的 LLI / LAM_PE / LAM_NE
+   起点是否落在 search bounds 内。若初值离最优过远, 可手动指定
+   `--initial-guess` 或扩大 bounds 一个量级。
+3. 若仍不收敛, 数据可能不适配本 SPEC 的 quasi-equilibrium 假设
+   (例如 RPT 是 C/10 而非 C/40, 残留 IR), 走 ICA-E003 升级路径。
+4. 持续不收敛时上报到 `docs/08_consultation_protocol.md`。
+
+**脚本应当行为**
+exit code 101, refuse, 打印本条目编号 (`[ICA-E002]`)。
+
+**何时升级到在线咨询**
+见 `docs/08_consultation_protocol.md §6.例 2 — 拟合前置条件不足`。
+
+### ICA-E003: IC 拟合 RMSE 或 R² 越过失败阈值
+
+**触发条件**
+`least_squares` 收敛后, V(Q) 残差 RMSE 量级超过 20 mV,
+或 R² 量级低于 0.99。
+
+**物理/方法学后果**
+V(Q) 拟合未达 quasi-equilibrium 模型在 alawa regime 内的可信精度。
+常见原因: (a) RPT 实际为 C/10 或更高, IR 未消除导致 13–27 mV 量级
+系统偏移; (b) cell 已进入非 alawa regime (CEI 主导 / plating-driven
+knee), SPEC 假设不适用; (c) CSV 单位错 (Ah vs A·s, V vs mV)。
+继续写回 (LLI, LAM_PE, LAM_NE) 会污染 FIT-4a/b 拟合。
+
+**权威文档交叉引用**
+- `docs/SPEC_ic_analysis.md`
+- `docs/PARAMETER_SOP.md §3.2 老化实验数据 (每次 RPT 一行)`
+- `docs/CRITICAL_REVIEW.md`
+
+**现场可选处置**
+1. 确认 RPT 是否真为 C/40 (准平衡); C-rate 偏高时残留 IR 在 V(Q)
+   上叠加系统偏移。若是, 重做 RPT 或在数据导出端做 IR 校正。
+2. 目视 V(Q) 图: graphite stage 1↔2↔3 features 是否清晰可见。features
+   模糊提示 cell 已进入非 alawa regime, IC analysis 在此 regime 不
+   再适用。
+3. 比对 CSV 单位: `Q_Ah` 应为 Ah (不是 A·s), `V_cell_V` 应为 V
+   (不是 mV)。任一单位错会让 RMSE 量级偏离两到三个数量级。
+4. 数据归档到 `runs/{run_id}/exp_e_failed/`, 不写回 spec, 等待数据
+   复测或转入升级路径调研。
+
+**脚本应当行为**
+exit code 102, refuse, 打印本条目编号 (`[ICA-E003]`)。
+
+**何时升级到在线咨询**
+见 `docs/08_consultation_protocol.md §6.例 1 — 数据契约违规`。
+
+### ICA-W001: IC 拟合质量在 marginal 区间
+
+**触发条件**
+`least_squares` 收敛后, RMSE 量级落入 15–20 mV 区间, 或 R² 量级
+落入 0.99 ≤ R² < 0.999 区间。
+
+**物理/方法学后果**
+拟合通过 SOP §3.2 的 "<15 mV 为可接受" 边界但低于优秀质量。
+(LLI, LAM_PE, LAM_NE) 仍写回 RPT 级 JSON, 但 `fit_r_squared` /
+`rmse_V` 字段反映质量较低。下游 FIT-4a/b 在见到 marginal 标记时应
+放宽对该 RPT 数据点的权重。
+
+**权威文档交叉引用**
+- `docs/PARAMETER_SOP.md §3.2 老化实验数据 (每次 RPT 一行)`
+- `docs/SPEC_ic_analysis.md`
+
+**现场可选处置**
+1. 若可接受当前精度 (例如初步建模阶段), 接受 marginal 状态;
+   `fit_quality.marginal_quality` 字段持久化质量信号供未来审计。
+2. 若不可接受, 按 ICA-E003 的 remediation 路径排查 (RPT C-rate /
+   单位 / alawa regime)。
+3. JSON metadata 段记录的 `marginal_quality=true` 会被下游 FIT-4a/b
+   读取并降权该 RPT。
+
+**脚本应当行为**
+exit code 103, warn, 打印本条目编号 (`[ICA-W001]`)。
+
+**何时升级到在线咨询**
+见 `docs/08_consultation_protocol.md §6.例 6 — 识别性警告`。
+
+### ICA-W002: IC 分析参数命中 search bound
+
+**触发条件**
+`least_squares` 收敛后, LLI / LAM_PE / LAM_NE 任一参数距其 search
+bound 的距离量级低于 bound 宽度的 1%。
+
+**物理/方法学后果**
+对应 DM 实际值可能在 bound 之外 (老化超出 SPEC 假设的 0.3·C 上限),
+或 cell 已进入非 alawa regime, bound 即将不适用。报告值不具置信
+意义, 误差棒在边界附近也会被截断。
+
+**权威文档交叉引用**
+- `docs/SPEC_ic_analysis.md`
+- `docs/CRITICAL_REVIEW.md`
+
+**现场可选处置**
+1. 若 LLI 命中 0.3·C_nominal 上界: cell 已严重退化, 可能进入
+   plating-driven knee; IC analysis 在此 regime 不适用, 进入 FIT-4c
+   knee 分析路径而非继续 IC analysis。
+2. 若 LAM_PE / LAM_NE 命中上界: 可能进入 CEI 主导 regime, 需要新
+   模型 (见 `docs/CRITICAL_REVIEW.md`); 不要简单放宽 bound, 因为
+   SPEC 的 bound 设计反映了模型适用域。
+3. 把命中事件写入输出 JSON 的 `fit_quality.bounds_hit` 字段, 下游
+   FIT-4a/b 应跳过此 RPT 数据点。
+
+**脚本应当行为**
+exit code 104, warn, 打印本条目编号 (`[ICA-W002]`)。
+
+**何时升级到在线咨询**
+见 `docs/08_consultation_protocol.md §6.例 6 — 识别性警告`。
+
+---
+
+## §6 FIT-4a 相关错误 (FIT4A)
 
 ### FIT4A-E001: Tier I/II/III 参数存在未填 placeholder
 
@@ -562,7 +729,7 @@ exit code 33, refuse, 打印本条目编号 (`[FIT4A-E004]`)。
 
 ---
 
-## §6 FIT-4b 相关错误 (FIT4B)
+## §7 FIT-4b 相关错误 (FIT4B)
 
 ### FIT4B-E001: 检测到 FIT-4a 参数被解冻
 
@@ -643,7 +810,7 @@ exit code 42, refuse, 打印本条目编号 (`[FIT4B-E003]`)。
 
 ---
 
-## §7 FIT-4c 相关错误 (FIT4C)
+## §8 FIT-4c 相关错误 (FIT4C)
 
 ### FIT4C-E001: 除 k_LP 外任一参数未冻结
 
@@ -699,7 +866,7 @@ exit code 51, refuse, 打印本条目编号 (`[FIT4C-E002]`)。
 
 ---
 
-## §8 数值求解器类错误 (SOLVE)
+## §9 数值求解器类错误 (SOLVE)
 
 ### SOLVE-E001: scipy solve_ivp BDF 积分失败
 
@@ -754,7 +921,7 @@ exit code 61, refuse, 打印本条目编号 (`[SOLVE-E002]`)。
 
 ---
 
-## §9 可识别性警告 (IDENT)
+## §10 可识别性警告 (IDENT)
 
 > 本节三条警告码 (IDENT-W001/W002/W003) 当前 status 为 draft。
 > 它们的 trigger 条件和阈值是基于理论预判的占位规格, 尚未在
@@ -862,6 +1029,11 @@ exit code 72, warn, 打印本条目编号 (`[IDENT-W003]`)。
 | FIT2-E002 | FIT2 | E | scipy.optimize.curve_fit 未收敛或返回非有限协方差 | 91 | refuse | active |
 | FIT2-E003 | FIT2 | E | RC 弛豫拟合 RMSE 超过失败阈值 | 92 | refuse | active |
 | FIT2-W001 | FIT2 | W | RC 弛豫拟合 RMSE 在 marginal 区间或 tau→R 映射不确定 | 93 | warn | active |
+| ICA-E001 | ICA | E | RPT C/40 CSV 列契约违规或样本不足 | 100 | refuse | active |
+| ICA-E002 | ICA | E | scipy.optimize.least_squares 未收敛或协方差非有限 | 101 | refuse | active |
+| ICA-E003 | ICA | E | IC 拟合 RMSE 或 R² 越过失败阈值 | 102 | refuse | active |
+| ICA-W001 | ICA | W | IC 拟合质量在 marginal 区间 | 103 | warn | active |
+| ICA-W002 | ICA | W | IC 分析参数命中 search bound | 104 | warn | active |
 | FIT4A-E001 | FIT4A | E | Tier I/II/III 参数存在未填 placeholder | 30 | refuse | active |
 | FIT4A-E002 | FIT4A | E | EXP-E 温度点过少, E_a 不可识别 | 31 | refuse | active |
 | FIT4A-E003 | FIT4A | E | IR 列缺失率过高 | 32 | refuse | active |

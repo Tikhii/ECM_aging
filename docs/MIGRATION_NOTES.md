@@ -557,6 +557,296 @@ v0.2.x 时代过期内容, 同样推迟到下次治理 patch。
 
 ---
 
+## 二十、v0.5.2 IC analysis 落地 (2026-04-28)
+
+### 20.1 任务范畴与边界
+
+`docs/SPEC_ic_analysis.md` 在 v0.4.2 (§十七) 升格为冻结契约 (frozen
+2026-04-22),v0.5.0 / v0.5.1 期间该 SPEC 标注 "pending v0.5.0" 但
+v0.5.0 被 FIT-2 占用,SPEC 兑现延迟到 v0.5.2。本任务包覆盖八个子阶段:
+
+0) reconnaissance — 对 cell_model / lookup_tables / cell_factory
+   做接口扫描,据 findings 选择 `synthesize_V_ocv` 实现路径
+1) 错误码事实层扩展 — schema scope.enum 加 ICA,registry 写入
+   ICA-E001/E002/E003/W001/W002 五条目
+2) 内核实装 — `libquiv_aging/ic_analysis.py` 提供 `synthesize_V_ocv`
+   forward、`heuristic_initial_guess`、`analyze_ic` 三层 API
+3) CLI 实装 — `scripts/fit_ic_to_dms.py` 5 参数,JSON + 2×2 PNG,
+   matplotlib lazy import
+4) 测试 — `tests/test_ic_analysis.py` 22 用例 (T1-T5 acceptance + 错误码
+   集成 + 子阶段 2 v2 helper 防回归)
+5) R8 同步 — README / QUICKSTART / docs/CLAUDE.md 三处目录树 + 测试数
+6) 元教训留痕 — 本节
+7) 验证 — 全 suite 109 passed
+8) 完成报告
+
+本节聚焦三个核心架构决策、§十九 元教训正面应用、错误码 ICA scope
+引入、子阶段 4 T4 阻塞与论文 Fig. 6c 物理印证。实现细节走代码与
+spec。
+
+### 20.2 Step 0 reconnaissance findings
+
+子阶段 0 做了四组 grep,关键发现:
+
+- `EquivCircuitCell.open_circuit_voltage_cell()` **不直接可复用**:返回
+  当前 SOC 单点 float,内部依赖 `_aging_calibrate_SOC` 中 2 次 brentq。
+  扫描 Q grid 触发 N×2 brentq → 单次 forward 秒级,违反 SPEC 性能目标
+  (<2s/RPT)。
+- `lookup_tables.py::open_circuit_voltage(X_ne, X_pe, T, ...)` 是干净的
+  vectorized 原语,接受 numpy 数组,返回 `(V0, dS_NE, dS_PE, V0_PE,
+  V0_NE)`,内部 `interp_dH_dS` 线性插值。这是 Path B 的天然落点。
+- `HalfCellThermo.interp_dH_dS(X)` 对 X<0/X>1 做 silent clamp 而非返回
+  inf。SPEC forward model 期望 X 越界返 inf 残差,故 ic_analysis 必须
+  在调用前显式 X 域检查 — 边界处理由 caller 负责,**非接口冲突**。
+- `_derive_C0_PE/NE/Q0_SEI_NE` 模块级函数签名与 SPEC 一致,可直接复用,
+  返回 A·s 单位需 /3600 → Ah。
+
+四 finding 共同支持 Path B (algebraic vectorized + 显式 X 域 inf
+传播),与任务包推荐路径一致,但理由更硬:不是"解耦更适合 pure
+forward"的理想化叙述,而是"`init()` 含 brentq → Path A 性能不可达"
+的硬约束。这一 reconnaissance-driven 路径选择是子阶段 4 §十九 元教训
+"实证驱动"在 v0.5.2 任务包内的首次正面应用 — 在写代码前先扫码再决策。
+
+### 20.3 三个核心架构决策
+
+#### 20.3.1 `synthesize_V_ocv` 路径选择: Path B + dual brentq + bracket 增强
+
+子阶段 2 第一次实施(单 brentq 锚定 V_max 端)在自检测试中暴露
+`spec X0 + paper Eq. 22 SEI 减项使 V_min 端 X_NE ≈ -0.008` 的非物理
+状态:`brentq window` 不能假设 dQ=0 ↔ V_min。
+
+第二次修订改用 **dual brentq** (V_min + V_max 各一次),对齐
+`scripts/fit_electrode_balance.py::_calibrate_soc_bounds` 的成熟做法,
+并新增 `_bracket_dQ_for_voltage(target_V)` 辅助函数 — 41 点物理可行
+dQ 域采样找首个 sign-change pair,给 brentq 提供干净 bracket,
+**避免 `f(a)*f(b)>0` 错误**。
+
+权衡: FIT-1 的 _calibrate_soc_bounds 是 fresh-cell 一次性 calibration,
+不需要 bracket 增强;IC analysis 优化器会把 (LAM_PE, LAM_NE, LLI) 推到
+alawa regime 边界,brentq window 必须 fail-fast 到整条 inf 残差。这是
+对 FIT-1 框架的鲁棒性增强,不是抽象重复。性能实测 ~3.9 ms/eval (含
+spec re-load),远低于 SPEC <10 ms/eval 阈值。
+
+子阶段 2 v2 进一步抽出 `_fresh_state_model_capacity_Ah(art)` 复用同一
+dual-brentq + bracket 路径(fail-safe fallback C_nominal),让
+`heuristic_initial_guess` 不再依赖外部猜测的 fresh-cell 容量。这一抽离
+也是 Step 0 reconnaissance "查清现有原语再决定要不要新增" 的延伸应用。
+
+#### 20.3.2 fit_quality 阈值的文献依据
+
+CLI quality gating 用四个阈值:
+
+```
+RMSE_FAIL_V    = 0.020   # >20 mV → ICA-E003 (exit 102)
+RMSE_MARGINAL_V= 0.015   # 15-20 mV → ICA-W001 (exit 103)
+R2_FAIL        = 0.99    # <0.99 → ICA-E003
+R2_MARGINAL    = 0.999   # 0.99-0.999 → ICA-W001
+```
+
+依据链:
+
+- `docs/PARAMETER_SOP.md §3.2` 的 `ic_analysis_fit_quality` 字段约定
+  "<15 mV 为可接受",对应 marginal 下限 15 mV
+- `docs/PARAMETER_SOP.md` 中 FIT-1 的 RMSE_FAIL=50 mV 是单调强约束,
+  IC 分析针对 IR 已扣除的 C/40 平台,残差应远更小,故 FAIL 收紧到 20
+  mV(2.5 倍 marginal 余量,经验门槛但与 Birkl 2017 IC 分析典型残差
+  数量级一致)
+- R² 0.99 / 0.999 双阈值参照 Phantom LAM 2024 IC 分析综述对 stage
+  feature 清晰度的判别 — 0.99 以下意味着主峰位置都拟合不准,0.999 以上
+  才能对 LAM_NE 这类弱可识别模式给出有意义的协方差
+
+阈值不是 paper Mmeka 2025 直接给定值,而是 SPEC 起草时对 SOP §3.2
++ Birkl 2017 + Phantom LAM 2024 三处文献综合推导。本次 v0.5.2 落地
+仅消费这些阈值,未做调校。
+
+#### 20.3.3 IC 分析输出**不回写 spec**
+
+与 FIT-1/FIT-2 的关键工程差异: IC 分析产出 `(LLI, LAM_PE, LAM_NE)`
+**不是 SSoT 参数**,是某个具体 RPT 数据点的诊断结果。多个 RPT 会产生
+多组 DMs(对应不同 EFC / 时间),写回 spec 会要么覆盖既有值、要么需要
+引入时间索引数组扩展 schema。
+
+决策:IC 分析输出独立 JSON (per RPT),供下游 FIT-4a/4b 消费 — FIT-4
+的拟合输入是 (EFC, LLI(EFC), LAM_PE(EFC), LAM_NE(EFC)) 时间序列,
+聚合多 JSON 是 FIT-4 任务包的职责,不是 IC 分析的。
+
+这与 SPEC §3 接口约定一致 (输出独立 JSON,schema 含 fit_quality +
+metadata 而非 spec writeback path),也是 R7 工作流约束精神的体现:
+spec 字段只能由 FIT-X 回写,而 IC 分析在 FIT-X 编号体系中**没有
+对应位置**(SOP-4.5 是 FIT-4 的前置数据准备,不是独立 FIT 步骤)。
+
+### 20.4 §十九 元教训正面应用 + v0.5.0 R8 漏项暴露
+
+#### 20.4.1 语义辐射目标主动扫描 — 无新失察
+
+§十九 提出"R5 扫描阶段需引入语义辐射目标"概念。本任务在 SPEC 落地前
+做了三轮主动扫描:
+
+1. **错误码 scope** (子阶段 1): grep `error_codes.schema.json::scope.enum`
+   全部已知 scope,确认 ICA 是**新 scope** 而非已有 FIT4A/4B 等的
+   sub-scope,registry 与 runbook §X 同步插入新条目。
+2. **目录树同步** (子阶段 5): grep README + QUICKSTART + docs/CLAUDE.md
+   三文件,确认 87 用例 / FIT-1/FIT-2/IC 三处"已实现"标注同步。
+3. **派生层一致性** (子阶段 5): grep `ic_analysis.py` / `fit_ic_to_dms`
+   / `test_ic_analysis.py` 出现次数,符合任务包指标 (≥2/≥2/==1)。
+
+无新派生层失察,§十九 元教训本次任务正面应用。
+
+#### 20.4.2 v0.5.0 R8 验收漏项暴露
+
+子阶段 5 同步 README 时发现:v0.5.0 release (FIT-2 落地) 把
+`libquiv_aging/relaxation_fitting.py` 入库,但 README 与 docs/CLAUDE.md
+的 `libquiv_aging/` 目录树**未追加该文件**。任务包指令"在
+relaxation_fitting.py 后插入 ic_analysis.py 一行"隐含假设其已存在,
+位置坐标无法落实。
+
+判断:**同补 v0.5.0 漏项与本子阶段新增**,符合 docs/CLAUDE.md
+"Claude Code 协作规范" 超范围审查段(警告呈现 + 保守修复)。
+
+根因: R8 验收 grep 模板只检查"文件名是否在 README 出现",未检查"目录
+树位置是否准确"。`relaxation_fitting.py` 在 v0.5.0 commit 中只被
+工作流概览段提及一次(`scripts/fit_rc_transient.py` 与
+`libquiv_aging/relaxation_fitting.py` 并列),未被 libquiv_aging/ 目录树
+段独立列出。"出现 ≥1 次"通过了 R8 验收,但目录树仍不完整。
+
+留待未来 R8 治理 patch 处理:把 R8 grep 模板扩展为"目录树位置 + 文件
+名出现"双重检查。本任务不动 R8 规则文本,仅记录该弱点。
+
+### 20.5 错误码 ICA scope 引入
+
+ICA scope 引入是本任务首个事实层动作,先于代码:
+
+- `error_codes.schema.json::scope.enum` 追加 `ICA`,
+  `patternProperties` regex 已是 `^ICA-(E\\d{3}|W\\d{3})$` 兼容形式,
+  无需扩展
+- `error_codes_registry.json` 添加 ICA-E001 (input validation, exit 100)
+  / E002 (optimizer failure, 101) / E003 (quality fail, 102) / W001
+  (quality marginal, 103) / W002 (bounds_hit, 104)。其中 ICA-E002
+  cross_refs 在子阶段 1 写为 TODO 占位,子阶段 3 CLI 落地后回填 →
+  `scripts/fit_ic_to_dms.py`
+- `docs/07_offline_runbook.md` §X 新增 ICA 子段,与 registry 11 字段
+  互锁 (trigger / consequence / cross_refs / script_behavior /
+  immediate_action / followup / escalation 等)
+- `08_consultation_protocol.md` 观测笔记模板 escalation 字段已是
+  通用占位,不需 ICA-specific 调整 (符合 R6 "registry 是事实层,
+  其他文档是派生层"原则)
+
+R6 因果链 (registry → runbook → 脚本 raise) 未被绕过。CLI exit code
+100/101/102/103/104 与 registry 完全对齐,优先级 104 (W002) > 103
+(W001) > 0 (pass) 在 CLI 主流程显式实现。
+
+### 20.6 子阶段 4 T4 阻塞与 paper Fig. 6c 物理印证
+
+任务包 §4.1 T4 写作 "sum(DMs) ≈ cap_loss within 10%",子阶段 4 实施时
+3 个 case 实测 ratio 1.66 / 2.29 / 2.97 — 偏差是 2-3 倍而非 ±10%,远
+超 2σ 容差。停下报告。
+
+用户回顾 paper Mmeka 2025 §"Cycle degradation" 实测 (143 EFC):
+
+```
+sum(DMs) = LAM_PE 0.08 + LAM_NE 0.04 + LLI 0.13 = 0.25 Ah
+measured cap_loss = 0.11 Ah → ratio 2.27
+```
+
+paper 原文显式警告:
+
+> "the sum of the degradation modes (0.25 Ah) exceeds the measured
+> capacity loss at the full-cell level (Fig. 6a) ... highlighting the
+> nonlinear relationship between various degradation modes and overall
+> capacity loss."
+
+实测 ratio 与 paper 实验同量级 → forward model **物理正确**,任务包
+T4 断言"sum 守恒"是物理直觉错误。
+
+T4 改写为 cap_loss self-consistency: 反演 DMs 走同一 forward model
+得到 cap_loss_hat,与真值 cap_loss_truth (同 forward 算出) 比较,
+rel_error < 10%。捕捉"DMs 内部分配错误"类 bug 比 sum 等式更严格,
+与 T2 (单点估计) / T3 (协方差) 语义不重叠。
+
+paper Fig. 6c 现象作为"sum(DMs) ≠ cap_loss 非线性关系"暂记录到测试
+docstring 与本节,**不**升级到 `PARAMETERS.json::critical_review_findings`
+作为新 N 条目 — 决策延迟到 v0.6+ patch (见 §20.7)。
+
+### 20.7 决策记录与延迟登记项
+
+#### 20.7.1 R9 候选 #5 (实证驱动校验) 与 #4 合并
+
+§十九 已有 R9 候选 #4 "R5 扫描阶段语义辐射目标显式补充"。子阶段 2
+第一次单 brentq 失败 + 子阶段 4 T4 阻塞,共同暴露另一类问题:**起草
+权威指令 (web chat 算法决策、任务包测试断言) 时,必须基于实证而非
+概念推导**。子阶段 2 单 brentq 是 web chat 端凭 paper 公式推导的算法
+方案,实测 X_NE 越界后改为 dual brentq;子阶段 4 T4 是任务包凭物理
+直觉写的"sum 守恒",实测 ratio 2-3x 后改为 self-consistency。
+
+判断: R9 候选 #5 与 #4 在精神上同源 — 都是"修改/起草权威指令时,必须
+基于实证而非概念推导"。建议合并为统一的"实证驱动校验" R9 候选,等
+**第二次类似事件再触发制度化**。本任务正面应用 (Step 0 reconnaissance
++ 子阶段 2 实测决策 + 子阶段 4 阻塞报告),不构成新事件。
+
+#### 20.7.2 paper Fig. 6c critical_review 升级延迟
+
+paper Fig. 6c "sum(DMs) ≠ cap_loss 非线性关系"作为 N 条目登记到
+`PARAMETERS.json::critical_review_findings` 的优势:
+
+- paper 自己警告的已知现象,不是文献争议(高可信度)
+- 直接影响 FIT-4a/b 拟合策略物理预期(下游消费者需感知)
+- 与现有 N1 (OFS 弱可识别性) 同类(类型对齐)
+
+倾向**升级**,但本任务不做。理由:
+
+- v0.5.2 任务包明确 §6 "不修改 critical_review_findings"
+- 升级动作走 R1 (PARAMETERS.json) + R5 (派生层扫描)流程,需独立的
+  扫描-确认-编辑-验收四步,不能搭便车塞进 v0.5.2
+- 当前唯一已知消费方 (FIT-4) 尚未实施,登记后验证路径不可达,会成为
+  无人维护的死字段
+
+留给 v0.6.0 FIT-4 任务包做并入处理 (FIT-4 启动时再补登 N 条目 +
+fit_steps::FIT-4 的 cross_refs 引用),同时也避免本任务变成
+"docs/PARAMETERS.json patch + IC 分析" 的混合任务包。
+
+#### 20.7.3 `libquiv_aging_version` 硬编码
+
+`scripts/fit_ic_to_dms.py` 当前用 `LIBQUIV_AGING_VERSION = "1.0.0"`
+硬编码常量写入 JSON metadata。子阶段 3 已识别这是 release 不会自动
+跟随的工程债务,推迟到 v0.6+ 改用
+`importlib.metadata.version("libquiv-aging")`。本任务不修,因为:
+
+- 修改触发 schema 兼容性确认 + 跨脚本复用 (FIT-1/FIT-2 是否也该改?)
+- 当前 "1.0.0" 在 JSON 中可被消费方识别为"未自动更新版本"信号,不影响
+  IC 分析功能
+
+#### 20.7.4 R8 grep 模板弱点
+
+§20.4.2 暴露的 R8 grep 模板"目录树位置 + 文件名出现"双重检查不足。
+留给未来 R8 治理 patch 做正式条款,本任务不动 R8 规则文本(任务包
+明确不在 v0.5.2 范畴)。
+
+### 20.8 经验留痕
+
+本次 IC analysis 落地是 v0.4.2 SPEC 提升 (§十七) 后第一次真正兑现
+frozen SPEC 契约,流程上的几个验证:
+
+- frozen SPEC 给出**接口契约**(参数定义 / 误差码 scope / JSON schema)
+  让八子阶段任务包能按部就班分发,无需在实施中反复回头改 SPEC
+- Step 0 reconnaissance 的"先扫码再写代码"是 §十九 元教训的实施级
+  应用 — 把"实证驱动"从 R5 文档协议向下传到代码协议
+- 子阶段 2 自检测试发现 X^0 引用约定差异 (paper SOC=1 reference vs
+  spec V_min reference),通过 docstring 显式记录两套约定;这是
+  v0.4.2 SPEC 提升预留的 "X^0 convention clarification" 占位条款
+  (frozen SPEC 当时只标注"两个文献口径,实施时决断")在落地时的兑现
+- 子阶段 4 T4 阻塞 → paper Fig. 6c 印证 → cap_loss self-consistency
+  改写 是一个完整的"任务包描述错误 → 实证发现 → 测试改写 + 决策记录
+  + 延迟登记"链条,可作为未来类似阻塞的样本
+
+下一个值得固定的工作流: v0.5.2 完成后做一次类似 §十九 的"全状态
+审计",检索 SPEC_ic_analysis 在所有派生文档中的引用是否完整、错误
+码 scope 表是否与代码 raise 点一一对应、`heuristic_initial_guess`
+等公开 API 在 README/CLAUDE.md 是否被遗漏。这一审计在本任务包子阶段
+5 + 子阶段 7 已部分覆盖,作为 release 最后的 sanity check 值得固化为
+默认动作 (§十九 §19.6 已提议,本任务再次应用)。
+
+---
+
 ## 版本记录
 
 | 日期 | 变更 |
@@ -572,3 +862,4 @@ v0.2.x 时代过期内容, 同样推迟到下次治理 patch。
 | 2026-04-25 | 追加 §十七。v0.4.2 SPEC 提升: TODO_ic_analysis.md → SPEC_ic_analysis.md, 暴露 backlog 文档可见性盲点。 |
 | 2026-04-26 | 追加 §十八。v0.5.0 FIT-2 RC 弛豫拟合落地: dispatch 模式准备升级路径, C6→C7 重映射, tau→R 双候选 + 歧义警告。 |
 | 2026-04-26 | 追加 §十九。v0.5.1 派生层语义辐射修复: EXP-C deprecated for FIT-2, SPEC_ic_analysis Status 更新, PARAMETER_SOP §3.1/§3.3 同步, README 目录结构图 tests/ + scripts/ 段补齐。元教训: R5 扫描阶段需引入"语义辐射目标"概念。 |
+| 2026-04-28 | 追加 §二十。v0.5.2 IC analysis 落地 (frozen SPEC 兑现): `libquiv_aging/ic_analysis.py` + `scripts/fit_ic_to_dms.py` + `tests/test_ic_analysis.py` (22 用例) + 错误码 ICA scope (E001/E002/E003/W001/W002)。三决策: Path B + dual brentq + bracket、fit_quality 阈值文献依据、不回写 spec。子阶段 4 T4 阻塞由 paper Fig. 6c "sum(DMs) ≠ cap_loss 非线性关系"印证 forward model 物理正确,T4 改写为 cap_loss self-consistency。R9 候选 #5 (实证驱动校验) 与 #4 合并,等第二次事件制度化。R8 grep 模板弱点 (v0.5.0 漏 relaxation_fitting.py 在目录树) 同步补齐。|

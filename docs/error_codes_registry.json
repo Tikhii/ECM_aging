@@ -1,6 +1,6 @@
 {
   "_comment": "Fact-layer registry of offline-workflow error codes. Edit order: this file first, then docs/07_offline_runbook.md, then scripts/ raise sites. When runbook and registry disagree, registry wins (see R6 / CLAUDE.md).",
-  "_updated": "2026-04-26",
+  "_updated": "2026-04-27",
   "version": "0.1.0",
   "codes": {
     "ENV-E001": {
@@ -346,6 +346,137 @@
       "since_version": "0.5.0",
       "status": "active",
       "notes": "warn 级别不阻塞下游, spec 仍被回写, status 仍为 fitted。fit_r_squared 与 mapping_candidates 字段是质量信号的载体。"
+    },
+
+    "ICA-E001": {
+      "scope": "ICA",
+      "level": "E",
+      "title": "RPT C/40 CSV 列契约违规或样本不足",
+      "trigger": "执行 fit_ic_to_dms.py 时, 输入 CSV 缺失必填列 (Q_Ah, V_cell_V), 或样本数量级低于 50 行, 或 Q range 量级低于 1.5 Ah, 或材料/参数 spec 文件不存在。",
+      "consequence": "IC analysis 的 forward model 需要 V(Q) 在足够 Q 跨度上有足量样本以分辨 graphite stage features。任一前置条件破坏会让 scipy.optimize.least_squares 在病态目标上收敛到错误最优, 写回的 (LLI, LAM_PE, LAM_NE) 三元组污染下游 FIT-4a/b 拟合的初值与残差权重。",
+      "cross_refs": [
+        "docs/SPEC_ic_analysis.md",
+        "docs/PARAMETER_SOP.md §3.2 老化实验数据 (每次 RPT 一行)",
+        "docs/PARAMETER_SOP.md §SOP-4.5 IC 分析提取 DMs"
+      ],
+      "remediation": [
+        "用 pandas.read_csv 检视实际列名, 比对 SPEC_ic_analysis.md 输入契约, 打印首个不匹配列。",
+        "如样本量级不足, 回溯 RPT 导出脚本, 确认 C/40 放电窗未被提前裁剪。",
+        "如 Q range 不足 (典型 panasonic ncr18650b 应 ≥ 1.5 Ah 量级), 检查放电是否到达 V_min 截止条件。",
+        "如 spec 文件不存在, 确认 --cell-type 与 material_specs/<cell>.material.json 文件名是否对齐, 并按 SOP-1 完成 cell type 骨架。"
+      ],
+      "script_behavior": {
+        "exit_code": 100,
+        "action": "refuse"
+      },
+      "escalation": "docs/08_consultation_protocol.md §6 例 1 数据契约违规",
+      "since_version": "0.5.x",
+      "status": "active",
+      "notes": "前置数据契约错误。脚本应在加载阶段拒绝, 避免 optimizer 在病态输入上耗时收敛。"
+    },
+
+    "ICA-E002": {
+      "scope": "ICA",
+      "level": "E",
+      "title": "scipy.optimize.least_squares 未收敛或协方差非有限",
+      "trigger": "fit_ic_to_dms.py 调用 least_squares 完成后, result.status 量级 ≤ 0 (未收敛); 或 J^T J 病态使条件数量级 ≥ 1e12; 或 Hessian 反演返回的 std 含 NaN/Inf。",
+      "consequence": "(LLI, LAM_PE, LAM_NE) 估计与误差棒不可信。强行写回会让 FIT-4a/b 把数值病态当作真实老化轨迹, 后续 k_SEI / k_LAM_* 估计被严重污染。误差棒不可计算意味着识别性已无从评估。",
+      "cross_refs": [
+        "docs/SPEC_ic_analysis.md",
+        "scripts/fit_ic_to_dms.py",
+        "libquiv_aging/ic_analysis.py"
+      ],
+      "remediation": [
+        "检查 V(Q) 曲线形态: 是否呈现 graphite stage 1↔2↔3 的清晰特征? 若曲线过平直或仅显示单一过渡, 数据信噪比不足以支持三参数同时识别。",
+        "检查初值: heuristic_initial_guess 给出的 LLI/LAM_PE/LAM_NE 起点是否落在 search bounds 内。若初值离最优过远, 可手动指定 --initial-guess 或扩大 bounds 一个量级。",
+        "若仍不收敛, 数据可能不适配本 SPEC 的 quasi-equilibrium 假设 (例如 RPT 是 C/10 而非 C/40, 残留 IR), 走 ICA-E003 升级路径。",
+        "持续不收敛时上报到 docs/08_consultation_protocol.md。"
+      ],
+      "script_behavior": {
+        "exit_code": 101,
+        "action": "refuse"
+      },
+      "escalation": "docs/08_consultation_protocol.md §6 例 2 拟合前置条件不足",
+      "since_version": "0.5.x",
+      "status": "active",
+      "notes": "若收敛但 RMSE/R² 超阈, 走 ICA-E003 而非本条。"
+    },
+
+    "ICA-E003": {
+      "scope": "ICA",
+      "level": "E",
+      "title": "IC 拟合 RMSE 或 R² 越过失败阈值",
+      "trigger": "least_squares 收敛后, V(Q) 残差 RMSE 量级超过 20 mV, 或 R² 量级低于 0.99。",
+      "consequence": "V(Q) 拟合未达 quasi-equilibrium 模型在 alawa regime 内的可信精度。常见原因: (a) RPT 实际为 C/10 或更高, IR 未消除导致 13-27 mV 量级系统偏移; (b) cell 已进入非 alawa regime (CEI 主导 / plating-driven knee), SPEC 假设不适用; (c) CSV 单位错 (Ah vs As, V vs mV)。继续写回 (LLI, LAM_PE, LAM_NE) 会污染 FIT-4a/b 拟合。",
+      "cross_refs": [
+        "docs/SPEC_ic_analysis.md",
+        "docs/PARAMETER_SOP.md §3.2 老化实验数据 (每次 RPT 一行)",
+        "docs/CRITICAL_REVIEW.md"
+      ],
+      "remediation": [
+        "确认 RPT 是否真为 C/40 (准平衡); C-rate 偏高时残留 IR 在 V(Q) 上叠加系统偏移。若是, 重做 RPT 或在数据导出端做 IR 校正。",
+        "目视 V(Q): graphite stage 1↔2↔3 features 是否清晰可见。features 模糊提示 cell 已进入非 alawa regime, IC analysis 在此 regime 不再适用。",
+        "比对 CSV 单位: Q_Ah 应为 Ah (不是 A·s), V_cell_V 应为 V (不是 mV)。任一单位错会让 RMSE 量级偏离两到三个数量级。",
+        "数据归档到 runs/{run_id}/exp_e_failed/, 不写回 spec, 等待数据复测或转入升级路径调研。"
+      ],
+      "script_behavior": {
+        "exit_code": 102,
+        "action": "refuse"
+      },
+      "escalation": "docs/08_consultation_protocol.md §6 例 1 数据契约违规",
+      "since_version": "0.5.x",
+      "status": "active",
+      "notes": "失败档拒绝写回。15-20 mV 之间或 0.99 ≤ R² < 0.999 的 marginal 档由 ICA-W001 处理。R²_FAIL = 0.99 比 FIT-2 的 0.95 严格, 因为 quasi-equilibrium 在 alawa regime 内本应 R² > 0.999, < 0.99 表示残差有 ≥1% 系统结构。"
+    },
+
+    "ICA-W001": {
+      "scope": "ICA",
+      "level": "W",
+      "title": "IC 拟合质量在 marginal 区间",
+      "trigger": "least_squares 收敛后, RMSE 量级落入 15-20 mV 区间, 或 R² 量级落入 0.99 ≤ R² < 0.999 区间。",
+      "consequence": "拟合通过 PARAMETER_SOP §3.2 的 \"<15 mV 为可接受\" 边界但低于优秀质量。(LLI, LAM_PE, LAM_NE) 仍写回 RPT 级 JSON 但 fit_r_squared / rmse_V 字段反映质量较低。下游 FIT-4a/b 在见到 marginal 标记时应放宽对该 RPT 数据点的权重。",
+      "cross_refs": [
+        "docs/PARAMETER_SOP.md §3.2 老化实验数据 (每次 RPT 一行)",
+        "docs/SPEC_ic_analysis.md"
+      ],
+      "remediation": [
+        "若可接受当前精度 (例如初步建模阶段), 接受 marginal 状态; fit_quality.marginal_quality 字段持久化质量信号供未来审计。",
+        "若不可接受, 按 ICA-E003 的 remediation 路径排查 (RPT C-rate / 单位 / alawa regime)。",
+        "无论选择哪条, JSON metadata 段记录的 marginal_quality=true 会被下游 FIT-4a/b 读取并降权该 RPT。"
+      ],
+      "script_behavior": {
+        "exit_code": 103,
+        "action": "warn"
+      },
+      "escalation": "docs/08_consultation_protocol.md §6 例 6 识别性警告",
+      "since_version": "0.5.x",
+      "status": "active",
+      "notes": "warn 级别不阻塞下游, JSON 仍被写出, 但 marginal_quality 字段是质量信号的载体。"
+    },
+
+    "ICA-W002": {
+      "scope": "ICA",
+      "level": "W",
+      "title": "IC 分析参数命中 search bound",
+      "trigger": "least_squares 收敛后, LLI / LAM_PE / LAM_NE 任一参数距其 search bound 的距离量级低于 bound 宽度的 1%。",
+      "consequence": "对应 DM 实际值可能在 bound 之外 (老化超出 SPEC 假设的 0.3·C 上限), 或 cell 已进入非 alawa regime, bound 即将不适用。报告值不具置信意义, 误差棒在边界附近也会被截断。",
+      "cross_refs": [
+        "docs/SPEC_ic_analysis.md",
+        "docs/CRITICAL_REVIEW.md"
+      ],
+      "remediation": [
+        "若 LLI 命中 0.3·C_nominal 上界: cell 已严重退化, 可能进入 plating-driven knee, IC analysis 在此 regime 不适用; 进入 FIT-4c knee 分析路径而非继续 IC analysis。",
+        "若 LAM_PE / LAM_NE 命中上界: 可能进入 CEI 主导 regime, 需要新模型 (见 CRITICAL_REVIEW); 不要简单放宽 bound, 因为 SPEC 的 bound 设计反映了模型适用域。",
+        "把命中事件写入输出 JSON 的 fit_quality.bounds_hit 字段, 下游 FIT-4a/b 应跳过此 RPT 数据点。"
+      ],
+      "script_behavior": {
+        "exit_code": 104,
+        "action": "warn"
+      },
+      "escalation": "docs/08_consultation_protocol.md §6 例 6 识别性警告",
+      "since_version": "0.5.x",
+      "status": "active",
+      "notes": "warn 级别不阻塞下游, JSON 仍被写出。bounds_hit 字段是质量信号的载体, 下游应主动检视。"
     },
 
     "FIT4A-E001": {

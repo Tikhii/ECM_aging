@@ -376,7 +376,7 @@ R_NE_0 = luts.interp_RNE(c_rate=-1/3, X_ne=0.5) / C_nominal_Ah
 
 **前置**：SOP-2 子步 2.1 完成
 
-→ 失败时参见 `docs/07_offline_runbook.md §9`（`IDENT-W002` 系列）。
+→ 失败时参见 `docs/07_offline_runbook.md §10`（`IDENT-W002` 系列）。
 
 **输入**：
 - 全电池 OCV：`experiments/EXP-A/cell_01_fullcycle_C40.csv`
@@ -498,7 +498,7 @@ alternate_*, amplitude_rss_*, mapping_marginal)。运行产物保存在
 
 **前置**：SOP-2 完成（需要 `R_NE_LUT`, `R_PE_LUT` 已就位）
 
-→ 失败时参见 `docs/07_offline_runbook.md §9`（`IDENT-W002` 系列；bound 命中常见于 FIT-3 搜索区间）。
+→ 失败时参见 `docs/07_offline_runbook.md §10`（`IDENT-W002` 系列；bound 命中常见于 FIT-3 搜索区间）。
 
 **输入**：EXP-D 的 DST 首循环数据 `experiments/EXP-D/cell_01_dst_firstcycle.csv`（列：`time_s, V_cell, I_A`）
 
@@ -539,7 +539,7 @@ alternate_*, amplitude_rss_*, mapping_marginal)。运行产物保存在
 - EXP-E 数据已整理成 `cell_Ex_rpt.csv`（含 `time_s, C_measured_Ah, R_IR_mOhm, LLI_Ah, LAM_PE_Ah`）
 - **关键**：至少一个温度的数据；若有多温度则 `E_a` 可自动识别，否则 `E_a` 固定为 55500 J/mol
 
-→ 失败时参见 `docs/07_offline_runbook.md §5`（`FIT4A-Exxx` 系列）。
+→ 失败时参见 `docs/07_offline_runbook.md §6`（`FIT4A-Exxx` 系列）。
 
 **脚本**：`scripts/fit_calendar.py`（见 SOP-5）
 
@@ -580,7 +580,7 @@ LAM_PE RMSE  < 0.01 Ah
 - FIT-4a 完成，**所有电阻相关参数（含 R_SEI）冻结**
 - EXP-F 数据整理好（含 `EFC, LLI_Ah, LAM_PE_Ah, LAM_NE_Ah`）
 
-→ 失败时参见 `docs/07_offline_runbook.md §6`（`FIT4B-Exxx` 系列）。
+→ 失败时参见 `docs/07_offline_runbook.md §7`（`FIT4B-Exxx` 系列）。
 
 **脚本**：`scripts/fit_cycle_preknee.py`
 
@@ -618,7 +618,7 @@ Capacity RMSE < 2% at EFC=150
 
 **前置**：FIT-4a, 4b 完成；EXP-G 数据（knee 已出现）
 
-→ 失败时参见 `docs/07_offline_runbook.md §7`（`FIT4C-Exxx` 系列）。
+→ 失败时参见 `docs/07_offline_runbook.md §8`（`FIT4C-Exxx` 系列）。
 
 **脚本**：`scripts/fit_knee.py`
 

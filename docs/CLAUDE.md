@@ -341,6 +341,8 @@ libquiv_aging/                  核心包
 ├── cell_model.py               EquivCircuitCell (DAE→ODE, solve_ivp)
 ├── cell_factory.py             通用双 spec 加载器 (create_cell_from_specs)
 ├── fitting.py                   FIT 脚本系列共享基础设施
+├── relaxation_fitting.py       FIT-2 RC 弛豫内核 (RELAXATION_MODELS dispatch)
+├── ic_analysis.py              IC 分析: RPT C/40 → (LLI, LAM_PE, LAM_NE) 反演 (SOP-4.5)
 ├── panasonic_ncr18650b.py      兼容层, 实际参数在 material_specs/ 和 param_specs/ 下
 ├── model_versions/             机制模型版本路由
 │   ├── __init__.py             版本注册表
@@ -358,7 +360,7 @@ scripts/
 ├── build_resistance_mat.py     EXP-B4 GITT 数据 → .mat (待生成)
 ├── fit_rc_transient.py         FIT-2: C1/C2 RC 弛豫拟合 (已实现, 双指数, dispatch 可扩展)
 ├── fit_resistance_distribution.py  FIT-3
-├── fit_ic_to_dms.py            RPT C/40 → (LLI, LAM_PE, LAM_NE) 抽取 (SOP-4.5)
+├── fit_ic_to_dms.py            RPT C/40 → (LLI, LAM_PE, LAM_NE) 抽取 (SOP-4.5, 已实现)
 ├── fit_calendar.py             FIT-4a (含 R_SEI!)
 ├── fit_cycle_preknee.py        FIT-4b
 └── fit_knee.py                 FIT-4c (只调 k_LP)
@@ -428,3 +430,4 @@ python examples/smoke_test.py    # 必须全通过
 | 2026-04-26 | v0.4.3 R8 成员扩展: 落地 LICENSE 和 NOTICE 文件, 把 LICENSE/NOTICE/pyproject.toml description 正式纳入 R8 范畴, 各自触发条件独立于 README/QUICKSTART 的四类触发。同步清理 pyproject.toml authors 占位符。 |
 | 2026-04-26 | v0.5.0 FIT-2 RC 弛豫拟合落地: 新增 `scripts/fit_rc_transient.py` 与 `libquiv_aging/relaxation_fitting.py` (dispatch 模式准备升级路径)。错误码扩展 FIT2-Exxx/W001。`CRITICAL_REVIEW.md` 新增 C7 (RC 拓扑对长弛豫的不足) 与 `docs/UPGRADE_LITERATURE/fractional_order_RC.md` 升级文献入口。详见 MIGRATION_NOTES §十八。 |
 | 2026-04-26 | v0.5.1 派生层语义辐射修复: EXP-C deprecated for FIT-2, PARAMETERS.json 三处字段 + SPEC_ic_analysis Status + PARAMETER_SOP §3.1/§3.3 + README 目录结构图同步。详见 MIGRATION_NOTES §十九。 |
+| 2026-04-28 | v0.5.2 IC analysis 落地: 兑现 frozen SPEC_ic_analysis 契约。新增 `libquiv_aging/ic_analysis.py` + `scripts/fit_ic_to_dms.py` + `tests/test_ic_analysis.py` (22 用例) + 错误码 ICA scope (E001/E002/E003/W001/W002)。三核心架构决策: Path B algebraic forward + dual brentq + bracket 增强、fit_quality 阈值文献依据 (SOP §3.2 + Birkl 2017 + Phantom LAM 2024)、IC 输出不回写 spec (per-RPT 独立 JSON 供 FIT-4 消费)。子阶段 4 T4 阻塞由 paper Fig. 6c 物理印证, T4 改写为 cap_loss self-consistency。详见 MIGRATION_NOTES §二十。 |

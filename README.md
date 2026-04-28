@@ -11,7 +11,7 @@
 - **模块化设计**：将原 758 行单文件 `LIBquivAging.m` 拆分为多个单一职责的模块, 含核心模型、查找表、老化动力学、cell type 抽象层、FIT 脚本基础设施等, 便于 Claude Code 按需检索和修改。
 - **面向研究**：所有数值参数都集中到可配置 `dataclass` 中（`SEIParameters`、`PlatingParameters` 等），方便替换化学体系或运行敏感性研究。
 - **高性能**：通过标量快速插值 + Newton warm-start 求解器，单次完整 DST 放电耗时 30 秒左右（原 MATLAB 代码 ~40 秒）。
-- **完整测试集**：87 个 pytest 用例覆盖核心模型、cell type 加载、FIT 脚本基础设施 (含 FIT-1, FIT-2)。
+- **完整测试集**：109 个 pytest 用例覆盖核心模型、cell type 加载、FIT 脚本基础设施 (含 FIT-1, FIT-2) 和 IC 分析。
 
 ## 目录结构
 
@@ -34,6 +34,8 @@ libquiv_aging_py/
 │   ├── cell_model.py             # EquivCircuitCell 主类 (ODE 求解)
 │   ├── cell_factory.py           # 通用 cell 加载器 (双 spec)
 │   ├── fitting.py                # FIT 脚本系列共享基础设施
+│   ├── relaxation_fitting.py     # FIT-2 RC 弛豫内核 (RELAXATION_MODELS dispatch)
+│   ├── ic_analysis.py            # IC 分析:RPT C/40 → (LLI, LAM_PE, LAM_NE) (SOP-4.5)
 │   ├── model_versions/           # 机制模型版本路由
 │   │   ├── __init__.py           # 版本注册表
 │   │   └── mmeka2025.py          # 当前机制的组装逻辑
@@ -53,6 +55,7 @@ libquiv_aging_py/
 ├── scripts/                      # 拟合脚本与工具
 │   ├── fit_electrode_balance.py  # FIT-1: LR/OFS 拟合
 │   ├── fit_rc_transient.py       # FIT-2: C1/C2 RC 弛豫双指数拟合 (dispatch 模式)
+│   ├── fit_ic_to_dms.py          # IC 分析 CLI (SOP-4.5): RPT C/40 → DMs + JSON/PNG
 │   ├── check_parameter_consistency.py
 │   ├── install_offline.sh        # air-gapped 安装入口
 │   ├── verify_install.sh
@@ -63,7 +66,7 @@ libquiv_aging_py/
 │   ├── figure7_simulation.py     # 复现论文图 7
 │   └── analysis_template.py      # 自定义分析模板
 │
-├── tests/                        # pytest 测试 (87 用例)
+├── tests/                        # pytest 测试 (109 用例)
 │   ├── test_basic.py             # 原始 22 个核心模型测试
 │   ├── test_schemas.py           # schema 与 spec 验证
 │   ├── test_cell_factory.py      # cell_factory 加载器
@@ -72,6 +75,7 @@ libquiv_aging_py/
 │   ├── test_fit_electrode_balance.py  # FIT-1 端到端
 │   ├── test_relaxation_fitting.py     # FIT-2 内核单测 (RELAXATION_MODELS)
 │   ├── test_fit_rc_transient.py       # FIT-2 端到端
+│   ├── test_ic_analysis.py            # IC 分析 + CLI 端到端 (T1-T5 + 错误码集成)
 │   ├── test_error_codes_registry.py   # 错误码 registry 验证
 │   └── golden_panasonic_snapshot.json # 回归测试金标准
 │
@@ -110,11 +114,14 @@ params_path)`, 内部根据参数 spec 的 `model_version` 字段路由到对应
 参数化工作流: 新 cell type 通过复制 panasonic 示例 spec 起步, 填入
 Tier I 直测参数, 准备 EXP-A 到 EXP-G 实验数据 (详见 `PARAMETER_SOP.md`
 §一二), 运行 `scripts/` 下的 FIT-X 拟合脚本依次产出参数。已实现:
-`fit_electrode_balance.py` (FIT-1, LR/OFS) 和 `fit_rc_transient.py`
+`fit_electrode_balance.py` (FIT-1, LR/OFS)、`fit_rc_transient.py`
 (FIT-2, C1/C2 RC 弛豫双指数, dispatch 模式预留 fractional-order /
-DRT 升级)。两者均自动回写到对应 spec 含完整 fit provenance (`fit_step`,
-`fit_source`, `fit_r_squared`, `relaxation_metadata` 等)。FIT-3/4 待
-v0.5.x 和 v0.6.0 实施。
+DRT 升级) 和 `fit_ic_to_dms.py` (SOP-4.5, IC 分析:RPT C/40 →
+LLI/LAM_PE/LAM_NE,JSON + 2×2 诊断 PNG,5 条 ICA-Exxx/Wxxx 错误码)。
+FIT-1/FIT-2 自动回写到对应 spec 含完整 fit provenance (`fit_step`,
+`fit_source`, `fit_r_squared`, `relaxation_metadata` 等);IC 分析按
+SPEC 不回写 spec,产出独立 JSON 供下游 FIT-4 等消费。FIT-3/4 待
+v0.6.0 实施。
 
 版本演化通过 git tag 标记: `docs/vX.Y.Z` 是文档基建或错误码 patch,
 `release/vX.Y.0` 是代码能力 minor release。截至 v0.5.0 已有九层 tag
