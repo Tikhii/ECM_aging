@@ -820,7 +820,18 @@
         "C_rates": "-2C, -1C, -C/2, +C/2, +1C, +2C",
         "pulse_duration_s": 600,
         "relaxation_s": 3600,
-        "splits": "Use half-cell GITT if available; else EIS Nyquist fitting"
+        "splits": {
+          "preferred": "Half-cell GITT on disassembled PE and NE coins; gives R_NE(I, X_NE) and R_PE(I, X_PE) directly",
+          "fallback": "Full-cell GITT + EXP-B3 EIS Nyquist split. R_s from EIS high-frequency intercept; remaining polarization assigned to NE vs PE per system convention (NCA-G/NMC-G typical NE:PE ~6:4; LFP-G ~5:5).",
+          "fallback_warning": "Fallback path cannot rigorously separate R_NE from R_PE. Downstream dynamic-response prediction accuracy degrades by 10-20% relative to half-cell GITT. NE:PE split ratio MUST be specified by project owner before EXP-B4 execution and recorded in PARAMETERS.json::experiments::EXP-B4::protocol_details::ne_pe_split_ratio_default (or equivalent cell-type-specific override)."
+        },
+        "ne_pe_split_ratio_default": {
+          "ne_fraction": 0.6,
+          "pe_fraction": 0.4,
+          "_comment": "Used only when EXP-B4 fallback path (full-cell GITT + EIS split) is taken. For half-cell GITT path, leave as null and split is derived from data. Sum must be 1.0.",
+          "applicable_to": ["NCA-G", "NMC-G"],
+          "_LFP_note": "For LFP-G, set both to 0.5"
+        }
       },
       "error_codes": [
         "DATA-E003"

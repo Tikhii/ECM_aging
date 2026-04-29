@@ -36,6 +36,8 @@
 
 ## 二、实验 DOE（Design of Experiments）
 
+**关于实验协议参数的真源**：实验 DOE 表中的所有数值参数（SOC 网格、C-rate 网格、脉冲时长、弛豫时长、温度、电压窗口等）以 `PARAMETERS.json::experiments::EXP-X::protocol_details` 为单一真源。本 SOP 仅复述高层约束与物理理由，避免数值散落多处导致漂移。如果发现 SOP 中的数值与 JSON 不一致，以 JSON 为准并提交修订。
+
 按论文的参数化顺序，实验分为 10 个独立模块：
 
 ### Fresh cell 基础表征（EXP-A, B1–B4, C, D）
@@ -57,6 +59,12 @@
 | **EXP-E** | 日历老化 | ≥4 最小（推荐 18） | 6–15 月 | `k_SEI_cal, E_a, k_LAM_PE_cal, γ_PE, R_SEI` | 每次 RPT 必测 IR |
 | **EXP-F** | 循环老化（knee 前） | ≥2（推荐 6） | 1–3 月 | `k_SEI_cyc, k_LAM_PE_cyc, k_LAM_NE_cyc` | 每 30–50 EFC 做 RPT |
 | **EXP-G** | 循环老化（knee 后） | 同 EXP-F | +3–6 月 | `k_LP` | 跑到 ~70% 容量 |
+
+**EXP-E（日历老化）执行约束**：
+- cell 在 RPT 之间不得取出恒温箱（避免热历史与电流历史污染）
+- SOC 漂移由 RPT 自带重置覆盖，不做独立 SOC 维护
+- 首 6 个月可加密 RPT 至 6 周一次（早期 SEI 快速增长段）
+- RPT 间隔之外的所有干预（更换温箱位置、临时 SOC 调整）必须记录在 metadata.csv 的 `notes` 列
 
 → 数据契约违规见 `docs/07_offline_runbook.md §2`（`DATA-Exxx` 系列）。
 
@@ -853,3 +861,4 @@ Claude Code 可被要求："对比 `parameterization_history/2026-04-20_initial/
 | 2026-04-29 | RPT 数据契约补强：明确 C/40 先充后放双向、IR 脉冲充放双向取平均；RPT 历史表加 rpt_idx 与 c40_charge/discharge_filename cross-ref；循环 SOC_storage 拆为 cycle_SOC_low/high。修订动机：外部 SOP 抽取过程中发现这些隐含假设没在内部文档中显式表达，下次抽取或新人入场会踩坑。同步 PARAMETERS.json::EXP-E::CRITICAL 与 EXP-F/EXP-G::RPT_requirements；07_offline_runbook.md 与 error_codes_registry.json 增 DATA-E004 / DATA-E005。fit_ic_to_dms.py 当前仅读放电方向，FIT-IC dual-direction support 作为 follow-up 单独跟进。 |
 | 2026-04-29 | §二.5 设备 hygiene 第 3、4 条参考 cell / 哨兵 cell 完整重写：明确参考 cell 不是"全新"而是"老化最少且老化条件已知"、哨兵 cell 数量至少 2 颗、两者职责区分、校准方法。修订动机：外部 SOP review 暴露内部描述的多处歧义，下次新人入场或下次抽取会再触发同样的 review 循环。第 5 条 metadata 改为指向 §3.2 末尾的 metadata.csv 字段表，避免两处发散。 |
 | 2026-04-29 | §四 EXP-D 派生量 fractionR1toRs / fractionR2toRs 计算流程明确化：FIT-3 已在 SOP §四 中描述，但 `scripts/fit_resistance_distribution.py` 截至本日尚未实现（情况 C）；在 PARAMETERS.json::experiments::EXP-D 加 compute_via 字段把这一关系显式化，FIT-3 节加 TODO 注记。脚本实现作为 follow-up 单独跟进。 |
+| 2026-04-29 | §二.2 EXP-E 加日历老化 SOC 维持执行约束（RPT 间不取出）；§二 加"协议参数真源在 JSON"总则。同步 PARAMETERS.json::experiments::EXP-B4::protocol_details::splits 扩为 preferred/fallback 对象，加 fallback_warning 与 NE:PE split ratio 来源说明（cell_meta 顶级字段不存在，落到 EXP-B4::protocol_details::ne_pe_split_ratio_default）。 |
