@@ -217,6 +217,65 @@ exit code 22, refuse, 打印本条目编号 (`[DATA-E003]`)。
 **何时升级到在线咨询**
 见 `docs/08_consultation_protocol.md §6.例 1 — 数据契约违规`。
 
+### DATA-E004: RPT IR 脉冲为单向测量 (须充放双向取平均)
+
+**触发条件**
+`experiments/EXP-{E,F,G}/.../metadata.csv` 或 metadata 字段表中 `IR_method` 标记
+为 single direction; 或 `cell_*_rpt.csv` 的 `R_IR_mOhm` 列上游测量协议不含充电与
+放电两次脉冲并取平均。
+
+**物理/方法学后果**
+SEI 电荷转移阻抗在充放电方向上不对称 (charge transfer 极化方向相关), 单向脉冲
+会引入系统偏置, 长期 RPT 中内阻轨迹的偏置会污染 R_SEI 拟合 (FIT-4a)。
+
+**权威文档交叉引用**
+- `docs/PARAMETER_SOP.md §3.2 RPT 内阻测量要求`
+- `docs/PARAMETER_SOP.md §二.2 内阻测量方法选择`
+- `docs/PARAMETERS.json::experiments::EXP-E`
+
+**现场可选处置**
+1. 在协议侧加充放双向各一次 1C × 10/30 s 脉冲, 静置 5 min 后取平均。
+2. 若已有单向历史数据, 不要回填; 把该轨迹标记为 IR-method-mismatch 并在 FIT-4a
+   报告中作为 caveat。
+3. 确认 metadata.csv 的 `IR_method` 字段如实标注 (charge_only / discharge_only /
+   bidirectional)。
+
+**脚本应当行为**
+exit code 23, refuse, 打印本条目编号 (`[DATA-E004]`)。
+
+**何时升级到在线咨询**
+见 `docs/08_consultation_protocol.md §6.例 1 — 数据契约违规`。
+
+### DATA-E005: RPT C/40 缺充电或放电方向文件
+
+**触发条件**
+`cell_*_rpt.csv` 的 `c40_charge_filename` 或 `c40_discharge_filename` 列为空, 或
+对应文件不存在于 `experiments/EXP-{E,F,G}/{cell_id}/` 路径下。
+
+**物理/方法学后果**
+IC 分析依赖充电方向 dQ/dV 识别 graphite 阶梯峰; 缺失充电曲线会让
+`fit_ic_to_dms.py` 退化为单方向拟合, LAM 识别精度下降。下游 FIT-4a/b 收到的
+LLI/LAM 输入有系统偏置。
+
+**权威文档交叉引用**
+- `docs/PARAMETER_SOP.md §3.2 RPT C/40 数据交付要求`
+- `scripts/fit_ic_to_dms.py`
+- `docs/SPEC_ic_analysis.md`
+
+**现场可选处置**
+1. 回查实验 raw 数据, 确认是否仅做了一个方向; 仅一个方向则后续 RPT 必须补全双向,
+   历史数据保持原状但标记为 single-direction。
+2. 若两个方向都做了但文件名映射缺失, 在 `cell_*_rpt.csv` 中补全
+   `c40_charge_filename` 与 `c40_discharge_filename` 两列。
+3. 若仅有放电方向且无法补做, 用 `fit_ic_to_dms.py --allow-single-direction` 命令行
+   开关 (TODO, FIT-IC dual-direction follow-up) 跑退化流程并接受精度降级。
+
+**脚本应当行为**
+exit code 24, refuse, 打印本条目编号 (`[DATA-E005]`)。
+
+**何时升级到在线咨询**
+见 `docs/08_consultation_protocol.md §6.例 1 — 数据契约违规`。
+
 → 数据契约违规的统一外带模板见 `docs/08_consultation_protocol.md §4`。
 
 ---
@@ -1021,6 +1080,8 @@ exit code 72, warn, 打印本条目编号 (`[IDENT-W003]`)。
 | DATA-E001 | DATA | E | RPT CSV 列名或单位不符 SOP §3.2 | 20 | refuse | active |
 | DATA-E002 | DATA | E | .dat 文件 x 列非单调或越界 | 21 | refuse | active |
 | DATA-E003 | DATA | E | 电阻 .mat 形状不是 1001×2001 | 22 | refuse | active |
+| DATA-E004 | DATA | E | RPT IR 脉冲为单向测量 (须充放双向取平均) | 23 | refuse | active |
+| DATA-E005 | DATA | E | RPT C/40 缺充电或放电方向文件 | 24 | refuse | active |
 | FIT1-E001 | FIT1 | E | 材料 spec 中 dX 或 X0 字段未填 | 80 | refuse | active |
 | FIT1-E002 | FIT1 | E | EXP-A OCV 拟合 RMSE 超过失败阈值 | 81 | refuse | active |
 | FIT1-E003 | FIT1 | E | scipy.optimize.minimize 未收敛 | 82 | refuse | active |

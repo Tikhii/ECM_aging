@@ -136,6 +136,58 @@
       "status": "active"
     },
 
+    "DATA-E004": {
+      "scope": "DATA",
+      "level": "E",
+      "title": "RPT IR 脉冲为单向测量 (须充放双向取平均)",
+      "trigger": "experiments/EXP-{E,F,G}/.../metadata.csv 或 metadata 字段表中 IR_method 标记为 single direction; 或 cell_*_rpt.csv 的 R_IR_mOhm 列上游测量协议不含充电与放电两次脉冲并取平均。",
+      "consequence": "SEI 电荷转移阻抗在充放电方向上不对称 (charge transfer 极化方向相关), 单向脉冲会引入系统偏置, 长期 RPT 中内阻轨迹的偏置会污染 R_SEI 拟合 (FIT-4a)。",
+      "cross_refs": [
+        "docs/PARAMETER_SOP.md §3.2 RPT 内阻测量要求",
+        "docs/PARAMETER_SOP.md §二.2 内阻测量方法选择",
+        "docs/PARAMETERS.json::experiments::EXP-E"
+      ],
+      "remediation": [
+        "在协议侧加充放双向各一次 1C × 10/30 s 脉冲, 静置 5 min 后取平均",
+        "若已有单向历史数据, 不要回填; 把该轨迹标记为 IR-method-mismatch 并在 FIT-4a 报告中作为 caveat",
+        "确认 metadata.csv 的 IR_method 字段如实标注 (charge_only / discharge_only / bidirectional)"
+      ],
+      "script_behavior": {
+        "exit_code": 23,
+        "action": "refuse"
+      },
+      "escalation": "§6.例 1 — 数据契约违规",
+      "since_version": "0.5.3",
+      "status": "active",
+      "notes": "2026-04-29 加入。本错误码与 DATA-E005 共同补强 RPT 双向数据契约, 以替代之前 PARAMETER_SOP.md 中的隐含假设。"
+    },
+
+    "DATA-E005": {
+      "scope": "DATA",
+      "level": "E",
+      "title": "RPT C/40 缺充电或放电方向文件",
+      "trigger": "cell_*_rpt.csv 的 c40_charge_filename 或 c40_discharge_filename 列为空, 或对应文件不存在于 experiments/EXP-{E,F,G}/{cell_id}/ 路径下。",
+      "consequence": "IC 分析依赖充电方向 dQ/dV 识别 graphite 阶梯峰; 缺失充电曲线会让 fit_ic_to_dms.py 退化为单方向拟合, LAM 识别精度下降。下游 FIT-4a/b 收到的 LLI/LAM 输入有系统偏置。",
+      "cross_refs": [
+        "docs/PARAMETER_SOP.md §3.2 RPT C/40 数据交付要求",
+        "scripts/fit_ic_to_dms.py",
+        "docs/SPEC_ic_analysis.md"
+      ],
+      "remediation": [
+        "回查实验 raw 数据, 确认是否仅做了一个方向; 仅一个方向则后续 RPT 必须补全双向, 历史数据保持原状但标记为 single-direction",
+        "若两个方向都做了但文件名映射缺失, 在 cell_*_rpt.csv 中补全 c40_charge_filename 与 c40_discharge_filename 两列",
+        "若仅有放电方向且无法补做, 用 fit_ic_to_dms.py --allow-single-direction 命令行开关 (TODO, FIT-IC dual-direction follow-up) 跑退化流程并接受精度降级"
+      ],
+      "script_behavior": {
+        "exit_code": 24,
+        "action": "refuse"
+      },
+      "escalation": "§6.例 1 — 数据契约违规",
+      "since_version": "0.5.3",
+      "status": "active",
+      "notes": "2026-04-29 加入。fit_ic_to_dms.py 当前只读单方向 (放电); FIT-IC dual-direction support 单独 follow-up, 实现后 --allow-single-direction 兜底开关与本错误码协同。"
+    },
+
     "FIT1-E001": {
       "scope": "FIT1",
       "level": "E",

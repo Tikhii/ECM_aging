@@ -220,17 +220,35 @@ R2），但失去对 Fig. 6b 式"日历参数预测循环 IR 增长"的独立验
 
 | 列名 | 单位 | 备注 |
 | --- | --- | --- |
+| `rpt_idx` | int | 从 0 起，BOL 标定为 0；每次 RPT 自增 |
 | `time_s` | s | 老化总时长（日历）或总测试时间（循环） |
 | `EFC` | - | 仅循环老化需要（= ∫\|I\|dt / (2C₀)） |
 | `T_storage_K` | K | 存储温度（日历老化用） |
-| `SOC_storage` | 0..1 | 存储 SOC（日历老化用） |
+| `SOC_storage` | 0..1 | 存储 SOC（**仅日历老化填**；循环老化留空） |
+| `cycle_SOC_low` | 0..1 | **仅循环老化填**：循环 DOD 的低端 SOC（日历老化留空） |
+| `cycle_SOC_high` | 0..1 | **仅循环老化填**：循环 DOD 的高端 SOC（日历老化留空） |
 | `C_measured_Ah` | Ah | C/5 测得的容量 |
-| `R_IR_mOhm` | mΩ | IR 脉冲或 EIS 高频实部 |
+| `R_IR_mOhm` | mΩ | IR 脉冲（充放双向取平均，见下方"RPT 内阻测量要求"）或 EIS 高频实部 |
+| `c40_charge_filename` | str | 不含路径，本次 RPT 的 C/40 充电方向数据文件名（见下方"RPT C/40 数据交付要求"） |
+| `c40_discharge_filename` | str | 不含路径，本次 RPT 的 C/40 放电方向数据文件名 |
 | `LLI_Ah` | Ah | IC 分析得 |
 | `LAM_PE_Ah` | Ah | IC 分析得 |
 | `LAM_NE_Ah` | Ah | IC 分析得 |
 | `ic_analysis_fit_quality` | - | IC 分析 rmse_V，质量指标（<15 mV 为可接受）|
 | `ic_analysis_timestamp` | ISO8601 | 该次 RPT 的 IC 分析运行时间 |
+
+**RPT C/40 数据交付要求**：
+- C/40 必须**先充后放，两个方向各做一次完整扫描**（充电 V_min → V_max 不做 CV，放电 V_max → V_min 不做 CV）
+- 两个方向的数据分别交付为独立 CSV：
+  - 充电：`{cell_id}_rpt{rpt_idx:02d}_c40_charge.csv`
+  - 放电：`{cell_id}_rpt{rpt_idx:02d}_c40_discharge.csv`
+- 在 RPT 历史 CSV 中通过 `c40_charge_filename` / `c40_discharge_filename` 两列做 cross-ref
+- IC 分析依赖充电方向 dQ/dV，缺失充电曲线会触发 `fit_ic_to_dms.py` 的 IC-W003 警告并退化为单方向拟合
+
+**RPT 内阻测量要求**：
+- IR 脉冲方法：**充放双向各做一次 1C × 10 s 或 30 s 脉冲**，每方向之间静置 5 min 至端电压稳定
+- 内阻 = 充电脉冲瞬时电压降的绝对值与放电脉冲瞬时电压降绝对值的**平均值**除以电流绝对值
+- 单向脉冲不可接受（违反 DATA-E004 数据契约，详见 `docs/07_offline_runbook.md §2`）
 
 ### 3.3 目录约定
 
@@ -798,3 +816,4 @@ Claude Code 可被要求："对比 `parameterization_history/2026-04-20_initial/
 | 2026-04-21 | FIT-3 补上"脚本"字段（`fit_resistance_distribution.py`，SOP-5 会生成）。修正上一轮字段结构遗漏。 |
 | 2026-04-22 | fractionR*toRs 命名陷阱澄清（方案 β）。§3.3 补两层分配的区分与物理依据；§2.2.3 加反向指引；PARAMETERS.json notes + cell_model.py docstring 同步警示。不改字段名，保留 MATLAB 对照链。 |
 | 2026-04-29 | §五 方案 C 修订：去掉 EXP-C，与 PARAMETERS.json::minimal_viable_experiments::aging_prediction_robust 同步。修订动机：外部版 EXPERIMENT SOP v1.2 发布前一致性检查中发现内部 JSON 与 MD 矛盾，以 JSON 真源裁定。EXP-C 自 v0.5.0 已 deprecated for FIT-2，留作 GITT 不可行时的回退选项。 |
+| 2026-04-29 | RPT 数据契约补强：明确 C/40 先充后放双向、IR 脉冲充放双向取平均；RPT 历史表加 rpt_idx 与 c40_charge/discharge_filename cross-ref；循环 SOC_storage 拆为 cycle_SOC_low/high。修订动机：外部 SOP 抽取过程中发现这些隐含假设没在内部文档中显式表达，下次抽取或新人入场会踩坑。同步 PARAMETERS.json::EXP-E::CRITICAL 与 EXP-F/EXP-G::RPT_requirements；07_offline_runbook.md 与 error_codes_registry.json 增 DATA-E004 / DATA-E005。fit_ic_to_dms.py 当前仅读放电方向，FIT-IC dual-direction support 作为 follow-up 单独跟进。 |

@@ -868,7 +868,7 @@
         "R_SEI",
         "E_a_SEI"
       ],
-      "CRITICAL": "Each RPT MUST include: (1) C/5 capacity, (2) IR pulse or EIS for internal resistance, (3) C/40 OCV for IC analysis -> LLI, LAM_PE, LAM_NE. Additionally: all RPTs must be performed at 25 ± 1 degC with ≥4 h thermal equilibration after removal from storage; channel/fixture assignment must be fixed per cell across the entire aging campaign; BOL/EOL reference-cell calibration and a sentinel cell are required for drift correction. See PARAMETER_SOP.md §二.4 and §二.5 for full protocol.",
+      "CRITICAL": "Each RPT MUST include: (1) C/5 capacity bidirectional (charge + discharge); (2) IR pulse: charge + discharge directions, average of |ΔV_charge_pulse| and |ΔV_discharge_pulse| divided by |I| (single-direction pulse violates DATA-E004); (3) C/40 OCV: charge sweep + discharge sweep delivered as two separate files {cell_id}_rpt{rpt_idx:02d}_c40_charge.csv and {cell_id}_rpt{rpt_idx:02d}_c40_discharge.csv (single-direction delivery violates DATA-E005, IC analysis requires charge direction for graphite stage peaks); IC analysis -> LLI, LAM_PE, LAM_NE. Additionally: all RPTs must be performed at 25 ± 1 degC with ≥4 h thermal equilibration after removal from storage; channel/fixture assignment must be fixed per cell across the entire aging campaign; BOL/EOL reference-cell calibration and a sentinel cell are required for drift correction. See PARAMETER_SOP.md §二.4 and §二.5 for full protocol.",
       "error_codes": [
         "DATA-E001",
         "FIT4A-E002",
@@ -887,7 +887,7 @@
         "k_LAM_PE_cyc",
         "k_LAM_NE_cyc"
       ],
-      "RPT_requirements": "Same RPT protocol as EXP-E. IR measurement is recommended but not strictly required for FIT-4b (R_SEI not re-fitted from cycle data, per rule R2). Temperature control (25 ± 1 degC) and device hygiene requirements are mandatory. See PARAMETER_SOP.md §二.",
+      "RPT_requirements": "Same RPT protocol as EXP-E, including bidirectional requirements: C/5 capacity charge + discharge; IR pulse charge + discharge averaged (DATA-E004); C/40 OCV charge + discharge as two separate files (DATA-E005). IR measurement itself is recommended but not strictly required for FIT-4b (R_SEI not re-fitted from cycle data, per rule R2); when measured, the bidirectional protocol applies. Temperature control (25 ± 1 degC) and device hygiene requirements are mandatory. See PARAMETER_SOP.md §二.",
       "error_codes": [
         "DATA-E001",
         "FIT4B-E003"
@@ -901,7 +901,7 @@
       "outputs": [
         "k_LP"
       ],
-      "RPT_requirements": "Same RPT protocol as EXP-E. IR measurement is recommended but not strictly required for FIT-4b (R_SEI not re-fitted from cycle data, per rule R2). Temperature control (25 ± 1 degC) and device hygiene requirements are mandatory. See PARAMETER_SOP.md §二.",
+      "RPT_requirements": "Same RPT protocol as EXP-E, including bidirectional requirements: C/5 capacity charge + discharge; IR pulse charge + discharge averaged (DATA-E004); C/40 OCV charge + discharge as two separate files (DATA-E005). IR measurement itself is recommended but not strictly required for FIT-4b (R_SEI not re-fitted from cycle data, per rule R2); when measured, the bidirectional protocol applies. Temperature control (25 ± 1 degC) and device hygiene requirements are mandatory. See PARAMETER_SOP.md §二.",
       "error_codes": [
         "DATA-E001",
         "FIT4C-E002"
