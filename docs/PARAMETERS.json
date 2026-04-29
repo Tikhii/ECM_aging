@@ -851,6 +851,12 @@
         "fractionR1toRs",
         "fractionR2toRs"
       ],
+      "compute_via": {
+        "script": "scripts/fit_resistance_distribution.py",
+        "fit_step": "FIT-3",
+        "status": "planned",
+        "_comment": "fractionR1toRs / fractionR2toRs are obtained by FIT-3 (grid scan + Nelder-Mead on V_cell(t) RMSE), see PARAMETER_SOP.md §四 FIT-3. The script scripts/fit_resistance_distribution.py is documented but not yet implemented as of 2026-04-29. Until implemented, the paper defaults (0.5 / 0.5 for NCR18650B) are used and FIT-3 falls under 'manually_set' rather than 'fitted'. New cell types should run FIT-3 once the script lands; tracking as a follow-up since v0.5.3 docs review."
+      },
       "error_codes": [
         "DATA-E001"
       ]

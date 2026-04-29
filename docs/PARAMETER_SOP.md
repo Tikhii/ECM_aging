@@ -178,14 +178,26 @@ R2），但失去对 Fig. 6b 式"日历参数预测循环 IR 增长"的独立验
    每颗 cell 的 channel 归属并记录在 `experiments/.../metadata.csv` 中。
 2. **固定夹具**：18650 保持器、弹簧针、四线制连接方式全部锁定。接触电阻变动 
    1 mΩ 即相当于 ~2–3% IR 误差（18650 IR 典型 30–50 mΩ）。
-3. **BOL/EOL 参考 cell 标定**：实验开始和结束时，各用**一颗全新参考 cell**
-   （从未参与老化，单独在 25°C、50% SOC 标定箱存放）跑一遍所有 channel。标定 
-   偏差进入后处理线性校正。
-4. **哨兵 cell**：老化 cell 组内指定**一颗最温和条件的 cell**（例如 25°C、50% 
-   SOC 日历组）作为"老化之外漂移"的基线。其 $C(t)$ 和 $R(t)$ 轨迹异常跳变即 
-   指示设备问题而非电池老化。
-5. **记录元数据**：`experiments/.../metadata.csv` 每颗 cell 至少记录：
-   `cell_id, channel_id, fixture_id, T_storage_K, SOC_storage, start_date, notes`。
+3. **参考 cell（reference cell）—— 设备漂移基线**：
+   - **数量**：1–2 颗（推荐 2 颗以容许单颗失效）
+   - **来源**：与老化 cell 同批次、同 binning 入场
+   - **存放条件**：项目第 0 天起至项目结束，全程在 25 ± 1 °C、50 ± 5 % SOC 标定箱内静置。每 90 天回到 cycler 上做一次 quick check（仅 C/5 容量 + IR）后立即重置回 50 % SOC 放回恒温箱
+   - **重要**：参考 cell **不是**"全新 cell"——项目结束时它本身已发生约 1–2 % 容量损失（25 °C / 50 % SOC 一年日历老化典型量级）。校准用的不是它的"绝对新值"，而是它在 BOL 与 EOL 两次 RPT 之间的**差值**
+   - **校准时刻**：项目第 0 天（BOL）和项目结束日（EOL），在所有参与老化的 channel 上**逐一**跑同一颗参考 cell 的 RPT（C/5 + IR 即可，不需 C/40）
+   - **校准方法**：
+     1. 每个 channel 的 BOL → EOL 测得 ΔC_ref,ch 与 ΔR_ref,ch
+     2. 用第 3 条 quick check 的轨迹外推估算参考 cell 自身日历老化贡献，扣除
+     3. 残差归为该 channel 的设备漂移，对该 channel 上所有老化 cell 的 RPT 历史做线性时间内插校正
+4. **哨兵 cell（sentinel cell）—— 异常实时探测**：
+   - **数量**：**至少 2 颗**，且必须是老化 cell 总体里**最温和工况的那 2 颗重复**（典型即 EXP-E 的 25 °C / 50 % SOC 日历组）
+   - **理由**：1 颗不够。单颗自身性能跳变无法和设备漂移区分。2 颗能交叉验证："两颗同时跳变 = 设备问题；只有一颗跳变 = 这颗 cell 自身问题"
+   - **作用**：哨兵 cell **同时是老化 cell**（参与正常 RPT 与正常存储），不是额外占编制的校准 cell。其轨迹应是所有老化 cell 中退化最缓慢的，因此任何明显的非单调跳变（如单次 RPT 间容量下跌 > 1 %、内阻上升 > 5 %）就是设备问题或 RPT 操作问题的早期警告
+   - **触发动作**：哨兵 cell 出现异常跳变时，立即停止所有相关 channel 上的当前 RPT，排查 cycler / 夹具 / 温箱状态后再恢复
+   - **与参考 cell 的区别**：参考 cell 在标定箱不老化（用于事后线性校正）；哨兵 cell 在老化条件下与其他 cell 同步老化（用于实时异常探测）。两者职责不同，必须各自配备
+5. **元数据记录**：每颗 cell（含老化 cell、参考 cell、哨兵 cell）的全套元数据字段见 §三 数据存储格式规范的 metadata.csv 表。元数据中需明确标注 `cell_role`：
+   - `aging`：常规老化 cell
+   - `reference`：参考 cell
+   - `aging+sentinel`：兼任哨兵的老化 cell
 
 ---
 
@@ -249,6 +261,28 @@ R2），但失去对 Fig. 6b 式"日历参数预测循环 IR 增长"的独立验
 - IR 脉冲方法：**充放双向各做一次 1C × 10 s 或 30 s 脉冲**，每方向之间静置 5 min 至端电压稳定
 - 内阻 = 充电脉冲瞬时电压降的绝对值与放电脉冲瞬时电压降绝对值的**平均值**除以电流绝对值
 - 单向脉冲不可接受（违反 DATA-E004 数据契约，详见 `docs/07_offline_runbook.md §2`）
+
+**metadata.csv 字段表**（每个老化实验目录 `experiments/EXP-{E,F,G}/` 下一份，每颗 cell 含老化 cell、参考 cell、哨兵 cell 一行）：
+
+| 列名 | 单位/类型 | 适用 | 备注 |
+| --- | --- | --- | --- |
+| `cell_id` | str | 全部 | 全工程唯一 |
+| `batch_id` | str | 全部 | 入场批次号 / binning 标签 |
+| `cell_role` | str | 全部 | `aging` / `reference` / `aging+sentinel`（见 §二.5 第 5 条） |
+| `channel_id` | str | 全部 | cycler 上的物理 channel，固定不动（见 §二.5 第 1 条） |
+| `cycler_id` | str | 全部 | cycler 设备编号 |
+| `fixture_id` | str | 全部 | 18650 保持器 / 弹簧针 / 四线制夹具编号（见 §二.5 第 2 条） |
+| `T_storage_K` | K | EXP-E | 日历老化存储温度 |
+| `SOC_storage` | 0..1 | EXP-E | 日历老化存储 SOC |
+| `cycle_T_K` | K | EXP-F/G | 循环温度 |
+| `cycle_DOD` | 0..1 | EXP-F/G | 循环 DOD |
+| `cycle_C_rate_chg` | C-rate | EXP-F/G | 循环充电倍率 |
+| `cycle_C_rate_dchg` | C-rate | EXP-F/G | 循环放电倍率 |
+| `start_date_iso` | ISO8601 | 全部 | 该 cell 开始服役日期 |
+| `IR_method` | str | 全部 | `bidirectional` / `EIS` / 历史遗留 `charge_only` 或 `discharge_only`（见上方 RPT 内阻测量要求；非 bidirectional 触发 DATA-E004） |
+| `notes` | str | 全部 | 自由文本，记录 RPT 间隔之外的所有干预（更换温箱位置、临时 SOC 调整等） |
+
+字段顺序与 EXPERIMENT_SOP（外部版）§6.3 保持一致。
 
 ### 3.3 目录约定
 
@@ -520,7 +554,7 @@ alternate_*, amplitude_rss_*, mapping_marginal)。运行产物保存在
 
 **输入**：EXP-D 的 DST 首循环数据 `experiments/EXP-D/cell_01_dst_firstcycle.csv`（列：`time_s, V_cell, I_A`）
 
-**脚本**：`scripts/fit_resistance_distribution.py`（SOP-5 会生成）
+**脚本**：`scripts/fit_resistance_distribution.py`（**TODO，尚未实现**：截至 2026-04-29 仍是 SOP-5 待生成项；在脚本落地前，新体系沿用论文默认 `0.5 / 0.5`，spec 的 `fractionR1toRs` / `fractionR2toRs` 字段保持 `manually_set` 状态而非 `fitted`。EXP-D 派生量计算流程权威定义在 `PARAMETERS.json::experiments::EXP-D::compute_via`）
 
 **算法**：
 1. 粗扫：`fractionR1toRs ∈ [0.1, 0.9]` 步长 0.1，`fractionR2toRs ∈ [0.1, 0.9]` 步长 0.1（9×9 = 81 点）
@@ -817,3 +851,5 @@ Claude Code 可被要求："对比 `parameterization_history/2026-04-20_initial/
 | 2026-04-22 | fractionR*toRs 命名陷阱澄清（方案 β）。§3.3 补两层分配的区分与物理依据；§2.2.3 加反向指引；PARAMETERS.json notes + cell_model.py docstring 同步警示。不改字段名，保留 MATLAB 对照链。 |
 | 2026-04-29 | §五 方案 C 修订：去掉 EXP-C，与 PARAMETERS.json::minimal_viable_experiments::aging_prediction_robust 同步。修订动机：外部版 EXPERIMENT SOP v1.2 发布前一致性检查中发现内部 JSON 与 MD 矛盾，以 JSON 真源裁定。EXP-C 自 v0.5.0 已 deprecated for FIT-2，留作 GITT 不可行时的回退选项。 |
 | 2026-04-29 | RPT 数据契约补强：明确 C/40 先充后放双向、IR 脉冲充放双向取平均；RPT 历史表加 rpt_idx 与 c40_charge/discharge_filename cross-ref；循环 SOC_storage 拆为 cycle_SOC_low/high。修订动机：外部 SOP 抽取过程中发现这些隐含假设没在内部文档中显式表达，下次抽取或新人入场会踩坑。同步 PARAMETERS.json::EXP-E::CRITICAL 与 EXP-F/EXP-G::RPT_requirements；07_offline_runbook.md 与 error_codes_registry.json 增 DATA-E004 / DATA-E005。fit_ic_to_dms.py 当前仅读放电方向，FIT-IC dual-direction support 作为 follow-up 单独跟进。 |
+| 2026-04-29 | §二.5 设备 hygiene 第 3、4 条参考 cell / 哨兵 cell 完整重写：明确参考 cell 不是"全新"而是"老化最少且老化条件已知"、哨兵 cell 数量至少 2 颗、两者职责区分、校准方法。修订动机：外部 SOP review 暴露内部描述的多处歧义，下次新人入场或下次抽取会再触发同样的 review 循环。第 5 条 metadata 改为指向 §3.2 末尾的 metadata.csv 字段表，避免两处发散。 |
+| 2026-04-29 | §四 EXP-D 派生量 fractionR1toRs / fractionR2toRs 计算流程明确化：FIT-3 已在 SOP §四 中描述，但 `scripts/fit_resistance_distribution.py` 截至本日尚未实现（情况 C）；在 PARAMETERS.json::experiments::EXP-D 加 compute_via 字段把这一关系显式化，FIT-3 节加 TODO 注记。脚本实现作为 follow-up 单独跟进。 |
