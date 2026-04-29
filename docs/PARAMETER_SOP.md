@@ -725,10 +725,12 @@ done
 **准备**：按 §二.0 步骤先创建 spec 文件，再按各 EXP-X 采集数据并跑 FIT-X 脚本。
 
 ### 方案 C：全方案（高置信度）
-**需要**：方案 B + `EXP-B3, EXP-C, EXP-E`
+**需要**：方案 B + `EXP-B3, EXP-E`
 **时长**：~12–15 个月
 **优势**：全部参数可拟合；多温度外推可靠
 **准备**：按 §二.0 步骤先创建 spec 文件，再按各 EXP-X 采集数据并跑 FIT-X 脚本。
+
+> EXP-C 与 EXP-D 不属于上述任何方案，按需补充：EXP-C 在无 GITT 设备时回退使用（自 v0.5.0 起 FIT-2 的主输入已切换为 EXP-B4 GITT 弛豫）；EXP-D 在动态响应精度要求高时补做（FIT-3 的 fractionR1toRs / fractionR2toRs 输入）。
 
 ---
 
@@ -795,3 +797,4 @@ Claude Code 可被要求："对比 `parameterization_history/2026-04-20_initial/
 | 2026-04-21 | 补上 FIT-3 小节。R5 流程下首个跨文档协调任务。 |
 | 2026-04-21 | FIT-3 补上"脚本"字段（`fit_resistance_distribution.py`，SOP-5 会生成）。修正上一轮字段结构遗漏。 |
 | 2026-04-22 | fractionR*toRs 命名陷阱澄清（方案 β）。§3.3 补两层分配的区分与物理依据；§2.2.3 加反向指引；PARAMETERS.json notes + cell_model.py docstring 同步警示。不改字段名，保留 MATLAB 对照链。 |
+| 2026-04-29 | §五 方案 C 修订：去掉 EXP-C，与 PARAMETERS.json::minimal_viable_experiments::aging_prediction_robust 同步。修订动机：外部版 EXPERIMENT SOP v1.2 发布前一致性检查中发现内部 JSON 与 MD 矛盾，以 JSON 真源裁定。EXP-C 自 v0.5.0 已 deprecated for FIT-2，留作 GITT 不可行时的回退选项。 |

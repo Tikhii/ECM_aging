@@ -74,7 +74,7 @@ MATLAB 原版使用 `ode23t` 求解 18 维 DAE。Python 移植中改用 `scipy.i
 
 实验体系由七个独立模块组成。EXP-A 是 fresh cell 的 C/40 完整放电，产出名义容量和全电池 OCV。EXP-B1 和 EXP-B2 是拆解 fresh cell 后组装 CR2032 半电池做 C/40 测试，分别产出 PE 和 NE 的半电池 OCV 曲线。EXP-B3 是 fresh cell 的 EIS 测量，产出串联电阻。EXP-B4 是 GITT 扫描，产出 NE 和 PE 的二维电阻查找表。EXP-C 是电流阶跃弛豫测试，用于拟合 RC 时间常数。EXP-D 是 fresh cell 上一圈完整的 DST 协议，用于拟合电阻劈分因子。EXP-E 是日历老化，需要多温度和多 SOC 条件长期储存六到十五个月，每次 RPT 必测内阻。EXP-F 和 EXP-G 是循环老化，前者到 knee 前的 150 到 200 EFC，后者继续到容量跌至 70%。
 
-对于新体系（例如 LFP-石墨），`PARAMETERS.json::minimal_viable_experiments` 给出了三档方案。最小 fresh-cell 方案只需 EXP-A、B1、B2、B4；可预测老化的最小方案加 EXP-F 和 EXP-G；完整方案加 EXP-B3、C 和 E。
+对于新体系（例如 LFP-石墨），`PARAMETERS.json::minimal_viable_experiments` 给出了三档方案。最小 fresh-cell 方案只需 EXP-A、B1、B2、B4；可预测老化的最小方案加 EXP-F 和 EXP-G；完整方案加 EXP-B3 和 E。EXP-C 与 EXP-D 不属于任何方案，按需补充：EXP-C 在无 GITT 设备时回退使用（自 v0.5.0 起 FIT-2 主输入已切换为 EXP-B4 GITT 弛豫），EXP-D 在动态响应精度要求高时补做。
 
 ---
 
