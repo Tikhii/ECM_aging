@@ -175,7 +175,7 @@ python scripts/fit_electrode_balance.py \
 | 创建新 cell type (双 spec 架构) | `docs/PARAMETER_SOP.md` §二.0 |
 | 拟合电极平衡 LR/OFS | `scripts/fit_electrode_balance.py` + `docs/PARAMETER_SOP.md` §三.1 |
 | 拟合 RC 弛豫电容 C1/C2 | `scripts/fit_rc_transient.py` + `docs/PARAMETER_SOP.md` §三.2 |
-| 模型升级方向 (RC 不够用 / 长弛豫等) | 文献入口在 `docs/UPGRADE_LITERATURE/` (目前含 `fractional_order_RC.md`, 对应 `CRITICAL_REVIEW.md` C7) |
+| 模型升级方向 (RC 不够用 / 长弛豫 / IC 分析方法学等) | 文献入口在 `docs/UPGRADE_LITERATURE/` (`fractional_order_RC.md` 对应 `CRITICAL_REVIEW.md` C7; `ic_analysis_methodology_review.md` 对应 N2/N3) |
 | 离线实验室部署 | `docs/09_offline_bundle_guide.md` |
 | 现场错误码手册 | `docs/07_offline_runbook.md` |
 | 跨 air-gap 向在线 Claude 咨询 | `docs/08_consultation_protocol.md` |

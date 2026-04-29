@@ -41,6 +41,7 @@
 | "拟合 RC 弛豫电容 C1/C2" | `scripts/fit_rc_transient.py` | `docs/PARAMETER_SOP.md §三.2` |
 | "做 IC 分析提取退化模式" | `docs/SPEC_ic_analysis.md` | `docs/PARAMETER_SOP.md §SOP-4.5` |
 | "RC 拓扑不够用 / 长弛豫拟合差" | `docs/CRITICAL_REVIEW.md` C7 | `docs/UPGRADE_LITERATURE/fractional_order_RC.md` |
+| "了解 IC 分析的学术合理性 / 潜在改进 / 文献入口" | docs/CRITICAL_REVIEW.md N2/N3 | docs/UPGRADE_LITERATURE/ic_analysis_methodology_review.md |
 
 ---
 

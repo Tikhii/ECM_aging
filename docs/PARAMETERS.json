@@ -631,7 +631,9 @@
       "measurement_needed": "V(t) relaxation after current pulse termination at known SOC and pulse current",
       "method": "scipy.optimize.curve_fit two-exponential V(t)=V_inf+A1*exp(-t/tau1)+A2*exp(-t/tau2), then C_i = tau_i / R_i via R_NE/R_PE LUT lookup at (C_rate=I_pre/C_nominal, X_NE/X_PE).",
       "relaxation_model_default": "two_exponential",
-      "relaxation_model_options": ["two_exponential"],
+      "relaxation_model_options": [
+        "two_exponential"
+      ],
       "tau_to_R_mapping": "Two candidates A: tau1->R_NE+tau2->R_PE; B: tau2->R_NE+tau1->R_PE. Selection by amplitude RSS against expected -I_pre*R_NE/-I_pre*R_PE. Both candidates persisted to fit_report. See PARAMETER_SOP.md §三.2.",
       "estimated_runtime": "seconds",
       "blocks_what": "Nothing hard",
@@ -830,7 +832,9 @@
       "cells_needed": 1,
       "duration": "4 hours",
       "outputs": [],
-      "deprecated_for": ["FIT-2"],
+      "deprecated_for": [
+        "FIT-2"
+      ],
       "deprecated_since_version": "0.5.0",
       "deprecated_replacement": "EXP-B4",
       "deprecated_note": "FIT-2 changed input from EXP-C current-step relaxation to EXP-B4 GITT relaxation in v0.5.0. EXP-B4 GITT pulses provide both R_NE_LUT/R_PE_LUT (original purpose) and the relaxation V(t) needed for two-exponential fitting, eliminating the need for a separate EXP-C protocol. See PARAMETERS.json::fit_steps::FIT-2::measurement_needed for current data contract.",
@@ -1061,6 +1065,18 @@
       "summary": "LR 和 OFS 在 V_cell(SOC) 数据上存在强共线性。OFS 仅通过 (1-OFS/100) 因子影响 X_PE 的 SOC 范围, 这可被 LR 对 X_NE 范围的调整反向补偿。OFS 的独立可识别性依赖半电池 OCV 在特定 X 值附近的局部特征 (stage transitions, dV/dX 极值), 要求 EXP-A 数据 SOC 覆盖到这些特征点。",
       "evidence": "v0.4.0 FIT-1 实施过程中, 100 点均匀采样的合成数据上, LR 反演相对误差 0.04%, OFS 反演相对误差 3.8%。真实 EXP-A 数据可能因为 stage transition 附近自然采样更密而表现更好, 但未验证。",
       "action": "记录现象。FIT-1 工作流上, 若 OFS uncertainty 偏大, 考虑 --fix-OFS 选项 (待 v0.4.x 实施) 把 OFS 固定到 datasheet 或 alawa 默认值, 只拟合 LR。"
+    },
+    "N2_pOCV_phantom_offset": {
+      "severity": "MODERATE",
+      "summary": "pseudo-OCV (实际 C/40 测量) 残留 SOC-dependent ohmic IR drop + intrinsic charge-discharge hysteresis 量级 tens of millivolts. NLS V(Q) 拟合会把这些 non-degradation 贡献误归到 (LLI, LAM_PE, LAM_NE) DMs, 产生 phantom degradation. C/SiOx 体系尤其严重, NCA/G 次要 (SiOx hysteresis 不存在, graphite hysteresis + IR 残留仍存在)。",
+      "evidence": "Asheruddin et al. (2025) arXiv:2512.19773 实测 LG M50T (高内阻) + Molicel P45B (低内阻) 商用 21700 cells: 不做 IR 校正会抑制 PE-LAM + LLI 反演并夸大 apparent graphite loss; hysteresis + voltage-windowing 主导 charge-discharge branch 间的 Si loss 差异。本工程主体系 NCA/G 实测未暴露但未做跨化学体系 stress test。",
+      "action": "记录现象。本工程当前通过 fit_quality RMSE 阈值 (20/15 mV) 间接吸收, 无显式 IR 校正。v0.6+ 候选改进: 引入可选 --ir-correction 参数到 analyze_ic, 接受 R_Omega(SOC) LUT 输入, V_corr = V_obs + I·R_Omega(SOC) 后再拟合。详见 docs/UPGRADE_LITERATURE/ic_analysis_methodology_review.md §4.1。"
+    },
+    "N3_sum_caploss_nonlinear": {
+      "severity": "MODERATE",
+      "summary": "sum(LLI + LAM_PE + LAM_NE) ≠ cap_loss 是跨化学体系普遍现象, 不是计算错误。物理原因: LAM 损失可被未使用的 SOC 范围部分吸收 (电极 SOC 窗口耦合非线性), 当 PE/NE 损失的 active material 处于 cell 实际 cycling 不触及的 stoichiometry 区间时, 它不直接贡献到 cell capacity 损失。",
+      "evidence": "Mmeka 2025 paper Fig. 6c 143 EFC calibration: sum=0.25 / cap_loss=0.11 / ratio=2.27。本工程 v0.5.2 子阶段 4 实测 cycle ratio 1.66/2.29/2.97 (light/moderate/severe), 与 paper 同量级且非线性递增。Dubarry & Anseán 2022 Front. Energy Res. 10:1023555 §best practices 跨多化学体系系统讨论此现象。",
+      "action": "记录现象 (物理事实, 不需要 fix)。T4 测试已在 v0.5.2 改写为 cap_loss self-consistency (forward 验证, 非 sum 守恒), 详见 MIGRATION_NOTES §20.6。FIT-4a/4b 消费 IC 输出时不能假设 sum 守恒, DMs 时间序列与 cap_loss 时间序列应各自独立拟合。详见 docs/UPGRADE_LITERATURE/ic_analysis_methodology_review.md §3.3 Item 7。"
     }
   },
   "external_references": {
