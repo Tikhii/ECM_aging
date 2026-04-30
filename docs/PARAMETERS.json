@@ -1093,7 +1093,7 @@
       "severity": "MODERATE",
       "summary": "sum(LLI + LAM_PE + LAM_NE) ≠ cap_loss 是跨化学体系普遍现象, 不是计算错误。物理原因: LAM 损失可被未使用的 SOC 范围部分吸收 (电极 SOC 窗口耦合非线性), 当 PE/NE 损失的 active material 处于 cell 实际 cycling 不触及的 stoichiometry 区间时, 它不直接贡献到 cell capacity 损失。",
       "evidence": "Mmeka 2025 paper Fig. 6c 143 EFC calibration: sum=0.25 / cap_loss=0.11 / ratio=2.27。本工程 v0.5.2 子阶段 4 实测 cycle ratio 1.66/2.29/2.97 (light/moderate/severe), 与 paper 同量级且非线性递增。Dubarry & Anseán 2022 Front. Energy Res. 10:1023555 §best practices 跨多化学体系系统讨论此现象。",
-      "action": "记录现象 (物理事实, 不需要 fix)。T4 测试已在 v0.5.2 改写为 cap_loss self-consistency (forward 验证, 非 sum 守恒), 详见 MIGRATION_NOTES §20.6。FIT-4a/4b 消费 IC 输出时不能假设 sum 守恒, DMs 时间序列与 cap_loss 时间序列应各自独立拟合。详见 docs/UPGRADE_LITERATURE/ic_analysis_methodology_review.md §3.3 Item 7。"
+      "action": "记录现象 (物理事实, 不需要 fix)。T4 测试已在 v0.5.2 改写为 cap_loss self-consistency (forward 验证, 非 sum 守恒), 详见 docs/legacy/MIGRATION_NOTES.md §20.6。FIT-4a/4b 消费 IC 输出时不能假设 sum 守恒, DMs 时间序列与 cap_loss 时间序列应各自独立拟合。详见 docs/UPGRADE_LITERATURE/ic_analysis_methodology_review.md §3.3 Item 7。"
     }
   },
   "external_references": {

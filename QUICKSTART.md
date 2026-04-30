@@ -161,7 +161,7 @@ conda deactivate
 | 在离线实验室部署 | `docs/09_offline_bundle_guide.md` |
 | 现场报错速查 | `docs/07_offline_runbook.md` |
 | 从模板开始写自己的分析 | `examples/analysis_template.py` |
-| 查项目演化历史 | `docs/MIGRATION_NOTES.md` |
+| 查项目演化历史 | `CHANGELOG.md` (release-level) + `docs/decisions/` (ADR 决策记录) + `docs/legacy/MIGRATION_NOTES.md` (深度档案) |
 
 ## 🆘 常见问题速查
 

@@ -642,7 +642,7 @@
         "docs/CLAUDE.md 规则 R2",
         "docs/PARAMETER_SOP.md §四 FIT-4b: 关键设置",
         "docs/PARAMETERS.json::fit_steps::FIT-4b::parameters_frozen",
-        "docs/MIGRATION_NOTES.md §三 规则 R2"
+        "docs/legacy/MIGRATION_NOTES.md §三 规则 R2"
       ],
       "remediation": [
         "在 fit_cycle_preknee.py 入口打印冻结清单与自由清单, 用户目视核对",
@@ -764,7 +764,7 @@
       "trigger": "任一 cell.CC/CV/CP 调用返回的 OdeResult.status < 0, 即 BDF 在剩余步长内无法收敛或遇到事件函数异常。",
       "consequence": "积分失败意味着 DAE 降为 ODE 的 Newton 内层在某个时刻发散, 后续状态变量不再可信; 若被静默忽略, 拟合器会把数值失败当作物理信号。",
       "cross_refs": [
-        "docs/MIGRATION_NOTES.md §二 代码层 (solve_ivp BDF + Newton + brentq)",
+        "docs/legacy/MIGRATION_NOTES.md §二 代码层 (solve_ivp BDF + Newton + brentq)",
         "libquiv_aging/cell_model.py::EquivCircuitCell 积分主循环"
       ],
       "remediation": [
@@ -788,7 +788,7 @@
       "trigger": "solve_algebraic_constraint 里 Newton warm-start 失败后, brentq 兜底在给定括号内无符号变化或二分到达迭代上限仍未达到 xtol。",
       "consequence": "意味着某个工况点下 (I, V, SOC) 代数耦合没有实解, 物理上对应电池不能同时满足 CC/CV 设定与 OCV+R 约束; 继续仿真会产生非物理的状态跳变。",
       "cross_refs": [
-        "docs/MIGRATION_NOTES.md §二 代码层 (Newton warm-start + brentq)",
+        "docs/legacy/MIGRATION_NOTES.md §二 代码层 (Newton warm-start + brentq)",
         "libquiv_aging/cell_model.py"
       ],
       "remediation": [

@@ -321,7 +321,7 @@ NLS V(Q) 拟合会把这些 non-degradation 贡献误归到 (LLI, LAM_PE, LAM_NE
 - **本工程 v0.5.2 子阶段 4 实测**: cycle ratio 1.66 / 2.29 / 2.97 (light / moderate / severe), 与 paper 同量级且非线性递增
 - **Dubarry & Anseán (2022)** *Front. Energy Res.* 10:1023555 §best practices 跨多化学体系系统讨论此现象
 
-**本工程影响 (T4 测试改写)**: v0.4 → v0.5.2 升级中, T4 cap_loss self-consistency 测试由 sum 守恒 (Birkl 2017 风格) 改为 forward 物理一致性验证: 给定 (LLI, LAM_PE, LAM_NE), 用 forward model 计算 cap_loss(LLI, LAM_PE, LAM_NE), 与 ground truth cap_loss 比对。详见 `docs/MIGRATION_NOTES.md` §20.6 完整决策记录。
+**本工程影响 (T4 测试改写)**: v0.4 → v0.5.2 升级中, T4 cap_loss self-consistency 测试由 sum 守恒 (Birkl 2017 风格) 改为 forward 物理一致性验证: 给定 (LLI, LAM_PE, LAM_NE), 用 forward model 计算 cap_loss(LLI, LAM_PE, LAM_NE), 与 ground truth cap_loss 比对。详见 `docs/legacy/MIGRATION_NOTES.md` §20.6 完整决策记录。
 
 **工程意义 (FIT-4a/4b 消费 IC 输出时必须遵守)**: 拟合 LLI / LAM 时**不能假设 sum 守恒**。DMs 时间序列与 cap_loss 时间序列应**各自独立拟合**, 不通过 sum constraint 联系。
 
@@ -419,5 +419,5 @@ NLS V(Q) 拟合会把这些 non-degradation 贡献误归到 (LLI, LAM_PE, LAM_NE
 | 日期 | 变更 |
 | --- | --- |
 | 2026-04-20 | 初版。12 条 findings (E1-E2, S1-S3, C1-C6, C_X_LAM) 全部记录。与 `PARAMETERS.json v2.0` 配套。 |
-| 2026-04-25 | 新增 N1 (LR/OFS 共线性)。v0.4.0 FIT-1 实施中发现, 详见 MIGRATION_NOTES §十五。 |
-| 2026-04-26 | 新增 C7 (RC 拓扑对长弛豫的不足)。v0.5.0 FIT-2 实施中暴露的 RMSE 下限来源, 升级路径见 docs/UPGRADE_LITERATURE/fractional_order_RC.md, 详见 MIGRATION_NOTES §十八。 |
+| 2026-04-25 | 新增 N1 (LR/OFS 共线性)。v0.4.0 FIT-1 实施中发现, 详见 docs/legacy/MIGRATION_NOTES.md §十五。 |
+| 2026-04-26 | 新增 C7 (RC 拓扑对长弛豫的不足)。v0.5.0 FIT-2 实施中暴露的 RMSE 下限来源, 升级路径见 docs/UPGRADE_LITERATURE/fractional_order_RC.md, 详见 docs/legacy/MIGRATION_NOTES.md §十八。 |

@@ -95,7 +95,7 @@ libquiv_aging_py/
     ├── PARAMETERS.json           # ★ 参数元数据 (单一事实来源)
     ├── PARAMETER_SOP.md          # 参数获取 SOP
     ├── CRITICAL_REVIEW.md        # 批判性审查 (S/C/N 系列)
-    ├── MIGRATION_NOTES.md        # 跨会话演化笔记
+    ├── legacy/MIGRATION_NOTES.md # 跨会话演化笔记 (frozen 2026-04-30)
     ├── error_codes_registry.json # 错误码事实层
     ├── error_codes.schema.json   # 错误码 schema
     └── UPGRADE_LITERATURE/       # 模型升级方向的文献 starter pack
@@ -125,7 +125,8 @@ v0.6.0 实施。
 
 版本演化通过 git tag 标记: `docs/vX.Y.Z` 是文档基建或错误码 patch,
 `release/vX.Y.0` 是代码能力 minor release。截至 v0.5.0 已有九层 tag
-阶梯, 完整演化路径见 `MIGRATION_NOTES.md`。
+阶梯, 完整演化历史见 `CHANGELOG.md`, 深度档案见
+`docs/legacy/MIGRATION_NOTES.md`, 架构决策记录见 `docs/decisions/`。
 
 air-gapped 实验室部署通过内部 pip 镜像单轨制, 详见
 `docs/09_offline_bundle_guide.md`。错误码体系 (ENV / DATA / FIT1 /
@@ -180,7 +181,7 @@ python scripts/fit_electrode_balance.py \
 | 现场错误码手册 | `docs/07_offline_runbook.md` |
 | 跨 air-gap 向在线 Claude 咨询 | `docs/08_consultation_protocol.md` |
 | 查参数元数据 / 论文错误 / 批判性审查 | `docs/PARAMETERS.json` + `docs/CRITICAL_REVIEW.md` |
-| 查项目演化历史 | `docs/MIGRATION_NOTES.md` |
+| 查项目演化历史 | `CHANGELOG.md` (release-level) + `docs/decisions/` (ADR 决策记录) + `docs/legacy/MIGRATION_NOTES.md` (深度档案) |
 | 给 AI 代理 (Claude Code) 的路由手册 | `docs/CLAUDE.md` |
 
 ## 许可证 (License)

@@ -804,7 +804,7 @@ plating/LAM 的 IR 贡献耦合, 产生非物理多解, 回归到本工程 2026-
 - `docs/CLAUDE.md 规则 R2`
 - `docs/PARAMETER_SOP.md §四 FIT-4b: 关键设置`
 - `docs/PARAMETERS.json::fit_steps::FIT-4b::parameters_frozen`
-- `docs/MIGRATION_NOTES.md §三 规则 R2`
+- `docs/legacy/MIGRATION_NOTES.md §三 规则 R2`
 
 **现场可选处置**
 1. 在 `fit_cycle_preknee.py` 入口打印冻结清单与自由清单, 用户目视核对。
@@ -938,7 +938,7 @@ exit code 51, refuse, 打印本条目编号 (`[FIT4C-E002]`)。
 信; 若被静默忽略, 拟合器会把数值失败当作物理信号。
 
 **权威文档交叉引用**
-- `docs/MIGRATION_NOTES.md §二 代码层 (solve_ivp BDF + Newton + brentq)`
+- `docs/legacy/MIGRATION_NOTES.md §二 代码层 (solve_ivp BDF + Newton + brentq)`
 - `libquiv_aging/cell_model.py::EquivCircuitCell 积分主循环`
 
 **现场可选处置**
@@ -964,7 +964,7 @@ exit code 60, refuse, 打印本条目编号 (`[SOLVE-E001]`)。
 CC/CV 设定与 OCV+R 约束; 继续仿真会产生非物理的状态跳变。
 
 **权威文档交叉引用**
-- `docs/MIGRATION_NOTES.md §二 代码层 (Newton warm-start + brentq)`
+- `docs/legacy/MIGRATION_NOTES.md §二 代码层 (Newton warm-start + brentq)`
 - `libquiv_aging/cell_model.py`
 
 **现场可选处置**

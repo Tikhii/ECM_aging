@@ -1,6 +1,6 @@
 # SPEC: IC Analysis for RPT → (LLI, LAM_PE, LAM_NE) Extraction
 
-**Status**: Spec frozen 2026-04-22. Promoted from TODO to SPEC on 2026-04-25 (v0.4.2 patch). Pending implementation in v0.5.x or v0.6.0 (deferred from v0.5.0 in favor of FIT-2 RC transient implementation; see MIGRATION_NOTES.md §十八).
+**Status**: Spec frozen 2026-04-22. Promoted from TODO to SPEC on 2026-04-25 (v0.4.2 patch). Pending implementation in v0.5.x or v0.6.0 (deferred from v0.5.0 in favor of FIT-2 RC transient implementation; see docs/legacy/MIGRATION_NOTES.md §十八).
 **Assignee**: Claude Code (local execution on libquiv-aging repo).
 **Blocks**: FIT-4a (calendar aging), FIT-4b (cycle preknee). Both need 
 (LLI_Ah, LAM_PE_Ah, LAM_NE_Ah) per RPT as their primary constraints.
@@ -253,7 +253,7 @@ maps to the canonical spec pair `material_specs/<cell_type>.material.json` +
 `param_specs/<cell_type>__mmeka2025.params.json`. For non-default schemas or 
 non-mmeka2025 mechanism versions, the implementation may extend the CLI to accept 
 explicit `--material-spec` and `--params-spec` paths. See v0.3.0 cell_factory 
-double-spec architecture (MIGRATION_NOTES §十四).
+double-spec architecture (docs/legacy/MIGRATION_NOTES.md §十四).
 
 **Diagnostic PNG** (2×2 layout):
 - (0,0): V(Q) observed + model + residual
