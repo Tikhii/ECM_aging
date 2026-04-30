@@ -1,6 +1,7 @@
 # Claude Code 工作手册
 
-本文件是给 AI 代理（特别是 Claude Code）的入口说明。如果你是人类读者，请先读 `README.md` 和 `QUICKSTART.md`。
+> **Collaboration philosophy**: see `../CLAUDE.md` (repo root).
+> This file is the engineering operations manual: R1-R8 disciplines, task routing, code navigation, terminology.
 
 ---
 
@@ -134,45 +135,23 @@ HEAD 上的 environment.yml 实为规范版 (name=libquiv-aging), 则工作树
 
 (后续遇到新的破坏性命令模式, 按本格式追加条目)
 
+### `docs/tasks/` 已废弃
+
+任务包路径已迁移到 vault (见 repo-root `CLAUDE.md` 的 `$VAULT` 段)。
+仓库内 `docs/tasks/` 已 .gitignored 并清空,出现 untracked 文件视为
+误操作。
+
 ---
 
 ## Claude Code 协作规范
 
-### Claude Code 的默认授权边界
+授权边界与超范围审查行为指引以 **R5 验收阶段** 为权威。R5 涵盖:
+- `git add` / `git commit` / `git tag` 默认禁止自动执行
+- 完成文件修改后呈 `git diff` / `git status`,由用户决策 stage / commit / tag
 
-在执行涉及 git / 文件系统 / 环境的改动任务时, Claude Code 的授权
-默认**不包括**:
-- `git add` (staging 是人的语义选择)
-- `git commit` (入库是人的最终决策)
-- `git tag` (tag 是 "可进入离线区" 的准入标志, 必须人签发)
-- `conda create` / `conda install` (环境构建是人控制的副作用链起点)
-- 删除任何 tracked 文件 (信息损失不可逆)
-
-任务单中若未明示授予上述权限, Claude Code 应在执行前停下并请求
-人工确认。本约束优先于任务单的字面效率考量。
-
-### 允许 (且鼓励) 的超范围行为
-
-Claude Code 在执行改动任务时, **允许并鼓励**主动审查以下内容,
-即使该审查超出任务字面范围:
-
-- 前置条件的真实性 (声称 "已入库" 的文件是否真的 tracked)
-- 被改动文件的语义正确性 (内容是否匹配其声明的用途)
-- 相邻文件的一致性 (改动是否使相邻权威文档变得矛盾)
-- git 历史状态 (HEAD / index / 工作树是否处于可预期的关系)
-
-此类审查反馈应以**警告**形式呈现在任务完成报告中, Claude Code
-**不应**据此自行采取纠正动作。由人决定是否接受警告并推进修复。
-
-理由: 2026-04-23 的 P0 事故中, Claude Code 两次通过超范围审查
-拦截了潜在错误 (git untracked 状态、base env 误导出)。此行为模式
-从 "偶发善意" 固化为 "预期责任", 可降低事故率而不破坏授权边界。
-
-### 与 R5 的关系
-
-本节列出的 Claude Code 默认授权边界, 与 R5 验收阶段的 git 条款
-"禁止自动 git add / commit / tag" 语义一致。R5 为规则条文 (强制力),
-本节为行为指引 (机制解释)。两处表述冲突时以 R5 为准。
+允许 (且鼓励) 的超范围行为: 前置条件真实性、被改动文件语义正确性、
+相邻文件一致性、git 历史状态。以**警告**形式呈现在完成报告中,不
+据此自行采取纠正动作。
 
 ---
 
@@ -416,19 +395,6 @@ python examples/smoke_test.py    # 必须全通过
 
 ## 版本纪要
 
-| 日期 | 变更 |
-| --- | --- |
-| 2026-04-20 | 初版。建立 PARAMETERS.json 作为 SSoT。修正 R_SEI 在 FIT-4a 而非 FIT-4b 的历史错误。 |
-| 2026-04-21 | 新增 R5 文档一致性协议。起因：FIT-3 小节缺失事件暴露了跨文档协调机制的空白。 |
-| 2026-04-23 | 新增 R6 错误码登记与 runbook 一致性。落盘 `docs/error_codes_registry.json` + `07_offline_runbook.md` + `08_consultation_protocol.md` 三件套（tag: docs/v0.2.0-offline-workflow）。**偏离记录**：本次任务单的 D.3 请求把新规则编号为 R5，但 2026-04-21 已存在 R5（文档一致性协议）；为保护已提交工作并保持编号不复用的原则，新规则改编为 R6。|
-| 2026-04-23 | v0.2.2 meta 教训制度化: 新增"术语约定"、"破坏性命令清单"、"Claude Code 协作规范"三小节。R5 验收阶段的"禁止自动 commit"条款扩展为"禁止自动 git add / commit / tag", 措辞同步更新。 |
-| 2026-04-24 | v0.2.3 离线工作流落地: 内部 pip 镜像单轨制, 新增 `docs/09_offline_bundle_guide.md` 与配套 scripts (`build_requirements.sh`, `install_offline.sh`, `verify_install.sh`)。 |
-| 2026-04-24 | v0.2.4 清理整顿: 奥卡姆剃刀原则首次应用。08 consultation protocol 追加适用范围声明, IDENT-Wxxx 标记为 draft, 09 offline bundle guide 删减未来扩展段落。详见 MIGRATION_NOTES §十三。 |
-| 2026-04-25 | v0.3.0 cell type 抽象层落地: 双 spec 架构 + 机制模型版本化。新增 `schemas/`, `material_specs/`, `param_specs/` 目录。`panasonic_ncr18650b.py` 重构为兼容层。新增 `create_cell_from_specs` 作为多 cell type 的统一入口。详见 MIGRATION_NOTES §十四。 |
-| 2026-04-25 | v0.4.0 第一阶段: FIT-1 电极平衡拟合脚本落地。新增 `scripts/fit_electrode_balance.py` 和 `libquiv_aging/fitting.py` 基础设施。错误码扩展 FIT1-Exxx/W001。详见 MIGRATION_NOTES §十五。 |
-| 2026-04-25 | v0.4.1 工作流升级: 新增 R8 规则把 README/QUICKSTART 同步纳入 release 流程。详见 MIGRATION_NOTES §十六。 |
-| 2026-04-25 | v0.4.2 SPEC 提升: 把 docs/TODO_ic_analysis.md 升级为 docs/SPEC_ic_analysis.md, 同步引用与接口约定。详见 MIGRATION_NOTES §十七。 |
-| 2026-04-26 | v0.4.3 R8 成员扩展: 落地 LICENSE 和 NOTICE 文件, 把 LICENSE/NOTICE/pyproject.toml description 正式纳入 R8 范畴, 各自触发条件独立于 README/QUICKSTART 的四类触发。同步清理 pyproject.toml authors 占位符。 |
-| 2026-04-26 | v0.5.0 FIT-2 RC 弛豫拟合落地: 新增 `scripts/fit_rc_transient.py` 与 `libquiv_aging/relaxation_fitting.py` (dispatch 模式准备升级路径)。错误码扩展 FIT2-Exxx/W001。`CRITICAL_REVIEW.md` 新增 C7 (RC 拓扑对长弛豫的不足) 与 `docs/UPGRADE_LITERATURE/fractional_order_RC.md` 升级文献入口。详见 MIGRATION_NOTES §十八。 |
-| 2026-04-26 | v0.5.1 派生层语义辐射修复: EXP-C deprecated for FIT-2, PARAMETERS.json 三处字段 + SPEC_ic_analysis Status + PARAMETER_SOP §3.1/§3.3 + README 目录结构图同步。详见 MIGRATION_NOTES §十九。 |
-| 2026-04-28 | v0.5.2 IC analysis 落地: 兑现 frozen SPEC_ic_analysis 契约。新增 `libquiv_aging/ic_analysis.py` + `scripts/fit_ic_to_dms.py` + `tests/test_ic_analysis.py` (22 用例) + 错误码 ICA scope (E001/E002/E003/W001/W002)。三核心架构决策: Path B algebraic forward + dual brentq + bracket 增强、fit_quality 阈值文献依据 (SOP §3.2 + Birkl 2017 + Phantom LAM 2024)、IC 输出不回写 spec (per-RPT 独立 JSON 供 FIT-4 消费)。子阶段 4 T4 阻塞由 paper Fig. 6c 物理印证, T4 改写为 cap_loss self-consistency。详见 MIGRATION_NOTES §二十。 |
+Release-level summaries are tracked in `../CHANGELOG.md` (Keep-a-Changelog).
+Architectural decision rationale lives in `decisions/` (ADR-NNNN).
+Frozen historical archive: `legacy/MIGRATION_NOTES.md`.
