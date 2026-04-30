@@ -36,6 +36,3 @@ runs/
 .claude/
 docs/tasks/
 *.session.log
-
-# Claude Code tool config (project root, time-bound)
-/CLAUDE.md
