@@ -1,3 +1,14 @@
+# MIGRATION_NOTES (legacy, frozen 2026-04-30)
+
+This file is no longer maintained. New architectural decisions are recorded as ADRs in `docs/decisions/`. The 21 chapters below preserve historical record only.
+
+For decision rationale, see `docs/decisions/`.
+For version evolution, see `git log` and `CHANGELOG.md`.
+
+---
+
+[original content begins below]
+
 # 工程交接纪要 (Migration Notes)
 
 本文件汇总 libquiv-aging Python 移植工程从 2026 年 4 月建立至今的全部关键决策、权威结论和工作流约定。目的是让一个全新的对话（无论是新账号、新 Project，还是隔了很长时间回到工程）能够在五分钟内达到等同的上下文深度。
