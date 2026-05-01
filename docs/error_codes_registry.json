@@ -1,6 +1,6 @@
 {
   "_comment": "Fact-layer registry of offline-workflow error codes. Edit order: this file first, then docs/07_offline_runbook.md, then scripts/ raise sites. When runbook and registry disagree, registry wins (see R6 / CLAUDE.md).",
-  "_updated": "2026-04-27",
+  "_updated": "2026-05-01",
   "version": "0.1.0",
   "codes": {
     "ENV-E001": {
@@ -632,6 +632,136 @@
       "status": "active"
     },
 
+    "FIT4A-E005": {
+      "scope": "FIT4A",
+      "level": "E",
+      "title": "输入契约违规 (cell-dir 结构 / RPT 数量 / 上游质量)",
+      "trigger": "输入 --cell-dir 不满足 SPEC_dm_aging §2 数据契约之一: (a) RPT_<NN>/ic_output.json 数量 < 3; (b) cell_<id>_rpt.csv 缺失, 或必填列 (rpt_index, EFC, time_s, T_storage_K, SOC_storage) 缺失/类型错误; (c) ≥ 30% 的 RPT 上游 ic_output.json 携带 ICA-W002 (bounds_hit) 或 fit_quality FAIL 标记。",
+      "consequence": "数据不足以支撑 9 个自由参数 + Hessian 协方差估计; 或上游 IC 反演已不可靠, 直接拟合会把 IC 反演噪声当作老化速率, 污染 k_SEI_cal / k_LAM_PE_cal / R_SEI 估计, 后续 FIT-4b 起步点偏离真实最优域。",
+      "cross_refs": [
+        "docs/SPEC_dm_aging.md §2 数据契约",
+        "docs/error_codes_registry.json::codes::ICA-W002",
+        "docs/error_codes_registry.json::codes::ICA-E003",
+        "docs/PARAMETER_SOP.md §四 FIT-4a 输入"
+      ],
+      "remediation": [
+        "把缺失/失败的 RPT 索引落盘到 _debug/FIT4A-E005_<ts>.json 供外带诊断",
+        "若 RPT 数量不足: 补做 RPT (需 cell-level 原始数据可回溯); 若上游 IC 反演 FAIL 比例过高: 回到 FIT-3 阶段重做 IC 反演而非在 FIT-4a 内绕过",
+        "禁止手动 patch CSV 列或伪造 ic_output.json 字段以满足契约"
+      ],
+      "script_behavior": {
+        "exit_code": 34,
+        "action": "refuse"
+      },
+      "escalation": "§6.例 2 — 拟合前置条件不足",
+      "since_version": "0.7.0",
+      "status": "draft"
+    },
+
+    "FIT4A-E006": {
+      "scope": "FIT4A",
+      "level": "E",
+      "title": "拟合不收敛或 Hessian 非有限",
+      "trigger": "scipy.optimize.least_squares (trf, bounds) 返回 status ≤ 0 (max_nfev 命中 / step 过小 / 函数值非有限); 或 J^T J 条件数 ≥ 1e12; 或由 Hessian 反演的协方差矩阵对角线含 NaN/Inf。",
+      "consequence": "估计量不可信, 报告的标准差不具统计意义。即使用户被动接受估值, 后续 FIT-4b 起步点会偏离真实最优域, 违反 R2 sequencing 的统计前置条件。",
+      "cross_refs": [
+        "docs/SPEC_dm_aging.md §3.2 拟合算法",
+        "docs/SPEC_dm_aging.md §7 测试矩阵 T3 (Hessian 协方差)",
+        "docs/error_codes_registry.json::codes::ICA-E002"
+      ],
+      "remediation": [
+        "检查初值 (paper_value_NCA_G) 是否已偏离当前体系数量级超过 1 量级",
+        "检查 SOC/T 覆盖是否触发 FIT4A-E004 共线性的亚阈情形 (即仍在 30% 之下但接近边界)",
+        "先缩小 bounds 跑出可识别区域, 再分阶段释放; 禁止靠下调 ftol/xtol 来'伪收敛'"
+      ],
+      "script_behavior": {
+        "exit_code": 35,
+        "action": "refuse"
+      },
+      "escalation": "§6.例 5 — 拟合不收敛",
+      "since_version": "0.7.0",
+      "status": "draft",
+      "notes": "本码与 FIT4A-E007 拆分: 不收敛 vs 收敛但 fit_quality FAIL 是两类独立诊断, 沿用 ICA-E002 / ICA-E003 在 v0.5.2 建立的拆分先例。"
+    },
+
+    "FIT4A-E007": {
+      "scope": "FIT4A",
+      "level": "E",
+      "title": "收敛但 fit_quality FAIL",
+      "trigger": "least_squares 已收敛 (status > 0 且协方差有限), 但 R² < 0.95 OR RMSE > 0.05 Ah (任一越界即 FAIL); 阈值锚定 NCR18650B 校准量级 (paper Table I.b).",
+      "consequence": "模型形式不能拟合到当前数据可信精度内。写出的 k_SEI_cal / R_SEI / gamma_PE 数值有限但物理意义可疑, 不能直接送入 FIT-4b。是否接受降级版本 (marginal) 须由用户在外带诊断后决定。",
+      "cross_refs": [
+        "docs/SPEC_dm_aging.md §4 拟合质量阈值",
+        "docs/error_codes_registry.json::codes::ICA-E003",
+        "docs/PARAMETER_SOP.md §四 FIT-4a 验收"
+      ],
+      "remediation": [
+        "落盘 R² / RMSE 实际值与残差曲线到 _debug/FIT4A-E007_<ts>.json",
+        "排查模型形式是否遗漏: CEI / 高温 Arrhenius 折点 / EXP-E 中 T_storage 漂移与 SOC drift",
+        "重做 RPT 数据预处理而非下调阈值; 阈值由 NCR18650B 量级锚定, 下调阈值等同于绕过 R6"
+      ],
+      "script_behavior": {
+        "exit_code": 36,
+        "action": "refuse"
+      },
+      "escalation": "§6.例 6 — 拟合质量不达标",
+      "since_version": "0.7.0",
+      "status": "draft",
+      "notes": "与 FIT4A-E006 (不收敛) 的拆分对应 ICA-E002 / ICA-E003 在 v0.5.2 已建立的拆分先例 — 不收敛与 fit_quality FAIL 是独立诊断, 各自有不同的 remediation 路径。"
+    },
+
+    "FIT4A-W001": {
+      "scope": "FIT4A",
+      "level": "W",
+      "title": "fit_quality 在 marginal 区间",
+      "trigger": "least_squares 收敛, 未触发 FIT4A-E007 的 FAIL 阈值, 但 0.95 ≤ R² < 0.99 OR 0.02 Ah < RMSE ≤ 0.05 Ah (任一在 marginal 区间内即触发).",
+      "consequence": "拟合通过最低门槛但低于优秀质量。k_SEI_cal / R_SEI / gamma_PE 仍写出到 stage_a_calendar.json, 但 fit_quality.marginal_quality=true 字段持久化质量信号供下游审计; FIT-4b 在见到 marginal 标记时应酌情降权或扩大不确定性带。",
+      "cross_refs": [
+        "docs/SPEC_dm_aging.md §4 拟合质量阈值",
+        "docs/error_codes_registry.json::codes::ICA-W001",
+        "docs/PARAMETER_SOP.md §四 FIT-4a 验收"
+      ],
+      "remediation": [
+        "若可接受当前精度 (初步建模阶段): 接受 marginal 状态, marginal_quality=true 落入 fit_quality 字段",
+        "若不可接受: 走 FIT4A-E007 的 remediation 排查路径细化模型 / 数据",
+        "无论哪条路径, marginal_quality 字段是下游 FIT-4b 读取的唯一信号载体, 必须落盘"
+      ],
+      "script_behavior": {
+        "exit_code": 37,
+        "action": "warn"
+      },
+      "escalation": "docs/08_consultation_protocol.md §6 例 6 拟合质量警告",
+      "since_version": "0.7.0",
+      "status": "draft",
+      "notes": "warn 级别不阻塞下游, JSON 仍被写出, marginal_quality 是质量信号载体。"
+    },
+
+    "FIT4A-W002": {
+      "scope": "FIT4A",
+      "level": "W",
+      "title": "自由参数命中 search bound",
+      "trigger": "least_squares 收敛后, 9 个自由参数中任一参数距 SPEC_dm_aging §3 bounds 表中其下界或上界的距离 ≤ bound 宽度的 1%。",
+      "consequence": "bound 设计反映模型适用域, 命中即说明数据将估计推到模型边界外。报告的协方差在边界附近被截断, 估计不具置信意义; 直接采纳到 FIT-4b 会传播这个虚假置信带。",
+      "cross_refs": [
+        "docs/SPEC_dm_aging.md §3 bounds 表",
+        "docs/error_codes_registry.json::codes::ICA-W002",
+        "docs/CRITICAL_REVIEW.md"
+      ],
+      "remediation": [
+        "把命中事件写入 stage_a_calendar.json::fit_quality.bounds_hit 字段",
+        "评估是否进入 CEI 主导 / 高温 Arrhenius break / 非 alawa regime 等模型外区域 (见 CRITICAL_REVIEW)",
+        "不要简单放宽 bound, 因为 bound 是 SPEC 适用域的硬约束"
+      ],
+      "script_behavior": {
+        "exit_code": 38,
+        "action": "warn"
+      },
+      "escalation": "docs/08_consultation_protocol.md §6 例 6 识别性警告",
+      "since_version": "0.7.0",
+      "status": "draft",
+      "notes": "warn 级别不阻塞下游, JSON 仍写出。bounds_hit 字段是质量信号载体, 下游 FIT-4b 应主动检视。"
+    },
+
     "FIT4B-E001": {
       "scope": "FIT4B",
       "level": "E",
@@ -707,6 +837,165 @@
       "status": "active"
     },
 
+    "FIT4B-E004": {
+      "scope": "FIT4B",
+      "level": "E",
+      "title": "输入契约违规 (cell-dir 结构 / RPT 数量 / 上游质量 / FIT-4a 产出)",
+      "trigger": "输入 --cell-dir 不满足 SPEC_dm_aging §2 数据契约之一: (a) RPT_<NN>/ic_output.json 数量 < 3 (cycle pre-knee 段); (b) cell_<id>_rpt.csv 缺失或必填列 (rpt_index, EFC, time_s, T_cycle_K, phase) 缺失/类型错误; (c) ≥ 30% 的 RPT 上游 ic_output.json 携带 ICA-W002 (bounds_hit) 或 fit_quality FAIL 标记; (d) 缺少上游 stage_a_calendar.json 或其 fit_quality.status 不是 PASS / marginal_quality 之一 (即 FIT-4a 未通过 R2 顺序门)。",
+      "consequence": "数据不足以支撑 FIT-4b 自由参数 + 协方差估计; 或 FIT-4a 未先通过即直接做 4b, 直接违反 R2 sequencing; 任一条件不满足都会让 k_SEI_cyc / k_LAM_PE_cyc / k_LAM_NE_cyc 估计被 SEI 瞬态或 IC 反演噪声主导, 污染 knee 时机预测。",
+      "cross_refs": [
+        "docs/SPEC_dm_aging.md §2 数据契约",
+        "docs/CLAUDE.md 规则 R2",
+        "docs/error_codes_registry.json::codes::ICA-W002",
+        "docs/error_codes_registry.json::codes::ICA-E003",
+        "docs/PARAMETER_SOP.md §四 FIT-4b 输入"
+      ],
+      "remediation": [
+        "把缺失/失败的 RPT 索引与 stage_a_calendar.json 的 fit_quality 状态落盘到 _debug/FIT4B-E004_<ts>.json",
+        "若 RPT 不足: 补做 RPT; 若上游 IC 反演 FAIL 比例过高: 回到 FIT-3 重做 IC 反演",
+        "若 stage_a_calendar.json 缺失或 FAIL: 必须先回到 FIT-4a 走通流程, 不允许跳过 FIT-4a 直接执行 FIT-4b",
+        "禁止手动 patch CSV 列或伪造 stage_a_calendar.json 的 fit_quality 字段以满足契约"
+      ],
+      "script_behavior": {
+        "exit_code": 43,
+        "action": "refuse"
+      },
+      "escalation": "§6.例 2 — 拟合前置条件不足",
+      "since_version": "0.7.0",
+      "status": "draft"
+    },
+
+    "FIT4B-E005": {
+      "scope": "FIT4B",
+      "level": "E",
+      "title": "拟合不收敛或 Hessian 非有限",
+      "trigger": "scipy.optimize.least_squares (trf, bounds) 返回 status ≤ 0; 或 J^T J 条件数 ≥ 1e12; 或由 Hessian 反演的协方差矩阵对角线含 NaN/Inf。",
+      "consequence": "估计量不可信, 报告的标准差不具统计意义。即便用户被动接受估值, 后续 FIT-4c 的 k_LP 一维搜索会从一个失稳的 k_SEI_cyc / k_LAM_*_cyc 起步, 把 R2 sequencing 的统计前置条件打破。",
+      "cross_refs": [
+        "docs/SPEC_dm_aging.md §3.2 拟合算法",
+        "docs/SPEC_dm_aging.md §7 测试矩阵 T3 (Hessian 协方差)",
+        "docs/error_codes_registry.json::codes::ICA-E002"
+      ],
+      "remediation": [
+        "检查初值是否远离 paper_value_NCA_G 量级超过 1 量级 (FIT-4a 输出可能过冷启动)",
+        "检查 T_cycle / EFC 覆盖是否触发亚阈共线性 (尚未达 FIT4B 输入契约 30% 阈值)",
+        "先缩小 bounds 跑出可识别区域, 再分阶段释放; 禁止靠下调 ftol/xtol 来'伪收敛'"
+      ],
+      "script_behavior": {
+        "exit_code": 44,
+        "action": "refuse"
+      },
+      "escalation": "§6.例 5 — 拟合不收敛",
+      "since_version": "0.7.0",
+      "status": "draft",
+      "notes": "本码与 FIT4B-E006 拆分: 不收敛 vs 收敛但 fit_quality FAIL 是两类独立诊断, 沿用 ICA-E002 / ICA-E003 在 v0.5.2 建立的拆分先例。"
+    },
+
+    "FIT4B-E006": {
+      "scope": "FIT4B",
+      "level": "E",
+      "title": "收敛但 fit_quality FAIL",
+      "trigger": "least_squares 已收敛 (status > 0 且协方差有限), 但 R² < 0.95 OR RMSE > 0.05 Ah (任一越界即 FAIL); 阈值锚定 NCR18650B 校准量级 (paper Table I.b).",
+      "consequence": "模型形式不能拟合到当前数据可信精度内。写出的 k_SEI_cyc / k_LAM_*_cyc 数值有限但物理意义可疑, 不能直接送入 FIT-4c。是否接受降级 (marginal) 须由用户在外带诊断后决定。",
+      "cross_refs": [
+        "docs/SPEC_dm_aging.md §4 拟合质量阈值",
+        "docs/error_codes_registry.json::codes::ICA-E003",
+        "docs/PARAMETER_SOP.md §四 FIT-4b 验收"
+      ],
+      "remediation": [
+        "落盘 R² / RMSE 实际值与残差曲线到 _debug/FIT4B-E006_<ts>.json",
+        "排查模型形式是否遗漏: CEI / 高 C-rate Tafel 修正 / EXP-F 中 T_cycle 漂移",
+        "重做 RPT 数据预处理而非下调阈值; 阈值由 NCR18650B 量级锚定, 下调阈值等同于绕过 R6"
+      ],
+      "script_behavior": {
+        "exit_code": 45,
+        "action": "refuse"
+      },
+      "escalation": "§6.例 6 — 拟合质量不达标",
+      "since_version": "0.7.0",
+      "status": "draft",
+      "notes": "与 FIT4B-E005 (不收敛) 的拆分对应 ICA-E002 / ICA-E003 在 v0.5.2 已建立的拆分先例。"
+    },
+
+    "FIT4B-E007": {
+      "scope": "FIT4B",
+      "level": "E",
+      "title": "S3 子拟合: 容量自洽性不达标 (N3 落点)",
+      "trigger": "FIT-4b 主拟合已通过 (FIT4B-E006 未触发), 但 SPEC_dm_aging §3.4 子步骤 S3 的容量自洽性检查中 |sum(LLI + LAM_PE + LAM_NE) - cap_loss_observed| / cap_loss_observed > 10% (任一 RPT 点违反阈值即触发).",
+      "consequence": "三 DM 之和与观测容量损失之间的非线性 (paper Fig. 6c 143 EFC: sum=0.25, cap_loss=0.11, 比率 2.27) 在当前体系下不可忽略。简单线性叠加假设失败, 需要进入 PARAMETERS.json::critical_review_findings::N3_sum_caploss_nonlinear 描述的升级路径 (引入 X_PE 显式映射或 Eq.42 LLI_PE 解耦)。继续无视会让 FIT-4c knee 预测建立在错误的容量记账之上。",
+      "cross_refs": [
+        "docs/CRITICAL_REVIEW.md §N3 sum DMs ≠ cap_loss",
+        "docs/PARAMETERS.json::critical_review_findings::N3_sum_caploss_nonlinear",
+        "docs/UPGRADE_LITERATURE/ic_analysis_methodology_review.md §3.3 Item 7",
+        "docs/SPEC_dm_aging.md §3.4 子步骤 S3 / §8 N3 caveat"
+      ],
+      "remediation": [
+        "落盘每个 RPT 点的 sum_DMs / cap_loss / rel_error 到 _debug/FIT4B-E007_<ts>.json",
+        "短期: 在 stage_b_cycle.json::n3_caveat 字段标注 nonlinearity 并冻结 FIT-4c (不能在 N3 violation 下做 knee)",
+        "长期: 按 CRITICAL_REVIEW §N3 升级路径引入 X_PE(LAM_PE) 显式映射, 不要直接拉宽阈值"
+      ],
+      "script_behavior": {
+        "exit_code": 46,
+        "action": "refuse"
+      },
+      "escalation": "§6.例 7 — N3 容量自洽性失败 (新增)",
+      "since_version": "0.7.0",
+      "status": "draft",
+      "notes": "本码是 paper §Model reduction (page 14 X_PE quote) 的工程落点; SPEC_dm_aging §8 显式将 S3 列为 FIT-4b 内的 N3 检测点而非 FIT-4c 内, 因为 cap_loss 自洽性必须在 knee 之前先校验。"
+    },
+
+    "FIT4B-W001": {
+      "scope": "FIT4B",
+      "level": "W",
+      "title": "fit_quality 在 marginal 区间 (含 S3 边缘违反)",
+      "trigger": "least_squares 收敛, 未触发 FIT4B-E006 / E007 的 FAIL 阈值, 但满足下列之一: (a) 0.95 ≤ R² < 0.99; (b) 0.02 Ah < RMSE ≤ 0.05 Ah; (c) S3 子步骤 5% < |sum_DMs - cap_loss|/cap_loss ≤ 10%。",
+      "consequence": "拟合通过最低门槛但低于优秀质量, 或 N3 非线性已可观测但尚未越过 10% FAIL 线。k_SEI_cyc / k_LAM_*_cyc 仍写出到 stage_b_cycle.json, 但 fit_quality.marginal_quality=true 与 (如适用) n3_caveat.s3_marginal=true 字段持久化质量信号供下游审计; FIT-4c 在见到 marginal 标记时应酌情降权或扩大不确定性带。",
+      "cross_refs": [
+        "docs/SPEC_dm_aging.md §4 拟合质量阈值",
+        "docs/SPEC_dm_aging.md §8 N3 caveat",
+        "docs/error_codes_registry.json::codes::ICA-W001"
+      ],
+      "remediation": [
+        "若可接受当前精度: 接受 marginal 状态, marginal_quality=true 落入 fit_quality 字段; S3 边缘情形单独落 n3_caveat.s3_marginal",
+        "若不可接受: 走 FIT4B-E006 (拟合质量) 或 E007 (N3) 的 remediation 排查路径",
+        "marginal_quality 与 s3_marginal 字段是下游 FIT-4c 读取的唯一信号载体, 必须落盘"
+      ],
+      "script_behavior": {
+        "exit_code": 47,
+        "action": "warn"
+      },
+      "escalation": "docs/08_consultation_protocol.md §6 例 6 拟合质量警告",
+      "since_version": "0.7.0",
+      "status": "draft",
+      "notes": "warn 级别不阻塞下游, JSON 仍被写出。本码合并了 fit_quality marginal 与 S3 marginal 两个独立的边缘信号 (各自有独立的字段载体), 因为两者都是 'continue with caveat' 语义。"
+    },
+
+    "FIT4B-W002": {
+      "scope": "FIT4B",
+      "level": "W",
+      "title": "自由参数命中 search bound",
+      "trigger": "least_squares 收敛后, FIT-4b 自由参数中任一参数距 SPEC_dm_aging §3 bounds 表中其下界或上界的距离 ≤ bound 宽度的 1%。",
+      "consequence": "bound 设计反映模型适用域, 命中即说明数据将估计推到模型边界外。报告的协方差在边界附近被截断, 估计不具置信意义; 直接采纳到 FIT-4c 会传播这个虚假置信带, 让 k_LP 一维搜索从失真的起点出发。",
+      "cross_refs": [
+        "docs/SPEC_dm_aging.md §3 bounds 表",
+        "docs/error_codes_registry.json::codes::ICA-W002",
+        "docs/CRITICAL_REVIEW.md"
+      ],
+      "remediation": [
+        "把命中事件写入 stage_b_cycle.json::fit_quality.bounds_hit 字段",
+        "评估是否进入 CEI / 高 C-rate Tafel / 非 alawa regime 等模型外区域 (见 CRITICAL_REVIEW)",
+        "不要简单放宽 bound, 因为 bound 是 SPEC 适用域的硬约束"
+      ],
+      "script_behavior": {
+        "exit_code": 48,
+        "action": "warn"
+      },
+      "escalation": "docs/08_consultation_protocol.md §6 例 6 识别性警告",
+      "since_version": "0.7.0",
+      "status": "draft",
+      "notes": "warn 级别不阻塞下游, JSON 仍写出。bounds_hit 字段是质量信号载体, 下游 FIT-4c 应主动检视。"
+    },
+
     "FIT4C-E001": {
       "scope": "FIT4C",
       "level": "E",
@@ -755,6 +1044,136 @@
       "escalation": "§6.例 2 — 拟合前置条件不足",
       "since_version": "0.1.0",
       "status": "active"
+    },
+
+    "FIT4C-E003": {
+      "scope": "FIT4C",
+      "level": "E",
+      "title": "输入契约违规 (cell-dir 结构 / RPT 数量 / 上游质量 / FIT-4b 产出)",
+      "trigger": "输入 --cell-dir 不满足 SPEC_dm_aging §2 数据契约之一: (a) RPT_<NN>/ic_output.json 数量 < 3 (跨 knee 段); (b) cell_<id>_rpt.csv 缺失或必填列 (rpt_index, EFC, time_s, T_cycle_K, phase) 缺失/类型错误; (c) ≥ 30% 的 RPT 上游 ic_output.json 携带 ICA-W002 (bounds_hit) 或 fit_quality FAIL 标记; (d) 缺少上游 stage_a_calendar.json 或 stage_b_cycle.json, 或两者任一 fit_quality.status 不是 PASS / marginal_quality 之一; (e) stage_b_cycle.json::n3_caveat.status == FAIL (即 N3 自洽性失败的情形下不允许做 knee).",
+      "consequence": "FIT-4c 是一维 k_LP 搜索, 必须建立在 FIT-4a/4b 已固化的参数集上 (R2 第三条); 输入契约任一违反都会让 k_LP 拟合失去 R2 sequencing 的统计前置条件。特别地, 在 N3 violation 下做 knee 等于把容量记账误差转嫁给 k_LP, 让 knee 时机预测系统性偏移。",
+      "cross_refs": [
+        "docs/SPEC_dm_aging.md §2 数据契约 / §3.4 子步骤 / §8 N3 caveat",
+        "docs/CLAUDE.md 规则 R2",
+        "docs/error_codes_registry.json::codes::FIT4B-E007",
+        "docs/PARAMETER_SOP.md §四 FIT-4c 输入"
+      ],
+      "remediation": [
+        "把缺失/失败的 RPT 索引、stage_a/b JSON 状态、n3_caveat 状态落盘到 _debug/FIT4C-E003_<ts>.json",
+        "若 FIT-4b 未通过或 N3 FAIL: 必须先回到 FIT-4b 解决, 不允许跳过 FIT-4b 直接执行 FIT-4c",
+        "禁止手动 patch CSV 列或伪造 stage_a/b JSON 字段以满足契约"
+      ],
+      "script_behavior": {
+        "exit_code": 52,
+        "action": "refuse"
+      },
+      "escalation": "§6.例 2 — 拟合前置条件不足",
+      "since_version": "0.7.0",
+      "status": "draft"
+    },
+
+    "FIT4C-E004": {
+      "scope": "FIT4C",
+      "level": "E",
+      "title": "拟合不收敛或 Hessian 非有限",
+      "trigger": "scipy.optimize.minimize_scalar (bounded) 或 least_squares (单参数模式) 返回非正常状态, 或 k_LP 关于 EFC 的二阶导数在搜索区间内不存在极值 (knee 判别失败); 或 Hessian 协方差对角线含 NaN/Inf。",
+      "consequence": "knee 位置无法被定位, 报告的 k_LP 标准差不具统计意义。即便用户被动接受估值, 后续容量预测与 EOL 估计会建立在一个不可识别的参数之上, 违背 FIT-4c 设计目的。",
+      "cross_refs": [
+        "docs/SPEC_dm_aging.md §3.2 拟合算法 / §7 测试矩阵 T3",
+        "docs/error_codes_registry.json::codes::FIT4C-E002",
+        "docs/error_codes_registry.json::codes::ICA-E002"
+      ],
+      "remediation": [
+        "落盘容量曲线及二阶导轨迹到 _debug/FIT4C-E004_<ts>.json",
+        "检查数据是否真正跨越 knee (FIT4C-E002 的亚阈情形)",
+        "若 ACC_FACTOR 在 EXP-G 上启用过, 关闭后重跑; 禁止靠下调 tol 来'伪收敛'"
+      ],
+      "script_behavior": {
+        "exit_code": 53,
+        "action": "refuse"
+      },
+      "escalation": "§6.例 5 — 拟合不收敛",
+      "since_version": "0.7.0",
+      "status": "draft",
+      "notes": "本码与 FIT4C-E005 拆分: 不收敛 vs 收敛但 fit_quality FAIL 是两类独立诊断, 沿用 ICA-E002 / ICA-E003 在 v0.5.2 建立的拆分先例。"
+    },
+
+    "FIT4C-E005": {
+      "scope": "FIT4C",
+      "level": "E",
+      "title": "收敛但 fit_quality FAIL",
+      "trigger": "minimize_scalar / least_squares 已收敛, 但 capacity(EFC) 残差 R² < 0.95 OR RMSE > 0.05 Ah (任一越界即 FAIL); 阈值锚定 NCR18650B 校准量级.",
+      "consequence": "knee 段拟合质量不达标。写出的 k_LP 数值有限但物理意义可疑, 直接送入容量预测会让 EOL 偏差不可控。在当前 V_LP_eq=0V 的简化假设下若 FAIL 反复出现, 提示需要按 CRITICAL_REVIEW §S2 的升级路径引入 V_LP_eq(SOC, T) 动态平衡电位。",
+      "cross_refs": [
+        "docs/SPEC_dm_aging.md §4 拟合质量阈值",
+        "docs/CRITICAL_REVIEW.md §S2 V_LP_eq=0V 简化",
+        "docs/error_codes_registry.json::codes::ICA-E003",
+        "docs/PARAMETER_SOP.md §四 FIT-4c 验收"
+      ],
+      "remediation": [
+        "落盘 R² / RMSE 实际值与残差曲线到 _debug/FIT4C-E005_<ts>.json",
+        "排查 V_LP_eq=0V 简化假设是否在当前体系失效 (CRITICAL_REVIEW §S2 升级路径)",
+        "重做 EXP-G 数据预处理或排查 ACC_FACTOR 残留, 不要下调阈值绕过"
+      ],
+      "script_behavior": {
+        "exit_code": 54,
+        "action": "refuse"
+      },
+      "escalation": "§6.例 6 — 拟合质量不达标",
+      "since_version": "0.7.0",
+      "status": "draft",
+      "notes": "与 FIT4C-E004 (不收敛) 的拆分对应 ICA-E002 / ICA-E003 在 v0.5.2 已建立的拆分先例。本码 cross_ref §S2 是因为 FIT-4c 反复 FAIL 是 V_LP_eq=0V 简化失效的最早工程信号。"
+    },
+
+    "FIT4C-W001": {
+      "scope": "FIT4C",
+      "level": "W",
+      "title": "fit_quality 在 marginal 区间",
+      "trigger": "minimize_scalar / least_squares 收敛, 未触发 FIT4C-E005 的 FAIL 阈值, 但 0.95 ≤ R² < 0.99 OR 0.02 Ah < RMSE ≤ 0.05 Ah.",
+      "consequence": "knee 段拟合通过最低门槛但低于优秀质量。k_LP 与其标准差仍写出到 stage_c_knee.json, 但 fit_quality.marginal_quality=true 字段持久化质量信号供下游审计; 容量预测脚本在见到 marginal 标记时应扩大不确定性带。",
+      "cross_refs": [
+        "docs/SPEC_dm_aging.md §4 拟合质量阈值",
+        "docs/error_codes_registry.json::codes::ICA-W001"
+      ],
+      "remediation": [
+        "若可接受当前精度: 接受 marginal 状态, marginal_quality=true 落入 fit_quality 字段",
+        "若不可接受: 走 FIT4C-E005 的 remediation 排查路径 (含 §S2 升级评估)",
+        "marginal_quality 字段是下游容量预测脚本读取的唯一信号载体, 必须落盘"
+      ],
+      "script_behavior": {
+        "exit_code": 55,
+        "action": "warn"
+      },
+      "escalation": "docs/08_consultation_protocol.md §6 例 6 拟合质量警告",
+      "since_version": "0.7.0",
+      "status": "draft",
+      "notes": "warn 级别不阻塞下游, JSON 仍被写出。"
+    },
+
+    "FIT4C-W002": {
+      "scope": "FIT4C",
+      "level": "W",
+      "title": "k_LP 命中 search bound",
+      "trigger": "minimize_scalar / least_squares 收敛后, k_LP 距 SPEC_dm_aging §3 bounds 表中其下界或上界的距离 ≤ bound 宽度的 1%。",
+      "consequence": "bound 反映 V_LP_eq=0V 简化假设下的物理合理域, 命中即说明数据驱动到模型边界外。报告的 k_LP 协方差被截断, 估计不具置信意义; 直接采纳到容量预测会传播虚假置信带。反复命中提示 V_LP_eq=0V 简化已不再适用 (CRITICAL_REVIEW §S2 升级触发条件).",
+      "cross_refs": [
+        "docs/SPEC_dm_aging.md §3 bounds 表",
+        "docs/CRITICAL_REVIEW.md §S2 V_LP_eq=0V 简化",
+        "docs/error_codes_registry.json::codes::ICA-W002"
+      ],
+      "remediation": [
+        "把命中事件写入 stage_c_knee.json::fit_quality.bounds_hit 字段",
+        "评估是否进入需要 V_LP_eq(SOC, T) 动态平衡电位的 regime (见 CRITICAL_REVIEW §S2)",
+        "不要简单放宽 bound, 因为 bound 是 V_LP_eq=0V 简化假设下的物理硬约束"
+      ],
+      "script_behavior": {
+        "exit_code": 56,
+        "action": "warn"
+      },
+      "escalation": "docs/08_consultation_protocol.md §6 例 6 识别性警告",
+      "since_version": "0.7.0",
+      "status": "draft",
+      "notes": "warn 级别不阻塞下游, JSON 仍写出。bounds_hit 反复触发是 §S2 升级路径的工程触发条件。"
     },
 
     "SOLVE-E001": {
