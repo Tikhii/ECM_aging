@@ -323,6 +323,7 @@ libquiv_aging/                  核心包
 ├── fitting.py                   FIT 脚本系列共享基础设施
 ├── relaxation_fitting.py       FIT-2 RC 弛豫内核 (RELAXATION_MODELS dispatch)
 ├── ic_analysis.py              IC 分析: RPT C/40 → (LLI, LAM_PE, LAM_NE) 反演 (SOP-4.5)
+├── dm_aging_fit.py             FIT-4 老化拟合实装 (v0.7.0-fit4): 4 公共 API + 4 dataclass + 16 错误码 raise 站点
 ├── panasonic_ncr18650b.py      兼容层, 实际参数在 material_specs/ 和 param_specs/ 下
 ├── model_versions/             机制模型版本路由
 │   ├── __init__.py             版本注册表
@@ -341,9 +342,7 @@ scripts/
 ├── fit_rc_transient.py         FIT-2: C1/C2 RC 弛豫拟合 (已实现, 双指数, dispatch 可扩展)
 ├── fit_resistance_distribution.py  FIT-3
 ├── fit_ic_to_dms.py            RPT C/40 → (LLI, LAM_PE, LAM_NE) 抽取 (SOP-4.5, 已实现)
-├── fit_calendar.py             FIT-4a (含 R_SEI!)
-├── fit_cycle_preknee.py        FIT-4b
-└── fit_knee.py                 FIT-4c (只调 k_LP)
+└── fit_dm_aging.py             FIT-4a/4b/4c 统一入口 (--stage {a,b,c,all}; v0.7.0-fit4; 4 公共 API: aggregate_rpt_records / fit_calendar_aging / fit_cycle_aging / fit_knee_location)
 
 tests/
 └── test_basic.py               15 个回归测试

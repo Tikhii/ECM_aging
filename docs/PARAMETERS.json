@@ -697,6 +697,16 @@
       "estimated_runtime": "hours if automated",
       "critical_constraint": "IR(t) MUST be measured at each RPT to identify R_SEI. Paper p.12 confirms all resistance-related aging params come from calendar fit.",
       "skip_if_no_data": "Set R_SEI to paper value (0.66), k_SEI_cal to paper default. Model loses quantitative IR prediction accuracy.",
+      "status": "implemented_v0.7.0_synthetic_only",
+      "implementation_v0_7_0": {
+        "api": "libquiv_aging.dm_aging_fit.fit_calendar_aging",
+        "script": "scripts/fit_dm_aging.py --stage a",
+        "tests": "tests/test_dm_aging.py::TestT5_FIT4A_ErrorCodes (E005/E006/E007/W001/W002 各 ≥1 触发); T2 calendar round-trip xfail (R_SEI 不可识别, 子阶段 6 ADR)"
+      },
+      "known_limitations_v0_7_0": [
+        "R_SEI 在 calendar (I=0 storage) 模式下完全不可识别 (Hessian 单列零). SPEC §3.1 当前将 R_SEI 列入 fit-4a fittable params 系误归类; 实装中 _forward_sim_calendar 不依赖 R_SEI, 拟合 J^TJ 奇异. 子阶段 6 ADR 修订: R_SEI 退出 fit-4a, 改由 EXP-E IR 脉冲测量直接给定.",
+        "T4 paper Mmeka 2025 Fig.6c S3 端到端验证未跑通: forward-sim 性能限制 (单 _forward_sim_cycle ~28s, max_nfev=200 → ~30-60min/fit), 测试已 xfail. v0.8 性能优化后实证, 当前 N3 升级落点 '已设计但未实证'."
+      ],
       "error_codes": [
         "FIT4A-E001",
         "FIT4A-E002",
@@ -706,7 +716,12 @@
         "SOLVE-E002",
         "IDENT-W001",
         "IDENT-W002",
-        "IDENT-W003"
+        "IDENT-W003",
+        "FIT4A-E005",
+        "FIT4A-E006",
+        "FIT4A-E007",
+        "FIT4A-W001",
+        "FIT4A-W002"
       ]
     },
     "FIT-4b": {
@@ -724,6 +739,17 @@
       "estimated_runtime": "hours if automated",
       "parameters_frozen": "All FIT-4a results (especially R_SEI)",
       "note": "R_SEI is NOT re-fitted here.",
+      "status": "implemented_v0.7.0_synthetic_only",
+      "implementation_v0_7_0": {
+        "api": "libquiv_aging.dm_aging_fit.fit_cycle_aging",
+        "script": "scripts/fit_dm_aging.py --stage b",
+        "tests": "tests/test_dm_aging.py::TestT5_FIT4B_ErrorCodes (E004/E005/E006/E007/W001/W002 各 ≥1 触发); T2 cycle round-trip xfail (forward-sim 性能)"
+      },
+      "known_limitations_v0_7_0": [
+        "T2 cycle round-trip 测试 xfail: 单 _forward_sim_cycle 含 _drive_cycles_to_efc 1C ODE 循环, 实测 ~28s/forward; least_squares max_nfev=200 → 单 fit ~30-60 min, CI 不可承受. v0.8 ADR 评估 fast-path mock / 矢量化优化.",
+        "S3 cap_loss self-consistency 在 paper Mmeka 2025 Fig.6c 真实数据上未实证 (T4 xfail 同根因). 当前仅在 synthetic round-trip + 错误码触发覆盖, N3 升级落点 '已设计但未实证'.",
+        "FIT4B-E007 / W001 registry trigger 当前措辞含 sum-based S3 痕迹, 与 SPEC §3.4/§8.2 forward-sim 表述不一致. 子阶段 6 ADR 同步 registry trigger 文本."
+      ],
       "error_codes": [
         "FIT4B-E001",
         "FIT4B-E002",
@@ -732,7 +758,13 @@
         "SOLVE-E002",
         "IDENT-W001",
         "IDENT-W002",
-        "IDENT-W003"
+        "IDENT-W003",
+        "FIT4B-E004",
+        "FIT4B-E005",
+        "FIT4B-E006",
+        "FIT4B-E007",
+        "FIT4B-W001",
+        "FIT4B-W002"
       ]
     },
     "FIT-4c": {
@@ -747,12 +779,27 @@
       "method": "1D scipy.optimize.minimize_scalar",
       "estimated_runtime": "minutes",
       "parameters_frozen": "ALL other aging parameters",
+      "status": "implemented_v0.7.0_synthetic_only",
+      "implementation_v0_7_0": {
+        "api": "libquiv_aging.dm_aging_fit.fit_knee_location",
+        "script": "scripts/fit_dm_aging.py --stage c",
+        "tests": "tests/test_dm_aging.py::TestT5_FIT4C_ErrorCodes (E003/E004/E005/W001/W002 各 ≥1 触发); T2 knee round-trip xfail (依赖 cycle forward-sim 性能)"
+      },
+      "known_limitations_v0_7_0": [
+        "T2 knee round-trip 测试 xfail: 同 FIT-4b forward-sim 性能根因 (依赖 _forward_sim_cycle drive 到 knee onset). v0.8 ADR 解决.",
+        "实装严格依赖 cycle_result 上游: 若 FIT4B-E007 (S3 fail) 或 FIT4B-Ex 上游中止, FIT-4c 链式 raise FIT4C-E003 不进入 minimize_scalar."
+      ],
       "error_codes": [
         "FIT4C-E001",
         "FIT4C-E002",
         "SOLVE-E001",
         "SOLVE-E002",
-        "IDENT-W002"
+        "IDENT-W002",
+        "FIT4C-E003",
+        "FIT4C-E004",
+        "FIT4C-E005",
+        "FIT4C-W001",
+        "FIT4C-W002"
       ]
     }
   },

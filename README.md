@@ -56,6 +56,7 @@ libquiv_aging_py/
 │   ├── fit_electrode_balance.py  # FIT-1: LR/OFS 拟合
 │   ├── fit_rc_transient.py       # FIT-2: C1/C2 RC 弛豫双指数拟合 (dispatch 模式)
 │   ├── fit_ic_to_dms.py          # IC 分析 CLI (SOP-4.5): RPT C/40 → DMs + JSON/PNG
+│   ├── fit_dm_aging.py           # FIT-4a/4b/4c 老化参数拟合 (calendar/cycle/knee, v0.7.0-fit4)
 │   ├── check_parameter_consistency.py
 │   ├── install_offline.sh        # air-gapped 安装入口
 │   ├── verify_install.sh
@@ -120,8 +121,11 @@ DRT 升级) 和 `fit_ic_to_dms.py` (SOP-4.5, IC 分析:RPT C/40 →
 LLI/LAM_PE/LAM_NE,JSON + 2×2 诊断 PNG,5 条 ICA-Exxx/Wxxx 错误码)。
 FIT-1/FIT-2 自动回写到对应 spec 含完整 fit provenance (`fit_step`,
 `fit_source`, `fit_r_squared`, `relaxation_metadata` 等);IC 分析按
-SPEC 不回写 spec,产出独立 JSON 供下游 FIT-4 等消费。FIT-3/4 待
-v0.6.0 实施。
+SPEC 不回写 spec,产出独立 JSON 供下游 FIT-4 等消费。FIT-3 待后续版本
+实施。FIT-4(a/b/c) 老化参数拟合框架在 v0.7.0-fit4 实装
+(`libquiv_aging.dm_aging_fit` + `scripts/fit_dm_aging.py` CLI)。单元
+测试覆盖 4 公共 API + 16 错误码事实层。端到端验证 (paper Mmeka 2025
+Fig. 6c 数据反演) 留 v0.8 性能优化后。
 
 版本演化通过 git tag 标记: `docs/vX.Y.Z` 是文档基建或错误码 patch,
 `release/vX.Y.0` 是代码能力 minor release。截至 v0.5.0 已有九层 tag

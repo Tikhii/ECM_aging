@@ -158,6 +158,7 @@ conda deactivate
 | 解读仿真输出 | `docs/04_outputs_guide.md` |
 | 看完整工作流示例 | `docs/05_workflow_examples.md` |
 | 用 FIT-1 拟合电极平衡 | `scripts/fit_electrode_balance.py` + `docs/PARAMETER_SOP.md` §三.1 |
+| 用 FIT-4 拟合老化参数 (calendar/cycle/knee) | `scripts/fit_dm_aging.py` + `docs/SPEC_dm_aging.md` + `docs/07_offline_runbook.md` |
 | 在离线实验室部署 | `docs/09_offline_bundle_guide.md` |
 | 现场报错速查 | `docs/07_offline_runbook.md` |
 | 从模板开始写自己的分析 | `examples/analysis_template.py` |
@@ -203,6 +204,19 @@ python scripts/fit_electrode_balance.py \
 ```
 
 详见 `docs/PARAMETER_SOP.md` §三.1 和 `docs/05_workflow_examples.md`。
+
+拟合老化参数 (FIT-4a/4b/4c, v0.7.0-fit4) 用 FIT-4 统一入口:
+
+```bash
+python scripts/fit_dm_aging.py \
+    --cell-dir <RPT 数据目录> \
+    --out <输出目录> \
+    --stage all   # 或 a / b / c 单 stage
+```
+
+`--stage all` 串行跑 a → b → c, 早期 E-码中止后续 stage; W-码累积到
+最终 exit code。16 条错误码语义见 `docs/07_offline_runbook.md`,
+SPEC 见 `docs/SPEC_dm_aging.md`。
 
 ---
 
