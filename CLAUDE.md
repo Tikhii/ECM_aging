@@ -30,6 +30,8 @@ Accept that your cross-session amnesia is structural. You MUST NOT attempt to co
 
 Persist factual content (physical decisions, paper references, code changes, engineering disciplines) to git — this is necessary. Beyond that, "collaboration process reflections" MUST NOT be persisted. Good judgment does not need to be repeatedly written down.
 
+This applies to code volume too: if a 200-line implementation could be 50, rewrite. The same principle that resists governance accumulation in protocols resists complexity accumulation in code.
+
 ## 3. Plan mode default
 
 New requests default to plan mode:
