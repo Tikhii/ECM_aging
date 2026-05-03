@@ -8,6 +8,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - (空)
 
+## [docs/v0.7.1-protocol-precision] — 2026-05-04
+
+- 协议层精度修订 (audit landing): repo-root `CLAUDE.md` §2 奥卡姆剃刀代码侧 corollary; `docs/CLAUDE.md` "Claude Code 协作规范" 新增 `### 代码层超范围约束` (匹配既有风格 / 未使用代码 / PR 自检); `docs/CLAUDE.md` R5 §4 验收阶段加强 2 bullet (read 全文实证 / 工程数字核对); `docs/decisions/README.md` Index 补 ADR-0016..0020 (R8 派生层 radiation 修补) + 新增 `## Authoring guidelines` (Status enum 4 值 / Filename / References / Frozen SPEC revisions)。
+- 3 files changed, 24 insertions. No code changes. R8 not triggered.
+- Audit source: 2026-05-03 independent workflow audit (not in git).
+
 ## [release/v0.7.0-fit4] — 2026-05-02
 
 ### Added
