@@ -681,7 +681,7 @@
       ]
     },
     "FIT-4a": {
-      "name": "Calendar aging parameters (INCLUDING R_SEI)",
+      "name": "Calendar aging parameters (R_SEI from EXP-E IR direct)",
       "requires_experiments": [
         "EXP-E"
       ],
@@ -689,23 +689,22 @@
         "k_SEI_cal",
         "k_LAM_PE_cal",
         "gamma_PE",
-        "R_SEI",
         "E_a_SEI"
       ],
-      "measurement_needed": "Capacity(t), IR(t), LLI(t), LAM_PE(t) at multiple (T, SOC)",
-      "method": "Multi-objective least-squares",
+      "measurement_needed": "Capacity(t), LLI(t), LAM_PE(t) at multiple (T, SOC); R_SEI from EXP-E IR pulse direct measurement (paper p.12, ADR-0016).",
+      "method": "Multi-objective least-squares (4-param)",
       "estimated_runtime": "hours if automated",
-      "critical_constraint": "IR(t) MUST be measured at each RPT to identify R_SEI. Paper p.12 confirms all resistance-related aging params come from calendar fit.",
-      "skip_if_no_data": "Set R_SEI to paper value (0.66), k_SEI_cal to paper default. Model loses quantitative IR prediction accuracy.",
+      "critical_constraint": "R_SEI source = cell.aging.resistance_aging.R_SEI loaded from param_specs literature_default (0.66) or overridden by EXP-E IR pulse measurement (ADR-0016). R_SEI is not fitted from LLI(t) sequence (calendar I=0 mode is unidentifiable, J^TJ singular).",
+      "skip_if_no_data": "Use param_specs literature_default R_SEI=0.66; model retains qualitative IR aging behavior but loses quantitative IR prediction accuracy.",
       "status": "implemented_v0.7.0_synthetic_only",
       "implementation_v0_7_0": {
         "api": "libquiv_aging.dm_aging_fit.fit_calendar_aging",
         "script": "scripts/fit_dm_aging.py --stage a",
-        "tests": "tests/test_dm_aging.py::TestT5_FIT4A_ErrorCodes (E005/E006/E007/W001/W002 各 ≥1 触发); T2 calendar round-trip xfail (R_SEI 不可识别, 子阶段 6 ADR)"
+        "tests": "tests/test_dm_aging.py::TestT5_FIT4A_ErrorCodes (E005/E006/E007/W001/W002 各 ≥1 触发); T2 calendar round-trip + T3 healthy std PASSED (4-param 拟合 J^TJ 非奇异, ADR-0016)"
       },
       "known_limitations_v0_7_0": [
-        "R_SEI 在 calendar (I=0 storage) 模式下完全不可识别 (Hessian 单列零). SPEC §3.1 当前将 R_SEI 列入 fit-4a fittable params 系误归类; 实装中 _forward_sim_calendar 不依赖 R_SEI, 拟合 J^TJ 奇异. 子阶段 6 ADR 修订: R_SEI 退出 fit-4a, 改由 EXP-E IR 脉冲测量直接给定.",
-        "T4 paper Mmeka 2025 Fig.6c S3 端到端验证未跑通: forward-sim 性能限制 (单 _forward_sim_cycle ~28s, max_nfev=200 → ~30-60min/fit), 测试已 xfail. v0.8 性能优化后实证, 当前 N3 升级落点 '已设计但未实证'."
+        "已修 (子阶段 6 ADR-0016): R_SEI 退出 fit-4a, 来源 cell.aging.resistance_aging.R_SEI (param_specs literature_default 0.66 或 EXP-E IR 实测覆盖). 4-param 拟合 J^TJ 不再奇异, T2 calendar round-trip + T3 healthy std xfail 已解除.",
+        "T4 paper Mmeka 2025 Fig.6c S3 端到端验证未跑通: forward-sim 性能限制 (单 _forward_sim_cycle ~28s, max_nfev=200 → ~30-60min/fit), 测试已 xfail. v0.8 性能优化后实证 (ADR-0017), 当前 N3 升级落点 '已设计但未实证'."
       ],
       "error_codes": [
         "FIT4A-E001",

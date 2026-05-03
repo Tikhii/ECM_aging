@@ -1108,15 +1108,17 @@ exit code 45, refuse, 打印本条目编号 (`[FIT4B-E006]`)。
 
 **触发条件**
 FIT-4b 主拟合已通过 (FIT4B-E006 未触发), 但 SPEC_dm_aging §3.4 子步骤 S3 的容
-量自洽性检查中 |sum(LLI + LAM_PE + LAM_NE) - cap_loss_observed| /
-cap_loss_observed > 10% 量级 (任一 RPT 点违反阈值即触发)。
+量自洽性检查中 forward-sim 预测 cap_loss(t_RPT) 与观测 cap_loss_obs 相对误差
+> 10% 量级 (`rel_error_max = max_i |cap_loss_model_i - cap_loss_obs_i| /
+cap_loss_obs_i > 0.10`, 任一 RPT 点违反阈值即触发)。
 
 **物理/方法学后果**
-三 DM 之和与观测容量损失之间的非线性 (paper Fig. 6c 143 EFC: sum=0.25,
-cap_loss=0.11, 比率 2.27 量级) 在当前体系下不可忽略。简单线性叠加假设失败,
-需要进入 `PARAMETERS.json::critical_review_findings::N3_sum_caploss_nonlinear`
-描述的升级路径 (引入 X_PE 显式映射或 Eq.42 LLI_PE 解耦)。继续无视会让 FIT-4c
-knee 预测建立在错误的容量记账之上。
+forward-sim 输出 cap_loss 与观测 cap_loss 系统性偏离, 反映三 DM 与容量损失之
+间的非线性映射在当前体系下不可忽略 (paper Fig. 6c 143 EFC 物理依据: 简单
+sum(DMs) = 0.25 而 cap_loss = 0.11, 比率 2.27 量级)。`PARAMETERS.json::
+critical_review_findings::N3_sum_caploss_nonlinear` 描述的升级路径 (引入 X_PE
+显式映射或 Eq.42 LLI_PE 解耦) 适用。继续无视会让 FIT-4c knee 预测建立在错误
+的容量记账之上。
 
 **权威文档交叉引用**
 - `docs/CRITICAL_REVIEW.md §N3 sum DMs ≠ cap_loss`
@@ -1143,7 +1145,8 @@ exit code 46, refuse, 打印本条目编号 (`[FIT4B-E007]`)。
 **触发条件**
 `least_squares` 收敛, 未触发 FIT4B-E006 / E007 的 FAIL 阈值, 但满足下列之一:
 (a) 0.95 ≤ R² < 0.99 量级; (b) 0.02 Ah < RMSE ≤ 0.05 Ah 量级; (c) S3 子步骤
-5% < |sum_DMs - cap_loss|/cap_loss ≤ 10% 量级。
+5% < forward-sim 预测 cap_loss(t_RPT) 与观测 cap_loss_obs 相对误差 ≤ 10%
+(`0.05 < rel_error_max ≤ 0.10`)。
 
 **物理/方法学后果**
 拟合通过最低门槛但低于优秀质量, 或 N3 非线性已可观测但尚未越过 10% FAIL 线。
@@ -1574,31 +1577,31 @@ exit code 72, warn, 打印本条目编号 (`[IDENT-W003]`)。
 | ICA-E003 | ICA | E | IC 拟合 RMSE 或 R² 越过失败阈值 | 102 | refuse | active |
 | ICA-W001 | ICA | W | IC 拟合质量在 marginal 区间 | 103 | warn | active |
 | ICA-W002 | ICA | W | IC 分析参数命中 search bound | 104 | warn | active |
-| FIT4A-E001 | FIT4A | E | Tier I/II/III 参数存在未填 placeholder | 30 | refuse | active |
-| FIT4A-E002 | FIT4A | E | EXP-E 温度点过少, E_a 不可识别 | 31 | refuse | active |
-| FIT4A-E003 | FIT4A | E | IR 列缺失率过高 | 32 | refuse | active |
-| FIT4A-E004 | FIT4A | E | SOC 覆盖不全, k_SEI_cal 与 k_LAM_PE_cal 共线 | 33 | refuse | active |
-| FIT4A-E005 | FIT4A | E | 输入契约违规 (cell-dir 结构 / RPT 数量 / 上游质量) | 34 | refuse | draft |
-| FIT4A-E006 | FIT4A | E | 拟合不收敛或 Hessian 非有限 | 35 | refuse | draft |
-| FIT4A-E007 | FIT4A | E | 收敛但 fit_quality FAIL | 36 | refuse | draft |
-| FIT4A-W001 | FIT4A | W | fit_quality 在 marginal 区间 | 37 | warn | draft |
-| FIT4A-W002 | FIT4A | W | 自由参数命中 search bound | 38 | warn | draft |
-| FIT4B-E001 | FIT4B | E | 检测到 FIT-4a 参数被解冻 | 40 | refuse | active |
-| FIT4B-E002 | FIT4B | E | k_LP 未被置零 | 41 | refuse | active |
-| FIT4B-E003 | FIT4B | E | 循环数据尚未进入 plateau, knee 前数据不足 | 42 | refuse | active |
-| FIT4B-E004 | FIT4B | E | 输入契约违规 (cell-dir 结构 / RPT 数量 / 上游质量 / FIT-4a 产出) | 43 | refuse | draft |
-| FIT4B-E005 | FIT4B | E | 拟合不收敛或 Hessian 非有限 | 44 | refuse | draft |
-| FIT4B-E006 | FIT4B | E | 收敛但 fit_quality FAIL | 45 | refuse | draft |
-| FIT4B-E007 | FIT4B | E | S3 子拟合: 容量自洽性不达标 (N3 落点) | 46 | refuse | draft |
-| FIT4B-W001 | FIT4B | W | fit_quality 在 marginal 区间 (含 S3 边缘违反) | 47 | warn | draft |
-| FIT4B-W002 | FIT4B | W | 自由参数命中 search bound | 48 | warn | draft |
-| FIT4C-E001 | FIT4C | E | 除 k_LP 外任一参数未冻结 | 50 | refuse | active |
-| FIT4C-E002 | FIT4C | E | 数据未跨越 knee, k_LP 不可识别 | 51 | refuse | active |
-| FIT4C-E003 | FIT4C | E | 输入契约违规 (cell-dir 结构 / RPT 数量 / 上游质量 / FIT-4b 产出) | 52 | refuse | draft |
-| FIT4C-E004 | FIT4C | E | 拟合不收敛或 Hessian 非有限 | 53 | refuse | draft |
-| FIT4C-E005 | FIT4C | E | 收敛但 fit_quality FAIL | 54 | refuse | draft |
-| FIT4C-W001 | FIT4C | W | fit_quality 在 marginal 区间 | 55 | warn | draft |
-| FIT4C-W002 | FIT4C | W | k_LP 命中 search bound | 56 | warn | draft |
+| FIT4A-E001 | FIT4A | E | Tier I/II/III 参数存在未填 placeholder | 30 | refuse | deprecated |
+| FIT4A-E002 | FIT4A | E | EXP-E 温度点过少, E_a 不可识别 | 31 | refuse | deprecated |
+| FIT4A-E003 | FIT4A | E | IR 列缺失率过高 | 32 | refuse | deprecated |
+| FIT4A-E004 | FIT4A | E | SOC 覆盖不全, k_SEI_cal 与 k_LAM_PE_cal 共线 | 33 | refuse | deprecated |
+| FIT4A-E005 | FIT4A | E | 输入契约违规 (cell-dir 结构 / RPT 数量 / 上游质量) | 34 | refuse | active |
+| FIT4A-E006 | FIT4A | E | 拟合不收敛或 Hessian 非有限 | 35 | refuse | active |
+| FIT4A-E007 | FIT4A | E | 收敛但 fit_quality FAIL | 36 | refuse | active |
+| FIT4A-W001 | FIT4A | W | fit_quality 在 marginal 区间 | 37 | warn | active |
+| FIT4A-W002 | FIT4A | W | 自由参数命中 search bound | 38 | warn | active |
+| FIT4B-E001 | FIT4B | E | 检测到 FIT-4a 参数被解冻 | 40 | refuse | deprecated |
+| FIT4B-E002 | FIT4B | E | k_LP 未被置零 | 41 | refuse | deprecated |
+| FIT4B-E003 | FIT4B | E | 循环数据尚未进入 plateau, knee 前数据不足 | 42 | refuse | deprecated |
+| FIT4B-E004 | FIT4B | E | 输入契约违规 (cell-dir 结构 / RPT 数量 / 上游质量 / FIT-4a 产出) | 43 | refuse | active |
+| FIT4B-E005 | FIT4B | E | 拟合不收敛或 Hessian 非有限 | 44 | refuse | active |
+| FIT4B-E006 | FIT4B | E | 收敛但 fit_quality FAIL | 45 | refuse | active |
+| FIT4B-E007 | FIT4B | E | S3 子拟合: 容量自洽性不达标 (N3 落点) | 46 | refuse | active |
+| FIT4B-W001 | FIT4B | W | fit_quality 在 marginal 区间 (含 S3 边缘违反) | 47 | warn | active |
+| FIT4B-W002 | FIT4B | W | 自由参数命中 search bound | 48 | warn | active |
+| FIT4C-E001 | FIT4C | E | 除 k_LP 外任一参数未冻结 | 50 | refuse | deprecated |
+| FIT4C-E002 | FIT4C | E | 数据未跨越 knee, k_LP 不可识别 | 51 | refuse | deprecated |
+| FIT4C-E003 | FIT4C | E | 输入契约违规 (cell-dir 结构 / RPT 数量 / 上游质量 / FIT-4b 产出) | 52 | refuse | active |
+| FIT4C-E004 | FIT4C | E | 拟合不收敛或 Hessian 非有限 | 53 | refuse | active |
+| FIT4C-E005 | FIT4C | E | 收敛但 fit_quality FAIL | 54 | refuse | active |
+| FIT4C-W001 | FIT4C | W | fit_quality 在 marginal 区间 | 55 | warn | active |
+| FIT4C-W002 | FIT4C | W | k_LP 命中 search bound | 56 | warn | active |
 | SOLVE-E001 | SOLVE | E | scipy solve_ivp BDF 积分失败 | 60 | refuse | active |
 | SOLVE-E002 | SOLVE | E | 代数约束 Newton 与 brentq 兜底均失败 | 61 | refuse | active |
 | IDENT-W001 | IDENT | W | Hessian 条件数量级偏大 | 70 | warn | draft |

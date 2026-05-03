@@ -146,14 +146,13 @@ def _calendar_stub(**overrides) -> FIT4ACalendarResult:
         k_SEI_cal=4.2e-2,
         k_LAM_PE_cal=1.15e-11,
         gamma_PE=3.18,
-        R_SEI=0.66,
         E_a_SEI=55500.0,
         rate_constants_std={
             "k_SEI_cal": 1e-4, "k_LAM_PE_cal": 1e-13, "gamma_PE": 0.1,
-            "R_SEI": 0.01, "E_a_SEI": 1000.0,
+            "E_a_SEI": 1000.0,
         },
         fit_quality={
-            "n_rpt": 5, "n_free_params": 5,
+            "n_rpt": 5, "n_free_params": 4,
             "rmse_LLI_Ah": 0.001, "rmse_LAM_PE_Ah": 0.001, "rmse_LAM_NE_Ah": 0.001,
             "r2_LLI": 0.999, "r2_LAM_PE": 0.999, "r2_LAM_NE": 0.999,
             "pass_overall": True, "marginal_quality": False, "bounds_hit": [],
@@ -351,25 +350,18 @@ class TestT2_RoundTripSynthetic:
     Plan D1: max_nfev=20 起步, n_rpt=5; 单测试预算 5 min × 2 安全边际.
     """
 
-    @pytest.mark.xfail(
-        reason=(
-            "R_SEI 在 calendar (I=0) 模式下完全不可识别: 实测 _forward_sim_calendar "
-            "对 R_SEI 灵敏度 = 0 (R_SEI 不进 V_NE 演化, 仅在 cycling 时 IR drop 显现). "
-            "SPEC §3.1 假设的 5-param 拟合在合成数据上必触发 J^TJ 奇异 → FIT4A-E006. "
-            "子阶段 4 §1.3 长尾, 子阶段 6 ADR 决议是否削减 calendar 自由参数到 4."
-        ),
-        strict=False,
-    )
     def test_calendar_round_trip_recovers_rates(self):
         """SPEC §7 T2 calendar: ground truth → forward → fit → 1σ-2σ recovery.
 
         T 跨 RPT 变化 (298.15 / 308.15 / 318.15 K) 让 E_a_SEI 在 Arrhenius 项里可识别;
         若所有 RPT 同 T, E_a 完全不可识别 → J^TJ 奇异.
+
+        ADR-0016: R_SEI 退出 fittable params (4 free params), J^TJ 不再奇异.
         """
         from libquiv_aging.dm_aging_fit import _forward_sim_calendar
         truth = {
             "k_SEI_cal": 4.2e-2, "k_LAM_PE_cal": 1.15e-11,
-            "gamma_PE": 3.18, "R_SEI": 0.66, "E_a_SEI": 55500.0,
+            "gamma_PE": 3.18, "E_a_SEI": 55500.0,
         }
         # 5 RPT × 跨 T (Arrhenius 激活) × 跨 time (calendar SEI √t 动力学激活)
         configs = [
@@ -403,8 +395,6 @@ class TestT2_RoundTripSynthetic:
                             truth["k_LAM_PE_cal"] * 0.8),
             "gamma_PE":    (truth["gamma_PE"] * 0.7, truth["gamma_PE"] * 1.3,
                             truth["gamma_PE"] * 0.9),
-            "R_SEI":       (truth["R_SEI"] * 0.7, truth["R_SEI"] * 1.3,
-                            truth["R_SEI"] * 0.9),
             "E_a_SEI":     (truth["E_a_SEI"] - 5000, truth["E_a_SEI"] + 5000,
                             truth["E_a_SEI"] - 1000),
         }
@@ -569,35 +559,34 @@ class TestT3_HessianStd_Degenerate:
 class TestT3_HessianStd_Healthy:
     """T2 healthy fit case → result.rate_constants_std 各字段非 NaN, > 0."""
 
-    @pytest.mark.xfail(
-        reason=(
-            "同 T2 calendar: R_SEI 在 calendar (I=0) 模式 J 该列恒 0 → J^TJ 奇异 → "
-            "_estimate_covariance_nvar fallback NaN → fit_calendar_aging raise FIT4A-E006. "
-            "子阶段 6 ADR 决议是否削减自由参数."
-        ),
-        strict=False,
-    )
     def test_calendar_std_non_nan(self):
-        # 复用 T2 calendar 的 path: 但更浅, 仅检查 std 字段
+        """T3 healthy fit: 4-param std 全 finite, > 0 (ADR-0016)."""
         from libquiv_aging.dm_aging_fit import _forward_sim_calendar
         truth = {
             "k_SEI_cal": 4.2e-2, "k_LAM_PE_cal": 1.15e-11,
-            "gamma_PE": 3.18, "R_SEI": 0.66, "E_a_SEI": 55500.0,
+            "gamma_PE": 3.18, "E_a_SEI": 55500.0,
         }
-        EFC_grid = [0.0, 100.0, 200.0, 300.0]
+        # 跨 T 让 E_a_SEI 可识别 (Arrhenius 项)
+        configs = [
+            (50.0,   298.15),
+            (100.0,  308.15),
+            (200.0,  318.15),
+            (300.0,  303.15),
+            (400.0,  313.15),
+        ]
         proto = _direct_records([
-            {"EFC": efc, "time_s": efc * 3600.0, "T_storage_K": 298.15,
+            {"EFC": efc, "time_s": efc * 3600.0, "T_storage_K": T,
              "SOC_storage": 0.5, "LLI_Ah": 0.0, "LAM_PE_Ah": 0.0, "LAM_NE_Ah": 0.0}
-            for efc in EFC_grid
+            for efc, T in configs
         ])
         synth = _forward_sim_calendar(truth, proto)
         records = _direct_records([
-            {"EFC": efc, "time_s": efc * 3600.0, "T_storage_K": 298.15,
+            {"EFC": efc, "time_s": efc * 3600.0, "T_storage_K": T,
              "SOC_storage": 0.5,
              "LLI_Ah": float(synth["LLI_Ah"][i]),
              "LAM_PE_Ah": float(synth["LAM_PE_Ah"][i]),
              "LAM_NE_Ah": float(synth["LAM_NE_Ah"][i])}
-            for i, efc in enumerate(EFC_grid)
+            for i, (efc, T) in enumerate(configs)
         ])
         tight_bounds = {
             "k_SEI_cal":   (truth["k_SEI_cal"] * 0.5, truth["k_SEI_cal"] * 2.0,
@@ -606,8 +595,6 @@ class TestT3_HessianStd_Healthy:
                             truth["k_LAM_PE_cal"] * 0.8),
             "gamma_PE":    (truth["gamma_PE"] * 0.7, truth["gamma_PE"] * 1.3,
                             truth["gamma_PE"] * 0.9),
-            "R_SEI":       (truth["R_SEI"] * 0.7, truth["R_SEI"] * 1.3,
-                            truth["R_SEI"] * 0.9),
             "E_a_SEI":     (truth["E_a_SEI"] - 5000, truth["E_a_SEI"] + 5000,
                             truth["E_a_SEI"] - 1000),
         }
@@ -712,7 +699,7 @@ class TestT5_FIT4A_ErrorCodes:
         monkeypatch.setattr(
             dm_aging_fit, "_run_least_squares",
             lambda *a, **kw: _fake_lsq_result(
-                x=[4.2e-2, 1.15e-11, 3.18, 0.66, 55500.0],
+                x=[4.2e-2, 1.15e-11, 3.18, 55500.0],
                 success=False, status=-1,
             ),
         )
@@ -733,7 +720,7 @@ class TestT5_FIT4A_ErrorCodes:
         monkeypatch.setattr(
             dm_aging_fit, "_run_least_squares",
             lambda *a, **kw: _fake_lsq_result(
-                x=[4.2e-2, 1.15e-11, 3.18, 0.66, 55500.0],
+                x=[4.2e-2, 1.15e-11, 3.18, 55500.0],
             ),
         )
         n = 5
@@ -768,7 +755,7 @@ class TestT5_FIT4A_ErrorCodes:
         monkeypatch.setattr(
             dm_aging_fit, "_run_least_squares",
             lambda *a, **kw: _fake_lsq_result(
-                x=[4.2e-2, 1.15e-11, 3.18, 0.66, 55500.0],
+                x=[4.2e-2, 1.15e-11, 3.18, 55500.0],
             ),
         )
 
@@ -802,7 +789,6 @@ class TestT5_FIT4A_ErrorCodes:
             _DEFAULT_BOUNDS_FIT4A["k_SEI_cal"][0],  # lb
             _DEFAULT_BOUNDS_FIT4A["k_LAM_PE_cal"][2],
             _DEFAULT_BOUNDS_FIT4A["gamma_PE"][2],
-            _DEFAULT_BOUNDS_FIT4A["R_SEI"][2],
             _DEFAULT_BOUNDS_FIT4A["E_a_SEI"][2],
         ]
         monkeypatch.setattr(

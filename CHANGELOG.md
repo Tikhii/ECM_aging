@@ -6,6 +6,44 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+- (空)
+
+## [release/v0.7.0-fit4] — 2026-05-02
+
+### Added
+- FIT-4 老化参数拟合框架 `libquiv_aging.dm_aging_fit`:
+  - 4 公共 API: `aggregate_rpt_records`, `fit_calendar_aging`, `fit_cycle_aging`, `fit_knee_location`
+  - 4 dataclass: `RPTRecord`, `FIT4ACalendarResult`, `FIT4BCycleResult`, `FIT4CKneeResult`
+  - 16 条新错误码 (FIT4A-E005..W002 / FIT4B-E004..W002 / FIT4C-E003..W002), status=active (ADR-0018)
+- CLI: `scripts/fit_dm_aging.py --stage {a,b,c,all}`
+- SPEC: `docs/SPEC_dm_aging.md` (frozen 2026-05-01, ADR-0016 修订 2026-05-02)
+- 测试: `tests/test_dm_aging.py` (26 fast + 2 slow targeted (T2 calendar + T3 healthy 解 xfail, ADR-0016) + 3 xfail (T2 cycle/knee + T4, 留 v0.8); T1 forward-only / T2 calendar / T3 healthy / T5 错误码 全 PASS)
+- R8 派生层: `README.md` / `QUICKSTART.md` / `docs/CLAUDE.md` 同步 v0.7.0-fit4 公共 API
+
+### Changed
+- ADR-0016: R_SEI 退出 FIT-4a calendar fittable params (5-param → 4-param)
+  - `docs/SPEC_dm_aging.md` §1 新增第 7 条; §3.1 free params 5 → 4; §3.3 R3 段; §3.5 删 R_SEI bounds 行; frontmatter 新增 Revision history
+  - `libquiv_aging/dm_aging_fit.py`: `_DEFAULT_BOUNDS_FIT4A` (4 keys); `_inject_calendar_params` 不再注入 R_SEI; `_inject_cycle_params` / `_inject_knee_params` 不再从 calendar_result.R_SEI 重注入; `FIT4ACalendarResult` 4 字段; result 实例化同步
+  - `docs/PARAMETERS.json::FIT-4a::fits` 4 keys; `critical_constraint` / `known_limitations_v0_7_0` 同步
+  - `tests/test_dm_aging.py` T2 calendar + T3 healthy std xfail 解除 (4-param J^TJ 非奇异)
+- ADR-0018: 16 条新错误码 status: draft → active (raise path validation 已实证, 与 N3 model behavior validation 拆分)
+- ADR-0019: FIT4B-E007 + FIT4B-W001(c) registry trigger sum-based → forward-sim
+- ADR-0020: 9 条旧 FIT-4 codes (FIT4A-E001..E004 / FIT4B-E001..E003 / FIT4C-E001..E002) status: active → deprecated, deprecated_note 指向 v0.7.0 新 codes
+
+### Breaking changes
+- `FIT4ACalendarResult.R_SEI: float` 字段移除 (5-param → 4-param). v0.7.0 是 release/v0.7.0-fit4 first release 含此 dataclass, 无外部消费者依赖. 见 ADR-0016.
+
+### Deferred to v0.8
+- ADR-0017: forward-sim 性能优化路径 (实装移 v0.8); 4 个 xfail (T2 cycle round-trip / T2 knee round-trip / T4 paper Mmeka 2025 Fig.6c) 保留为问题锚点
+- N3 升级落点 "已设计但未实证" 维持; v0.8 跑通 T4 后升级 "已实证 (paper Fig.6c)" (ADR-0018)
+
+### References
+- ADRs: 0016 / 0017 / 0018 / 0019 / 0020
+- 跨子阶段 1-6 工作量: vault/v0.7.0-fit4/fit4_subphase_{0..6}.md
+- 跨子阶段 1-6 工作量与长尾移交 v0.8 总结: vault/v0.7.0-fit4/fit4_subphase_6.md §13
+
+## [Pre-v0.7.0 archive cleanup]
+
 - Engineering archive cleanup: 15 ADRs extracted into `docs/decisions/`, MIGRATION_NOTES frozen under `docs/legacy/`, repo-root `CLAUDE.md` introduced as collaboration philosophy entry, `docs/CLAUDE.md` trimmed to engineering operations manual (R1-R8 preserved verbatim).
 
 ## [docs/v0.5.3-ext-sop-feedback] — 2026-04-30

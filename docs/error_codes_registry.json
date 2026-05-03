@@ -29,7 +29,6 @@
       "since_version": "0.1.0",
       "status": "active"
     },
-
     "ENV-E002": {
       "scope": "ENV",
       "level": "E",
@@ -56,7 +55,6 @@
       "status": "active",
       "notes": "本错误码于 2026-04-24 (v0.3.0 阶段) 从 09_offline_bundle_guide.md §五 正式化而来。remediation 前两条为诊断路径, 第三条为升级路径 (向 IT 协调)。'不应采取的处置' 列表是从制度防护角度列出, 防止使用坏的 workaround 破坏环境一致性。"
     },
-
     "DATA-E001": {
       "scope": "DATA",
       "level": "E",
@@ -82,7 +80,6 @@
       "since_version": "0.1.0",
       "status": "active"
     },
-
     "DATA-E002": {
       "scope": "DATA",
       "level": "E",
@@ -108,7 +105,6 @@
       "since_version": "0.1.0",
       "status": "active"
     },
-
     "DATA-E003": {
       "scope": "DATA",
       "level": "E",
@@ -135,7 +131,6 @@
       "since_version": "0.1.0",
       "status": "active"
     },
-
     "DATA-E004": {
       "scope": "DATA",
       "level": "E",
@@ -161,7 +156,6 @@
       "status": "active",
       "notes": "2026-04-29 加入。本错误码与 DATA-E005 共同补强 RPT 双向数据契约, 以替代之前 PARAMETER_SOP.md 中的隐含假设。"
     },
-
     "DATA-E005": {
       "scope": "DATA",
       "level": "E",
@@ -187,7 +181,6 @@
       "status": "active",
       "notes": "2026-04-29 加入。fit_ic_to_dms.py 当前只读单方向 (放电); FIT-IC dual-direction support 单独 follow-up, 实现后 --allow-single-direction 兜底开关与本错误码协同。"
     },
-
     "FIT1-E001": {
       "scope": "FIT1",
       "level": "E",
@@ -213,7 +206,6 @@
       "status": "active",
       "notes": "前置条件错误。X0_PE/NE 不影响优化变量但决定起点; dX_PE/NE 决定化学计量映射的范围。任一缺失都使 FIT-1 不可执行。"
     },
-
     "FIT1-E002": {
       "scope": "FIT1",
       "level": "E",
@@ -240,7 +232,6 @@
       "status": "active",
       "notes": "失败档拒绝写回 spec。20-50 mV 之间的 marginal 档由 FIT1-W001 处理。"
     },
-
     "FIT1-E003": {
       "scope": "FIT1",
       "level": "E",
@@ -266,7 +257,6 @@
       "status": "active",
       "notes": "若收敛但 RMSE 超阈, 走 FIT1-E002 而非本条。"
     },
-
     "FIT1-W001": {
       "scope": "FIT1",
       "level": "W",
@@ -291,7 +281,6 @@
       "status": "active",
       "notes": "warn 级别不阻塞下游, spec 仍被回写, status 仍为 fitted。fit_r_squared 字段是质量信号的载体。"
     },
-
     "FIT2-E001": {
       "scope": "FIT2",
       "level": "E",
@@ -318,7 +307,6 @@
       "status": "active",
       "notes": "前置数据契约错误。脚本应在加载阶段而非拟合阶段拒绝, 避免 curve_fit 给出貌似收敛但物理量纲错误的结果。"
     },
-
     "FIT2-E002": {
       "scope": "FIT2",
       "level": "E",
@@ -345,7 +333,6 @@
       "status": "active",
       "notes": "若收敛但 RMSE 超阈, 走 FIT2-E003 而非本条。"
     },
-
     "FIT2-E003": {
       "scope": "FIT2",
       "level": "E",
@@ -372,7 +359,6 @@
       "status": "active",
       "notes": "失败档拒绝写回 spec。残差呈现系统性结构是 C7 升级路径的入口信号。"
     },
-
     "FIT2-W001": {
       "scope": "FIT2",
       "level": "W",
@@ -399,7 +385,6 @@
       "status": "active",
       "notes": "warn 级别不阻塞下游, spec 仍被回写, status 仍为 fitted。fit_r_squared 与 mapping_candidates 字段是质量信号的载体。"
     },
-
     "ICA-E001": {
       "scope": "ICA",
       "level": "E",
@@ -426,7 +411,6 @@
       "status": "active",
       "notes": "前置数据契约错误。脚本应在加载阶段拒绝, 避免 optimizer 在病态输入上耗时收敛。"
     },
-
     "ICA-E002": {
       "scope": "ICA",
       "level": "E",
@@ -453,7 +437,6 @@
       "status": "active",
       "notes": "若收敛但 RMSE/R² 超阈, 走 ICA-E003 而非本条。"
     },
-
     "ICA-E003": {
       "scope": "ICA",
       "level": "E",
@@ -480,7 +463,6 @@
       "status": "active",
       "notes": "失败档拒绝写回。15-20 mV 之间或 0.99 ≤ R² < 0.999 的 marginal 档由 ICA-W001 处理。R²_FAIL = 0.99 比 FIT-2 的 0.95 严格, 因为 quasi-equilibrium 在 alawa regime 内本应 R² > 0.999, < 0.99 表示残差有 ≥1% 系统结构。"
     },
-
     "ICA-W001": {
       "scope": "ICA",
       "level": "W",
@@ -505,7 +487,6 @@
       "status": "active",
       "notes": "warn 级别不阻塞下游, JSON 仍被写出, 但 marginal_quality 字段是质量信号的载体。"
     },
-
     "ICA-W002": {
       "scope": "ICA",
       "level": "W",
@@ -530,7 +511,6 @@
       "status": "active",
       "notes": "warn 级别不阻塞下游, JSON 仍被写出。bounds_hit 字段是质量信号的载体, 下游应主动检视。"
     },
-
     "FIT4A-E001": {
       "scope": "FIT4A",
       "level": "E",
@@ -553,9 +533,9 @@
       },
       "escalation": "§6.例 2 — 拟合前置条件不足",
       "since_version": "0.1.0",
-      "status": "active"
+      "status": "deprecated",
+      "deprecated_note": "v0.7.0 替代为 FIT4A-E005..W002, 见 ADR-0020."
     },
-
     "FIT4A-E002": {
       "scope": "FIT4A",
       "level": "E",
@@ -578,9 +558,9 @@
       },
       "escalation": "§6.例 2 — 拟合前置条件不足",
       "since_version": "0.1.0",
-      "status": "active"
+      "status": "deprecated",
+      "deprecated_note": "v0.7.0 替代为 FIT4A-E005..W002, 见 ADR-0020."
     },
-
     "FIT4A-E003": {
       "scope": "FIT4A",
       "level": "E",
@@ -603,9 +583,9 @@
       },
       "escalation": "§6.例 2 — 拟合前置条件不足",
       "since_version": "0.1.0",
-      "status": "active"
+      "status": "deprecated",
+      "deprecated_note": "v0.7.0 替代为 FIT4A-E005..W002, 见 ADR-0020."
     },
-
     "FIT4A-E004": {
       "scope": "FIT4A",
       "level": "E",
@@ -629,9 +609,9 @@
       },
       "escalation": "§6.例 2 — 拟合前置条件不足",
       "since_version": "0.1.0",
-      "status": "active"
+      "status": "deprecated",
+      "deprecated_note": "v0.7.0 替代为 FIT4A-E005..W002, 见 ADR-0020."
     },
-
     "FIT4A-E005": {
       "scope": "FIT4A",
       "level": "E",
@@ -655,9 +635,8 @@
       },
       "escalation": "§6.例 2 — 拟合前置条件不足",
       "since_version": "0.7.0",
-      "status": "draft"
+      "status": "active"
     },
-
     "FIT4A-E006": {
       "scope": "FIT4A",
       "level": "E",
@@ -680,10 +659,9 @@
       },
       "escalation": "§6.例 5 — 拟合不收敛",
       "since_version": "0.7.0",
-      "status": "draft",
+      "status": "active",
       "notes": "本码与 FIT4A-E007 拆分: 不收敛 vs 收敛但 fit_quality FAIL 是两类独立诊断, 沿用 ICA-E002 / ICA-E003 在 v0.5.2 建立的拆分先例。"
     },
-
     "FIT4A-E007": {
       "scope": "FIT4A",
       "level": "E",
@@ -706,10 +684,9 @@
       },
       "escalation": "§6.例 6 — 拟合质量不达标",
       "since_version": "0.7.0",
-      "status": "draft",
+      "status": "active",
       "notes": "与 FIT4A-E006 (不收敛) 的拆分对应 ICA-E002 / ICA-E003 在 v0.5.2 已建立的拆分先例 — 不收敛与 fit_quality FAIL 是独立诊断, 各自有不同的 remediation 路径。"
     },
-
     "FIT4A-W001": {
       "scope": "FIT4A",
       "level": "W",
@@ -732,10 +709,9 @@
       },
       "escalation": "docs/08_consultation_protocol.md §6 例 6 拟合质量警告",
       "since_version": "0.7.0",
-      "status": "draft",
+      "status": "active",
       "notes": "warn 级别不阻塞下游, JSON 仍被写出, marginal_quality 是质量信号载体。"
     },
-
     "FIT4A-W002": {
       "scope": "FIT4A",
       "level": "W",
@@ -758,10 +734,9 @@
       },
       "escalation": "docs/08_consultation_protocol.md §6 例 6 识别性警告",
       "since_version": "0.7.0",
-      "status": "draft",
+      "status": "active",
       "notes": "warn 级别不阻塞下游, JSON 仍写出。bounds_hit 字段是质量信号载体, 下游 FIT-4b 应主动检视。"
     },
-
     "FIT4B-E001": {
       "scope": "FIT4B",
       "level": "E",
@@ -785,9 +760,9 @@
       },
       "escalation": "§6.例 4 — R2 顺序违规",
       "since_version": "0.1.0",
-      "status": "active"
+      "status": "deprecated",
+      "deprecated_note": "v0.7.0 替代为 FIT4B-E004..W002, 见 ADR-0020."
     },
-
     "FIT4B-E002": {
       "scope": "FIT4B",
       "level": "E",
@@ -810,9 +785,9 @@
       },
       "escalation": "§6.例 4 — R2 顺序违规",
       "since_version": "0.1.0",
-      "status": "active"
+      "status": "deprecated",
+      "deprecated_note": "v0.7.0 替代为 FIT4B-E004..W002, 见 ADR-0020."
     },
-
     "FIT4B-E003": {
       "scope": "FIT4B",
       "level": "E",
@@ -834,9 +809,9 @@
       },
       "escalation": "§6.例 2 — 拟合前置条件不足",
       "since_version": "0.1.0",
-      "status": "active"
+      "status": "deprecated",
+      "deprecated_note": "v0.7.0 替代为 FIT4B-E004..W002, 见 ADR-0020."
     },
-
     "FIT4B-E004": {
       "scope": "FIT4B",
       "level": "E",
@@ -862,9 +837,8 @@
       },
       "escalation": "§6.例 2 — 拟合前置条件不足",
       "since_version": "0.7.0",
-      "status": "draft"
+      "status": "active"
     },
-
     "FIT4B-E005": {
       "scope": "FIT4B",
       "level": "E",
@@ -887,10 +861,9 @@
       },
       "escalation": "§6.例 5 — 拟合不收敛",
       "since_version": "0.7.0",
-      "status": "draft",
+      "status": "active",
       "notes": "本码与 FIT4B-E006 拆分: 不收敛 vs 收敛但 fit_quality FAIL 是两类独立诊断, 沿用 ICA-E002 / ICA-E003 在 v0.5.2 建立的拆分先例。"
     },
-
     "FIT4B-E006": {
       "scope": "FIT4B",
       "level": "E",
@@ -913,15 +886,14 @@
       },
       "escalation": "§6.例 6 — 拟合质量不达标",
       "since_version": "0.7.0",
-      "status": "draft",
+      "status": "active",
       "notes": "与 FIT4B-E005 (不收敛) 的拆分对应 ICA-E002 / ICA-E003 在 v0.5.2 已建立的拆分先例。"
     },
-
     "FIT4B-E007": {
       "scope": "FIT4B",
       "level": "E",
       "title": "S3 子拟合: 容量自洽性不达标 (N3 落点)",
-      "trigger": "FIT-4b 主拟合已通过 (FIT4B-E006 未触发), 但 SPEC_dm_aging §3.4 子步骤 S3 的容量自洽性检查中 |sum(LLI + LAM_PE + LAM_NE) - cap_loss_observed| / cap_loss_observed > 10% (任一 RPT 点违反阈值即触发).",
+      "trigger": "FIT-4b 主拟合已通过 (FIT4B-E006 未触发), 但 SPEC_dm_aging §3.4 子步骤 S3 的容量自洽性检查中 forward-sim 预测 cap_loss(t_RPT) 与观测 cap_loss_obs 相对误差 > 10% (rel_error_max = max_i |cap_loss_model_i - cap_loss_obs_i| / cap_loss_obs_i > 0.10, 任一 RPT 点违反阈值即触发).",
       "consequence": "三 DM 之和与观测容量损失之间的非线性 (paper Fig. 6c 143 EFC: sum=0.25, cap_loss=0.11, 比率 2.27) 在当前体系下不可忽略。简单线性叠加假设失败, 需要进入 PARAMETERS.json::critical_review_findings::N3_sum_caploss_nonlinear 描述的升级路径 (引入 X_PE 显式映射或 Eq.42 LLI_PE 解耦)。继续无视会让 FIT-4c knee 预测建立在错误的容量记账之上。",
       "cross_refs": [
         "docs/CRITICAL_REVIEW.md §N3 sum DMs ≠ cap_loss",
@@ -940,15 +912,14 @@
       },
       "escalation": "§6.例 7 — N3 容量自洽性失败 (新增)",
       "since_version": "0.7.0",
-      "status": "draft",
+      "status": "active",
       "notes": "本码是 paper §Model reduction (page 14 X_PE quote) 的工程落点; SPEC_dm_aging §8 显式将 S3 列为 FIT-4b 内的 N3 检测点而非 FIT-4c 内, 因为 cap_loss 自洽性必须在 knee 之前先校验。"
     },
-
     "FIT4B-W001": {
       "scope": "FIT4B",
       "level": "W",
       "title": "fit_quality 在 marginal 区间 (含 S3 边缘违反)",
-      "trigger": "least_squares 收敛, 未触发 FIT4B-E006 / E007 的 FAIL 阈值, 但满足下列之一: (a) 0.95 ≤ R² < 0.99; (b) 0.02 Ah < RMSE ≤ 0.05 Ah; (c) S3 子步骤 5% < |sum_DMs - cap_loss|/cap_loss ≤ 10%。",
+      "trigger": "least_squares 收敛, 未触发 FIT4B-E006 / E007 的 FAIL 阈值, 但满足下列之一: (a) 0.95 ≤ R² < 0.99; (b) 0.02 Ah < RMSE ≤ 0.05 Ah; (c) S3 子步骤 5% < forward-sim 预测 cap_loss(t_RPT) 与观测 cap_loss_obs 相对误差 ≤ 10% (0.05 < rel_error_max ≤ 0.10).",
       "consequence": "拟合通过最低门槛但低于优秀质量, 或 N3 非线性已可观测但尚未越过 10% FAIL 线。k_SEI_cyc / k_LAM_*_cyc 仍写出到 stage_b_cycle.json, 但 fit_quality.marginal_quality=true 与 (如适用) n3_caveat.s3_marginal=true 字段持久化质量信号供下游审计; FIT-4c 在见到 marginal 标记时应酌情降权或扩大不确定性带。",
       "cross_refs": [
         "docs/SPEC_dm_aging.md §4 拟合质量阈值",
@@ -966,10 +937,9 @@
       },
       "escalation": "docs/08_consultation_protocol.md §6 例 6 拟合质量警告",
       "since_version": "0.7.0",
-      "status": "draft",
+      "status": "active",
       "notes": "warn 级别不阻塞下游, JSON 仍被写出。本码合并了 fit_quality marginal 与 S3 marginal 两个独立的边缘信号 (各自有独立的字段载体), 因为两者都是 'continue with caveat' 语义。"
     },
-
     "FIT4B-W002": {
       "scope": "FIT4B",
       "level": "W",
@@ -992,10 +962,9 @@
       },
       "escalation": "docs/08_consultation_protocol.md §6 例 6 识别性警告",
       "since_version": "0.7.0",
-      "status": "draft",
+      "status": "active",
       "notes": "warn 级别不阻塞下游, JSON 仍写出。bounds_hit 字段是质量信号载体, 下游 FIT-4c 应主动检视。"
     },
-
     "FIT4C-E001": {
       "scope": "FIT4C",
       "level": "E",
@@ -1018,9 +987,9 @@
       },
       "escalation": "§6.例 4 — R2 顺序违规",
       "since_version": "0.1.0",
-      "status": "active"
+      "status": "deprecated",
+      "deprecated_note": "v0.7.0 替代为 FIT4C-E003..W002, 见 ADR-0020."
     },
-
     "FIT4C-E002": {
       "scope": "FIT4C",
       "level": "E",
@@ -1043,9 +1012,9 @@
       },
       "escalation": "§6.例 2 — 拟合前置条件不足",
       "since_version": "0.1.0",
-      "status": "active"
+      "status": "deprecated",
+      "deprecated_note": "v0.7.0 替代为 FIT4C-E003..W002, 见 ADR-0020."
     },
-
     "FIT4C-E003": {
       "scope": "FIT4C",
       "level": "E",
@@ -1069,9 +1038,8 @@
       },
       "escalation": "§6.例 2 — 拟合前置条件不足",
       "since_version": "0.7.0",
-      "status": "draft"
+      "status": "active"
     },
-
     "FIT4C-E004": {
       "scope": "FIT4C",
       "level": "E",
@@ -1094,10 +1062,9 @@
       },
       "escalation": "§6.例 5 — 拟合不收敛",
       "since_version": "0.7.0",
-      "status": "draft",
+      "status": "active",
       "notes": "本码与 FIT4C-E005 拆分: 不收敛 vs 收敛但 fit_quality FAIL 是两类独立诊断, 沿用 ICA-E002 / ICA-E003 在 v0.5.2 建立的拆分先例。"
     },
-
     "FIT4C-E005": {
       "scope": "FIT4C",
       "level": "E",
@@ -1121,10 +1088,9 @@
       },
       "escalation": "§6.例 6 — 拟合质量不达标",
       "since_version": "0.7.0",
-      "status": "draft",
+      "status": "active",
       "notes": "与 FIT4C-E004 (不收敛) 的拆分对应 ICA-E002 / ICA-E003 在 v0.5.2 已建立的拆分先例。本码 cross_ref §S2 是因为 FIT-4c 反复 FAIL 是 V_LP_eq=0V 简化失效的最早工程信号。"
     },
-
     "FIT4C-W001": {
       "scope": "FIT4C",
       "level": "W",
@@ -1146,10 +1112,9 @@
       },
       "escalation": "docs/08_consultation_protocol.md §6 例 6 拟合质量警告",
       "since_version": "0.7.0",
-      "status": "draft",
+      "status": "active",
       "notes": "warn 级别不阻塞下游, JSON 仍被写出。"
     },
-
     "FIT4C-W002": {
       "scope": "FIT4C",
       "level": "W",
@@ -1172,10 +1137,9 @@
       },
       "escalation": "docs/08_consultation_protocol.md §6 例 6 识别性警告",
       "since_version": "0.7.0",
-      "status": "draft",
+      "status": "active",
       "notes": "warn 级别不阻塞下游, JSON 仍写出。bounds_hit 反复触发是 §S2 升级路径的工程触发条件。"
     },
-
     "SOLVE-E001": {
       "scope": "SOLVE",
       "level": "E",
@@ -1199,7 +1163,6 @@
       "since_version": "0.1.0",
       "status": "active"
     },
-
     "SOLVE-E002": {
       "scope": "SOLVE",
       "level": "E",
@@ -1223,7 +1186,6 @@
       "since_version": "0.1.0",
       "status": "active"
     },
-
     "IDENT-W001": {
       "scope": "IDENT",
       "level": "W",
@@ -1249,7 +1211,6 @@
       "status": "draft",
       "notes": "Placeholder pending fit scripts implementation in P1-B. Trigger conditions and thresholds will be validated against actual scripts behavior. Schema may be adjusted at that time."
     },
-
     "IDENT-W002": {
       "scope": "IDENT",
       "level": "W",
@@ -1274,7 +1235,6 @@
       "status": "draft",
       "notes": "Placeholder pending fit scripts implementation in P1-B. Trigger conditions and thresholds will be validated against actual scripts behavior. Schema may be adjusted at that time."
     },
-
     "IDENT-W003": {
       "scope": "IDENT",
       "level": "W",

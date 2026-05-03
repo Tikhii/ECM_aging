@@ -66,9 +66,11 @@ _DEFAULT_BOUNDS_FIT4A: dict[str, tuple[float, float, float]] = {
     "k_SEI_cal":   (1e-4, 1.0, 4.2e-2),         # A²·s; paper Table I.b 纠正后值
     "k_LAM_PE_cal": (1e-12, 1e-7, 1.15e-11),    # A
     "gamma_PE":    (0.0, 30.0, 3.18),           # 1/V
-    "R_SEI":       (0.1, 5.0, 0.66),            # 无因次 (paper)
     "E_a_SEI":     (40000.0, 80000.0, 55500.0), # J/mol
 }
+# R_SEI 退出 FIT-4a fittable params (ADR-0016): calendar I=0 模式 J 列恒 0,
+# J^TJ 奇异. 来源 = cell.aging.resistance_aging.R_SEI (param_specs literature_default 0.66
+# 或 EXP-E IR 脉冲实测覆盖).
 
 _DEFAULT_BOUNDS_FIT4B: dict[str, tuple[float, float, float]] = {
     "k_SEI_cyc":   (1e-4, 1.0, 0.470),          # F = A·s/V
@@ -131,11 +133,14 @@ class RPTRecord:
 
 @dataclass
 class FIT4ACalendarResult:
-    """FIT-4a stage_a_calendar.json schema."""
+    """FIT-4a stage_a_calendar.json schema.
+
+    R_SEI 不在此 dataclass: 退出 FIT-4a fittable params (ADR-0016); 来源
+    cell.aging.resistance_aging.R_SEI (param_specs literature_default).
+    """
     k_SEI_cal: float
     k_LAM_PE_cal: float
     gamma_PE: float
-    R_SEI: float
     E_a_SEI: float
     rate_constants_std: dict
     fit_quality: dict
@@ -363,7 +368,14 @@ def _inject_calendar_params(cell: EquivCircuitCell, theta: dict) -> None:
     Parameters
     ----------
     theta : dict
-        含 k_SEI_cal, k_LAM_PE_cal, gamma_PE, R_SEI, E_a_SEI.
+        含 k_SEI_cal, k_LAM_PE_cal, gamma_PE, E_a_SEI (4 free params; R_SEI
+        退出 FIT-4a fittable, ADR-0016).
+
+    Notes
+    -----
+    cell.aging.resistance_aging.R_SEI 不在此处注入: 来源 param_specs
+    literature_default (cell_factory 加载时已 frozen) 或用户在 cell_factory
+    load 后通过 EXP-E IR 实测覆盖.
     """
     cell.aging.sei.k_cal = float(theta["k_SEI_cal"])
     cell.aging.sei.k_cyc = 0.0  # calendar: cycle 项关闭
@@ -371,7 +383,6 @@ def _inject_calendar_params(cell: EquivCircuitCell, theta: dict) -> None:
     cell.aging.lam_pe.k_cal = float(theta["k_LAM_PE_cal"])
     cell.aging.lam_pe.k_cyc = 0.0
     cell.aging.lam_pe.gamma = float(theta["gamma_PE"])
-    cell.aging.resistance_aging.R_SEI = float(theta["R_SEI"])
     # plating + LAM_NE 在 calendar 阶段不激活
     cell.aging.plating.k_LP = 0.0
     cell.aging.lam_ne.k_cal = 0.0
@@ -385,14 +396,19 @@ def _inject_cycle_params(
 ) -> None:
     """把 FIT-4b free params + frozen 4a 参数 + k_LP=0 注入 cell.aging.
 
-    R2 强制: 4a 的 5 个参数 frozen, k_LP 强制 0.
+    R2 强制: 4a 的 4 个参数 frozen, k_LP 强制 0.
+
+    Notes
+    -----
+    cell.aging.resistance_aging.R_SEI 不重新注入 (R_SEI 退出 FIT-4a
+    fittable, ADR-0016); 来源 cell_factory 加载时的 literature_default,
+    保持 cell.aging.resistance_aging.R_SEI 跨 stage 不变.
     """
-    # 4a frozen
+    # 4a frozen (R_SEI 不在 frozen list, 见 ADR-0016)
     cell.aging.sei.k_cal = calendar_result.k_SEI_cal
     cell.aging.sei.Ea = calendar_result.E_a_SEI
     cell.aging.lam_pe.k_cal = calendar_result.k_LAM_PE_cal
     cell.aging.lam_pe.gamma = calendar_result.gamma_PE
-    cell.aging.resistance_aging.R_SEI = calendar_result.R_SEI
     # 4b free
     cell.aging.sei.k_cyc = float(theta["k_SEI_cyc"])
     cell.aging.lam_pe.k_cyc = float(theta["k_LAM_PE_cyc"])
@@ -408,12 +424,17 @@ def _inject_knee_params(
     calendar_result: FIT4ACalendarResult,
     cycle_result: FIT4BCycleResult,
 ) -> None:
-    """注入完整的 4a + 4b frozen 参数, 仅 k_LP 自由."""
+    """注入完整的 4a + 4b frozen 参数, 仅 k_LP 自由.
+
+    Notes
+    -----
+    cell.aging.resistance_aging.R_SEI 不重新注入 (R_SEI 退出 FIT-4a
+    fittable, ADR-0016); 来源 cell_factory 加载时的 literature_default.
+    """
     cell.aging.sei.k_cal = calendar_result.k_SEI_cal
     cell.aging.sei.Ea = calendar_result.E_a_SEI
     cell.aging.lam_pe.k_cal = calendar_result.k_LAM_PE_cal
     cell.aging.lam_pe.gamma = calendar_result.gamma_PE
-    cell.aging.resistance_aging.R_SEI = calendar_result.R_SEI
     cell.aging.sei.k_cyc = cycle_result.k_SEI_cyc
     cell.aging.lam_pe.k_cyc = cycle_result.k_LAM_PE_cyc
     cell.aging.lam_ne.k_cal = 0.0
@@ -885,10 +906,11 @@ def fit_calendar_aging(
     rpt_records: list[RPTRecord],
     bounds: dict | None = None,
 ) -> FIT4ACalendarResult:
-    """FIT-4a — calendar aging 拟合 (5 free params).
+    """FIT-4a — calendar aging 拟合 (4 free params).
 
-    Free: k_SEI_cal, k_LAM_PE_cal, gamma_PE, R_SEI, E_a_SEI (SPEC §3.1).
-    Frozen: cell_factory + Tier I/II/III + R_NE_0 (R4).
+    Free: k_SEI_cal, k_LAM_PE_cal, gamma_PE, E_a_SEI (SPEC §3.1, ADR-0016).
+    Frozen: cell_factory + Tier I/II/III + R_NE_0 (R4) + R_SEI (来源
+    cell.aging.resistance_aging.R_SEI, param_specs literature_default).
 
     Raises
     ------
@@ -987,7 +1009,6 @@ def fit_calendar_aging(
         k_SEI_cal=float(result.x[param_names.index("k_SEI_cal")]),
         k_LAM_PE_cal=float(result.x[param_names.index("k_LAM_PE_cal")]),
         gamma_PE=float(result.x[param_names.index("gamma_PE")]),
-        R_SEI=float(result.x[param_names.index("R_SEI")]),
         E_a_SEI=float(result.x[param_names.index("E_a_SEI")]),
         rate_constants_std=std_dict,
         fit_quality=fq,
