@@ -8,6 +8,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - (空)
 
+## [docs/v0.7.x-claude-md-genericize] — 2026-05-05
+
+- repo-root `CLAUDE.md` 精修与多模型泛化: header 加 "regardless of vendor or client form factor"; `Claude Code` / `CC` / `Claude Desktop` → `the IDE-side agent` / `chat clients` (中性术语); §1 删用户背景声明冗余; §2 Claude 自指词去除 (`Claude's own behavior` → `your own behavior`, 其他原措辞经多轮 user-vetted 严格保留); §4 三层文献统一 bullet 风格, Tier 1 完整保留, Tier 2 / Tier 3 抽象为类型描述; §5 文档描述压缩 + 触发场景疑问句化; §6 末尾去重; §7 vault access 三 bullet 改为 capability words, async/git 复数语义化, `the user` → `I` 文体统一; §8 末句紧凑化。
+- 严格保留: 全部 R1-R8 / authoritative documents 列表 / routing priority / 触发短语 / 全部 MUST / MUST NOT 强措辞 / R5/§7 反自动 git 约束 / Tier 1 完整出版信息 / vault 绝对路径 / conda env 名 / 2026-05-04 audit landing 加入的 code-volume corollary。
+- Scope: repo-root CLAUDE.md only. 派生层 (`docs/CLAUDE.md` / ADRs / README / QUICKSTART 等) 中的 `Claude Code` / `CC` 措辞推迟到后续 patch (R5 reconnaissance 命中清单见 vault 子阶段 3 报告 §6.1.7)。
+- 2 files changed: CLAUDE.md 139 → 118 行 (-21, +26/-47); CHANGELOG.md +7 行 entry. No code changes. R8 not triggered.
+
 ## [docs/v0.7.1-protocol-precision] — 2026-05-04
 
 - 协议层精度修订 (audit landing): repo-root `CLAUDE.md` §2 奥卡姆剃刀代码侧 corollary; `docs/CLAUDE.md` "Claude Code 协作规范" 新增 `### 代码层超范围约束` (匹配既有风格 / 未使用代码 / PR 自检); `docs/CLAUDE.md` R5 §4 验收阶段加强 2 bullet (read 全文实证 / 工程数字核对); `docs/decisions/README.md` Index 补 ADR-0016..0020 (R8 派生层 radiation 修补) + 新增 `## Authoring guidelines` (Status enum 4 值 / Filename / References / Frozen SPEC revisions)。
