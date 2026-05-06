@@ -243,6 +243,8 @@ R_i(t) = R_i^0 · f_{R,i}(t)      # 论文式 (43)
   文件修改后停下, 把 `git diff` 或 `git status` 呈给用户,
   由用户决定是否 stage / commit / tag。
 
+> vault 侧具体应用见 vault `PROTOCOL.md §1.2` (R5 specialization)。
+
 **违反本规则的典型症状**：某个概念在 A 文档说 X，在 B 文档说 Y，
 在 JSON 里什么也没说。这是 2026-04 之前的状态，R5 就是为了防止回退。
 

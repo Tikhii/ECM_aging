@@ -35,6 +35,7 @@ For frozen historical archive, see `docs/legacy/MIGRATION_NOTES.md`.
 - **Filename**: `NNNN-short-english-description.md`, English slug only, no Chinese characters or escape-prone punctuation. Keeps git / CI / grep friendly and avoids cross-session encoding issues.
 - **References**: Cite other ADRs by absolute number (e.g. `ADR-0016`), never by relative reference (`the previous ADR` / `last ADR`). Each ADR must be readable standalone. Origin: ADR-0019 References section cites ADR-0013 by absolute number.
 - **Frozen SPEC revisions**: Modifications to frozen SPEC content (including frontmatter, but not changing the frozen marker itself) require a corresponding ADR. The SPEC frontmatter records the revision pointer; the ADR records the rationale. Without this pairing, future readers cannot trace why a frozen SPEC's content differs from its initial freeze. Origin: ADR-0016 is the sole traceable anchor for SPEC §1/§3.1/§3.3/§3.5 revisions.
+- **vault subphase §5 → ADR summary**: vault subphase 决策表条目 sealed 为 ADR 后, vault 内仅留 1 行 summary 引用 ADR; 完整 rationale 入 ADR (cross-system form orthogonality, vault `PROTOCOL.md §0.1` T2)。
 
 ## Template
 
