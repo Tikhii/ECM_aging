@@ -8,6 +8,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - (空)
 
+## [docs/v0.7.3-protocol-v1.4] - 2026-05-07
+
+  ### Changed
+  - repo `CLAUDE.md` §1 添加 §1.0 Role dispatch by load context — vault
+    PROTOCOL v1.4 接口契约对称化的 git 端 anchor (vault 端为
+    `vault/CLAUDE.md` "Cross-role rule and interaction protocol" 段)
+  - repo `CLAUDE.md` §3 / §7: v1.2 措辞 sweep (chat clients / IDE-side
+    agent → Design Agent / Execution Agent)
+  - repo `CLAUDE.md` §7 重构: 角色职责委派 vault PROTOCOL.md §1.1, 工作
+    模式委派 §4.5, repo 仅保留 git-side 特有 3 项
+
+  ### Notes
+  - diff +18/-10. Subphase: vault/v0.7.x-protocol-v1.4/repo_claude_md_sweep.md
+  - PROTOCOL revision history v1.4 在 vault, 不入 git
+
+
 ## [docs/v0.7.x-claude-md-genericize] — 2026-05-05
 
 - repo-root `CLAUDE.md` 精修与多模型泛化: header 加 "regardless of vendor or client form factor"; `Claude Code` / `CC` / `Claude Desktop` → `the IDE-side agent` / `chat clients` (中性术语); §1 删用户背景声明冗余; §2 Claude 自指词去除 (`Claude's own behavior` → `your own behavior`, 其他原措辞经多轮 user-vetted 严格保留); §4 三层文献统一 bullet 风格, Tier 1 完整保留, Tier 2 / Tier 3 抽象为类型描述; §5 文档描述压缩 + 触发场景疑问句化; §6 末尾去重; §7 vault access 三 bullet 改为 capability words, async/git 复数语义化, `the user` → `I` 文体统一; §8 末句紧凑化。
