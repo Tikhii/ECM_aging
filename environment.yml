@@ -36,6 +36,7 @@ dependencies:
   # ---- 开发工具 ----
   - pytest>=7.0
   - pytest-cov
+  - pytest-timeout>=2.0
   - black
   - ruff
   - mypy

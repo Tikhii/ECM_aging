@@ -24,6 +24,7 @@ dependencies = [
 dev = [
     "pytest>=7.0",
     "pytest-cov",
+    "pytest-timeout>=2.0",
     "black",
     "ruff",
     "mypy",
@@ -52,3 +53,9 @@ ignore = ["E501"]  # 行过长由 black 管理
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
+markers = [
+    "slow: paper-realistic forward sim (1C ODE in `_drive_cycles_to_efc`, 数十分钟-数小时 per test). Deselected by default. Opt-in via `pytest -m slow` or `pytest -m ''`.",
+]
+# Default: skip slow tests + 600s safety timeout per test.
+# Override slow filter via `-m ''` (run all) or `-m slow` (run slow only).
+addopts = "-m 'not slow' --timeout=600"
