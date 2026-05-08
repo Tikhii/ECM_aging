@@ -1,0 +1,279 @@
+{
+  "schema_version": "params_mmeka2025.v1",
+  "model_version": "mmeka2025",
+  "material_spec_ref": "material_specs/lfp_large_format_power.material.json",
+  "fitted_at": null,
+  "last_modified_at": "2026-05-08T00:00:00Z",
+  "C0_PE_correction_factor": {
+    "value": 1.0560123329907503,
+    "status": "literature_default",
+    "fit_step": null,
+    "fit_source": null,
+    "fit_script_version": null,
+    "fit_r_squared": null,
+    "uncertainty": null,
+    "last_modified_at": "2026-05-08T00:00:00Z"
+  },
+  "C1": {
+    "value": 949.28,
+    "status": "literature_default",
+    "fit_step": null,
+    "fit_source": null,
+    "fit_script_version": null,
+    "fit_r_squared": null,
+    "uncertainty": null,
+    "last_modified_at": "2026-05-08T00:00:00Z"
+  },
+  "C2": {
+    "value": 3576.07,
+    "status": "literature_default",
+    "fit_step": null,
+    "fit_source": null,
+    "fit_script_version": null,
+    "fit_r_squared": null,
+    "uncertainty": null,
+    "last_modified_at": "2026-05-08T00:00:00Z"
+  },
+  "C3": {
+    "value": 0.0,
+    "status": "literature_default",
+    "fit_step": null,
+    "fit_source": null,
+    "fit_script_version": null,
+    "fit_r_squared": null,
+    "uncertainty": null,
+    "last_modified_at": "2026-05-08T00:00:00Z"
+  },
+  "fractionR1toRs": {
+    "value": 0.5,
+    "status": "literature_default",
+    "fit_step": null,
+    "fit_source": null,
+    "fit_script_version": null,
+    "fit_r_squared": null,
+    "uncertainty": null,
+    "last_modified_at": "2026-05-08T00:00:00Z"
+  },
+  "fractionR2toRs": {
+    "value": 0.5,
+    "status": "literature_default",
+    "fit_step": null,
+    "fit_source": null,
+    "fit_script_version": null,
+    "fit_r_squared": null,
+    "uncertainty": null,
+    "last_modified_at": "2026-05-08T00:00:00Z"
+  },
+  "k_SEI_cal": {
+    "value": null,
+    "status": "pending_fit",
+    "fit_step": null,
+    "fit_source": null,
+    "fit_script_version": null,
+    "fit_r_squared": null,
+    "uncertainty": null,
+    "last_modified_at": "2026-05-08T00:00:00Z"
+  },
+  "k_SEI_cyc": {
+    "value": null,
+    "status": "pending_fit",
+    "fit_step": null,
+    "fit_source": null,
+    "fit_script_version": null,
+    "fit_r_squared": null,
+    "uncertainty": null,
+    "last_modified_at": "2026-05-08T00:00:00Z"
+  },
+  "E_a_SEI": {
+    "value": null,
+    "status": "pending_fit",
+    "fit_step": null,
+    "fit_source": null,
+    "fit_script_version": null,
+    "fit_r_squared": null,
+    "uncertainty": null,
+    "last_modified_at": "2026-05-08T00:00:00Z"
+  },
+  "alpha_f_SEI": {
+    "value": 0.5,
+    "status": "convention",
+    "fit_step": null,
+    "fit_source": null,
+    "fit_script_version": null,
+    "fit_r_squared": null,
+    "uncertainty": null,
+    "last_modified_at": "2026-05-08T00:00:00Z"
+  },
+  "k_LP": {
+    "value": null,
+    "status": "pending_fit",
+    "fit_step": null,
+    "fit_source": null,
+    "fit_script_version": null,
+    "fit_r_squared": null,
+    "uncertainty": null,
+    "last_modified_at": "2026-05-08T00:00:00Z"
+  },
+  "alpha_LP": {
+    "value": 0.5,
+    "status": "convention",
+    "fit_step": null,
+    "fit_source": null,
+    "fit_script_version": null,
+    "fit_r_squared": null,
+    "uncertainty": null,
+    "last_modified_at": "2026-05-08T00:00:00Z"
+  },
+  "V_LP_eq": {
+    "value": 0.0,
+    "status": "convention",
+    "fit_step": null,
+    "fit_source": null,
+    "fit_script_version": null,
+    "fit_r_squared": null,
+    "uncertainty": null,
+    "last_modified_at": "2026-05-08T00:00:00Z"
+  },
+  "k_LAM_PE_cal": {
+    "value": null,
+    "status": "pending_fit",
+    "fit_step": null,
+    "fit_source": null,
+    "fit_script_version": null,
+    "fit_r_squared": null,
+    "uncertainty": null,
+    "last_modified_at": "2026-05-08T00:00:00Z"
+  },
+  "k_LAM_PE_cyc": {
+    "value": null,
+    "status": "pending_fit",
+    "fit_step": null,
+    "fit_source": null,
+    "fit_script_version": null,
+    "fit_r_squared": null,
+    "uncertainty": null,
+    "last_modified_at": "2026-05-08T00:00:00Z"
+  },
+  "gamma_PE": {
+    "value": null,
+    "status": "pending_fit",
+    "fit_step": null,
+    "fit_source": null,
+    "fit_script_version": null,
+    "fit_r_squared": null,
+    "uncertainty": null,
+    "last_modified_at": "2026-05-08T00:00:00Z"
+  },
+  "k_LAM_NE_cal": {
+    "value": 0.0,
+    "status": "convention",
+    "fit_step": null,
+    "fit_source": null,
+    "fit_script_version": null,
+    "fit_r_squared": null,
+    "uncertainty": null,
+    "last_modified_at": "2026-05-08T00:00:00Z"
+  },
+  "k_LAM_NE_cyc": {
+    "value": null,
+    "status": "pending_fit",
+    "fit_step": null,
+    "fit_source": null,
+    "fit_script_version": null,
+    "fit_r_squared": null,
+    "uncertainty": null,
+    "last_modified_at": "2026-05-08T00:00:00Z"
+  },
+  "gamma_NE": {
+    "value": 0.0,
+    "status": "convention",
+    "fit_step": null,
+    "fit_source": null,
+    "fit_script_version": null,
+    "fit_r_squared": null,
+    "uncertainty": null,
+    "last_modified_at": "2026-05-08T00:00:00Z"
+  },
+  "R_SEI": {
+    "value": 0.66,
+    "status": "literature_default",
+    "fit_step": null,
+    "fit_source": null,
+    "fit_script_version": null,
+    "fit_r_squared": null,
+    "uncertainty": null,
+    "last_modified_at": "2026-05-08T00:00:00Z"
+  },
+  "R_NE_0": {
+    "value": 0.018236,
+    "status": "literature_default",
+    "fit_step": null,
+    "fit_source": null,
+    "fit_script_version": null,
+    "fit_r_squared": null,
+    "uncertainty": null,
+    "last_modified_at": "2026-05-08T00:00:00Z"
+  },
+  "resistance_mat": "libquiv_aging/data/ResistancesAlawa.mat",
+  "resistance_mode": "ncr18650b_default",
+  "Q0_LLI_PE": {
+    "value": 0.0,
+    "status": "convention",
+    "fit_step": null,
+    "fit_source": null,
+    "fit_script_version": null,
+    "fit_r_squared": null,
+    "uncertainty": null,
+    "last_modified_at": "2026-05-08T00:00:00Z"
+  },
+  "Q0_LAM_PE": {
+    "value": 0.0,
+    "status": "convention",
+    "fit_step": null,
+    "fit_source": null,
+    "fit_script_version": null,
+    "fit_r_squared": null,
+    "uncertainty": null,
+    "last_modified_at": "2026-05-08T00:00:00Z"
+  },
+  "Q0_LAM_NE": {
+    "value": 0.0,
+    "status": "convention",
+    "fit_step": null,
+    "fit_source": null,
+    "fit_script_version": null,
+    "fit_r_squared": null,
+    "uncertainty": null,
+    "last_modified_at": "2026-05-08T00:00:00Z"
+  },
+  "Q0_PLA_NE": {
+    "value": 0.0,
+    "status": "convention",
+    "fit_step": null,
+    "fit_source": null,
+    "fit_script_version": null,
+    "fit_r_squared": null,
+    "uncertainty": null,
+    "last_modified_at": "2026-05-08T00:00:00Z"
+  },
+  "X_LAM_PE": {
+    "value": 0.0,
+    "status": "convention",
+    "fit_step": null,
+    "fit_source": null,
+    "fit_script_version": null,
+    "fit_r_squared": null,
+    "uncertainty": null,
+    "last_modified_at": "2026-05-08T00:00:00Z"
+  },
+  "X_LAM_NE": {
+    "value": 0.0,
+    "status": "convention",
+    "fit_step": null,
+    "fit_source": null,
+    "fit_script_version": null,
+    "fit_r_squared": null,
+    "uncertainty": null,
+    "last_modified_at": "2026-05-08T00:00:00Z"
+  }
+}

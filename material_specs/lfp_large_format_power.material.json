@@ -1,0 +1,103 @@
+{
+  "schema_version": "material.v1",
+  "cell_type": "lfp_large_format_power",
+  "chemistry": "LFP/Graphite",
+  "created_at": "2026-05-07T00:00:00Z",
+  "last_modified_at": "2026-05-08T00:00:00Z",
+  "C_nominal_Ah": {
+    "value": 180,
+    "status": "datasheet",
+    "fit_step": null,
+    "fit_source": null,
+    "fit_script_version": null,
+    "fit_r_squared": null,
+    "uncertainty": null,
+    "last_modified_at": "2026-05-07T00:00:00Z"
+  },
+  "V_max": {
+    "value": 3.8,
+    "status": "datasheet",
+    "fit_step": null,
+    "fit_source": null,
+    "fit_script_version": null,
+    "fit_r_squared": null,
+    "uncertainty": null,
+    "last_modified_at": "2026-05-07T12:00:00Z"
+  },
+  "V_min": {
+    "value": 2.0,
+    "status": "datasheet",
+    "fit_step": null,
+    "fit_source": null,
+    "fit_script_version": null,
+    "fit_r_squared": null,
+    "uncertainty": null,
+    "last_modified_at": "2026-05-07T12:00:00Z"
+  },
+  "X0_PE": {
+    "value": 0.95,
+    "status": "literature_default",
+    "fit_step": null,
+    "fit_source": null,
+    "fit_script_version": null,
+    "fit_r_squared": null,
+    "uncertainty": null,
+    "last_modified_at": "2026-05-07T00:00:00Z"
+  },
+  "X0_NE": {
+    "value": 0.015331,
+    "status": "fitted",
+    "fit_step": "B.1-T2-analytic-calibrate",
+    "fit_source": "brentq forward-solve V_PE(X0_PE=0.95) - V_NE(X0_NE) = V_min_target=2.0V on libquiv_aging/data/{Graphite,LFP}Alawa.dat at T=298.15K",
+    "fit_script_version": "v0.8.0-b1-2026-05-08",
+    "fit_r_squared": 1.0,
+    "uncertainty": null,
+    "last_modified_at": "2026-05-08T00:00:00Z"
+  },
+  "dX_PE_alawa": {
+    "value": 0.85,
+    "status": "literature_default",
+    "fit_step": null,
+    "fit_source": null,
+    "fit_script_version": null,
+    "fit_r_squared": null,
+    "uncertainty": null,
+    "last_modified_at": "2026-05-07T00:00:00Z"
+  },
+  "dX_NE_alawa": {
+    "value": 0.96,
+    "status": "literature_default",
+    "fit_step": null,
+    "fit_source": null,
+    "fit_script_version": null,
+    "fit_r_squared": null,
+    "uncertainty": null,
+    "last_modified_at": "2026-05-07T00:00:00Z"
+  },
+  "LR": {
+    "value": 1.1,
+    "status": "manually_set",
+    "fit_step": null,
+    "fit_source": null,
+    "fit_script_version": null,
+    "fit_r_squared": null,
+    "uncertainty": null,
+    "last_modified_at": "2026-05-07T00:00:00Z"
+  },
+  "OFS": {
+    "value": 7,
+    "status": "manually_set",
+    "fit_step": null,
+    "fit_source": null,
+    "fit_script_version": null,
+    "fit_r_squared": null,
+    "uncertainty": null,
+    "last_modified_at": "2026-05-07T00:00:00Z"
+  },
+  "anode_thermo_dat": "libquiv_aging/data/GraphiteAlawa.dat",
+  "cathode_thermo_dat": "libquiv_aging/data/LFPAlawa.dat",
+  "mvol_ne_mode": "graphite_standard",
+  "mvol_ne_coeff": null,
+  "mvol_pe_mode": "lfp_linear",
+  "mvol_pe_coeff": null
+}

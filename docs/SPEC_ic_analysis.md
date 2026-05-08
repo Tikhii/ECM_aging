@@ -5,6 +5,9 @@
 **Blocks**: FIT-4a (calendar aging), FIT-4b (cycle preknee). Both need 
 (LLI_Ah, LAM_PE_Ah, LAM_NE_Ah) per RPT as their primary constraints.
 
+**Revision history**:
+- 2026-05-07 (子阶段 B.1 of `release/v0.8.0-lfp-integration`, ADR-0021): LFP/graphite cell_type IC analysis 算法语义退化 (LLI-only 单参数 fit). Algorithm Design + Numerical subtleties 段加 LFP 分支声明. SPEC frozen 标记不动.
+
 ---
 
 ## Purpose
@@ -119,6 +122,18 @@ $\hat\sigma^2 = \text{SSE} / (N - 3)$.
 - LLI: [0, 0.3 · C_nominal]
 - LAM_PE: [0, 0.3 · C_PE_0]
 - LAM_NE: [0, 0.3 · C_NE_0]
+
+### LFP LLI-only branch (v0.8 B.1, ADR-0021)
+
+LFP cathode OCV 在 ~3.43–3.45 V vs Li/Li⁺ 平台横跨 ~84% SOC (LiFePO₄ ↔ FePO₄ 两相共存, Padhi 1997 + Yamada 2006). 三 DM (LLI + LAM_PE + LAM_NE) 在 LFP 平台-主导曲线上 J^T J 接近奇异 (A.2 实证 cond ≈ 1.9e8 on edge subset, σ_LAM_NE ≈ 117 Ah ≈ 13× C_nominal). 因此 LFP cell_type 上 IC analysis **退化为 LLI-only 单参数 fit**:
+
+- **Chemistry sniff**: `material_spec["chemistry"]` 含 "LFP" → 跳 LAM_PE / LAM_NE 自由度.
+- **Residual function 跨分支统一**: `V_model(LAM_PE=0, LAM_NE=0, LLI) - V_obs` (调 `_synthesize_V_ocv_inner` 同 NCR 路径, LAM 输入硬绑 0).
+- **Bounds**: LFP 仅 `LLI ∈ [0, 0.3·C_nominal]` (LAM_PE / LAM_NE bounds 不解锁).
+- **Output**: `ICAnalysisResult.LAM_PE_Ah / LAM_NE_Ah → NaN`; 新增 `lfp_degraded_branch: bool` flag (具体字段 vs `LFPICAnalysisResult` 子类 dataclass 由 B.2 实装决定).
+- **Identifiability**: 单参 fit 的 `J^T J = sum(J^2)` 标量, > 0 即非奇异 (区别于 3-DM 矩阵奇异性). 协方差 `var[LLI] = sigma²/J^TJ`.
+
+`docs/SPEC_dm_aging.md §3.1 Cell type routing` 表给 FIT-4a/4b NaN-skip 语义.
 
 ---
 
@@ -300,6 +315,20 @@ algebraic, no ODE solve. Vectorize over Q array via numpy.
 
 **Dependencies**: numpy, scipy ≥ 1.10, pandas, matplotlib (plot-only). 
 All present in existing `libquiv-aging` conda env.
+
+---
+
+## Numerical Subtleties (LFP-specific)
+
+This section captures numerical / identifiability quirks specific to the LFP LLI-only branch (v0.8 B.1, ADR-0021). NCA/Graphite path unchanged.
+
+- **Single-parameter J^T J is a scalar**, never singular if signal is present. `J^T J = sum(J_i²) > 0` is the identifiability guard for LFP (replaces the `cond(J^T J) < 1e10` 3×3 guard used for NCR).
+- **Single-phase X_PE region is narrow**: LFP V_PE(X_PE) has steep dV/dX only in the single-phase edges X_PE ∈ [0, 0.05] ∪ [0.89, 1] (~16% of the Padhi/Yamada theoretical range). The plateau at X_PE ∈ [0.05, 0.89] sits at V_PE ≈ 3.434 V (mean) with std < 1 mV (`LFPAlawa.dat` derived from Padhi 1997 + Yamada 2006).
+- **IC fit subset selection**: Practical implementation can use a V-band tolerance filter `|V_aged - 3.44| > 15 mV` to exclude plateau-dominated samples. **Caveat**: V_cell varies with V_NE across discharge, so the V-band filter does NOT correspond 1:1 to X_PE ∈ [0, 0.05] ∪ [0.89, 1]. A.2 v2 实证: V-band 选 99.8% of curve; X_PE-edge 直接 mask 选 1.8% (lithiated edge X_PE > 0.89 通常超出 cell 操作窗 — graphite Li budget 在 X_NE → 0 时先 bind). 本 SPEC 不强制 subset 选择策略, B.2 实装决定; 任一选择下 LLI-only 反演鲁棒 (synthetic err < 1e-4%).
+- **3-DM negative control on the same LFP data**: cond(J^T J) ≈ 1.9e8 on edge subset, σ_LAM_NE ≈ 117 Ah (~13× C_nominal=180 Ah, ~13× LAM_NE truth=0). 数学上不严格奇异 (< 1e10), 但工程上 LAM 项不可识别. Plan §risks 已预清 "do not force fail at cond > 1e10"; 工程结论以 LAM σ vs truth 量级判定.
+- **V_min reachability with current X0_NE / OFS budget**: A.2 v2 实证 spec V_min 可达性受 graphite Li budget 约束 (X_NE → 0 boundary). B.1 X0_NE analytic calibrate (`material_specs/lfp_large_format_power.material.json::X0_NE.fit_source = "analytic_calibrate_2026-05-08_v0.8_b1"`) 求解 V_PE(X0_PE=0.95) - V_NE(X0_NE) = V_min_target=2.0V, 解 X0_NE ≈ 0.0153. 该 analytic value 是起步, B.3 fresh OCV 实测 calibrate refine.
+
+References: `docs/decisions/0021-lfp-llionly-ic-analysis.md` (decision rationale); `docs/decisions/0022-lfp-alawa-padhi-yamada.md` (data source); `vault/v0.8/a2_ic_analysis_lli_only.md` (sealed report, A.2 实证).
 
 ---
 

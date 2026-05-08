@@ -16,6 +16,25 @@
       "params": "param_specs/panasonic_ncr18650b__mmeka2025.params.json"
     }
   },
+  "cell_types": {
+    "_comment": "Cell type registry. material_spec_path / params_spec_path are repo-relative. Added v0.8 B.1 (ADR-0021).",
+    "panasonic_ncr18650b": {
+      "material_spec_path": "material_specs/panasonic_ncr18650b.material.json",
+      "params_spec_path": "param_specs/panasonic_ncr18650b__mmeka2025.params.json",
+      "chemistry": "NCA/Graphite",
+      "nominal_capacity_Ah": 3.35,
+      "mechanism_version": "mmeka2025",
+      "fit_implementation": {"FIT-4a": "implementation_v0_7_0", "FIT-4b": "v0_7_0", "FIT-4c": "v0_7_0"}
+    },
+    "lfp_large_format_power": {
+      "material_spec_path": "material_specs/lfp_large_format_power.material.json",
+      "params_spec_path": "param_specs/lfp_large_format_power__mmeka2025.params.json",
+      "chemistry": "LFP/Graphite",
+      "nominal_capacity_Ah": 180,
+      "mechanism_version": "mmeka2025",
+      "fit_implementation": {"FIT-4a": "implementation_v0_8_0_lfp", "FIT-4b": "v0_8_0_lfp", "FIT-4c": "v0_8_0_lfp"}
+    }
+  },
   "tiers": {
     "I": "Read directly from datasheet or by convention (no fitting)",
     "II": "Measured directly and loaded as lookup tables (LUTs)",
